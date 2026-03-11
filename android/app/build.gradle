@@ -1,0 +1,110 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
+android {
+    namespace "com.Insta.grocery.customer.insta_grocery_customer"
+    compileSdkVersion 35
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    defaultConfig {
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        applicationId "com.insta.grocery.customer"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
+        minSdkVersion 21
+        targetSdkVersion 35
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+        multiDexEnabled true
+        ndkVersion "28.0.12433566"
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+        }
+    }
+
+    signingConfigs {
+        liveConfig {
+            Properties keystore_properties = new Properties();
+            //for google playstore
+            keystore_properties.load(project.rootProject.file('keystore/keystore.properties').newDataInputStream())
+
+            keyAlias keystore_properties.getProperty("KEY_ALIAS")
+            keyPassword keystore_properties.getProperty("KEY_PASSWORD")
+            storeFile new File(rootDir, keystore_properties.getProperty("STORE_PATH"))
+            storePassword keystore_properties.getProperty("STORE_PASSWORD")
+        }
+    }
+
+    buildTypes {
+        releaseStaging {
+
+            shrinkResources false
+            minifyEnabled false
+            matchingFallbacks = ['release']
+            signingConfig signingConfigs.liveConfig
+        }
+
+
+        release {
+            //    minifyEnabled enableProguardInReleaseBuilds
+            shrinkResources false
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.liveConfig
+
+        }
+    }
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            def buildDate = new Date().format("dd_MM_yyyy")
+            def buildType = variant.getBuildType().name
+            def flavorName = variant.flavorName
+            def appName = "${"Febbo"}_v${defaultConfig.getVersionCode()}_${buildDate}-${buildType}.apk"
+
+            outputFileName = appName
+        }
+    }
+    configurations.all {
+        exclude group: 'com.google.errorprone', module: 'error_prone_annotations'
+    }
+}
+
+flutter {
+    source '../..'
+}
+dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'com.google.errorprone:error_prone_annotations:2.7.1'
+
+}

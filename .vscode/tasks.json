@@ -1,0 +1,11 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Flutter Run External",
+            "type": "shell",
+            "command": "start cmd.exe /K \"fvm flutter run\"",
+            "problemMatcher": []
+        }
+    ]
+}

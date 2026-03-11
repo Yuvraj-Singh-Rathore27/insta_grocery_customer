@@ -1,0 +1,68 @@
+Ios Details
+
+drvani.84@gmail.com
+Vijaysurya@123
+
+playstore details
+frebboconnect@gmail.com
+Vanivijay@123
+
+Vishnu…
+   Change App logo
+   Change App name…
+      Frebbo
+      Frebbo Partners
+      Frebbo Delivery
+
+
+      {
+        "status": 200,
+        "code": 0,
+        "error": false,
+        "message": "Success",
+        "data": [
+          {
+            "is_active": true,
+            "created_at": "2025-03-11T11:15:36.083014",
+            "updated_at": "2025-03-11T11:15:36.083014",
+            "is_deleted": false,
+            "photos": null,
+            "created_by_id": 1,
+            "updated_by_id": 1,
+            "id": 1,
+            "name": "Store",
+            "created_by": 1,
+            "updated_by": 1
+          },
+          {
+            "is_active": true,
+            "created_at": "2025-03-11T11:15:36.083014",
+            "updated_at": "2025-03-11T11:15:36.083014",
+            "is_deleted": false,
+            "photos": null,
+            "created_by_id": 1,
+            "updated_by_id": 1,
+            "id": 2,
+            "name": "Distributor",
+            "created_by": 1,
+            "updated_by": 1
+          },
+          {
+            "is_active": true,
+            "created_at": "2025-03-11T11:15:36.083014",
+            "updated_at": "2025-03-11T11:15:36.083014",
+            "is_deleted": false,
+            "photos": null,
+            "created_by_id": 1,
+            "updated_by_id": 1,
+            "id": 3,
+            "name": "Company",
+            "created_by": 1,
+            "updated_by": 1
+          }
+        ]
+      }
+
+
+http://43.205.42.216/grocery/admin
+
