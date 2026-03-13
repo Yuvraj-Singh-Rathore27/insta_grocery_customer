@@ -2086,22 +2086,29 @@ class WebServicesHelper {
 
   Map<String, String> query = {};
 
-  /// add category only if exists
-  if (param['category_id'] != null &&
-      param['category_id'].toString().isNotEmpty) {
-    query['category_id'] = param['category_id'].toString();
+  void addIfNotEmpty(String key, dynamic value) {
+    if (value != null &&
+        value.toString().trim().isNotEmpty &&
+        value.toString() != "null") {
+      query[key] = value.toString();
+    }
   }
 
-  /// add subcategory only if exists
-  if (param['subcategory_id'] != null &&
-      param['subcategory_id'].toString().isNotEmpty) {
-    query['subcategory_id'] = param['subcategory_id'].toString();
+  addIfNotEmpty("name", param["name"]);
+  addIfNotEmpty("preferred_city", param["preferred_city"]);
+  addIfNotEmpty("experience", param["experience"]);
+  addIfNotEmpty("expected_salary", param["expected_salary"]);
+  addIfNotEmpty("category_id", param["category_id"]);
+  addIfNotEmpty("subcategory_id", param["subcategory_id"]);
+  // addIfNotEmpty("job_type", param["job_type"]);
+// 
+  if (param["accommodation"] != null) {
+    query["accommodation"] = param["accommodation"].toString();
   }
 
   final uri = Uri.parse(baseUrl).replace(queryParameters: query);
 
-  print("🌍 URL => $uri");
-  print("📦 PARAM => $param");
+  print("🌍 FILTER URL => $uri");
 
   final response = await http.get(
     uri,
@@ -2113,12 +2120,12 @@ class WebServicesHelper {
 
   if (response.statusCode == 200) {
     return jsonDecode(response.body);
-  } else {
-    print("❌ API ERROR ${response.statusCode}");
-    print(response.body);
-    return null;
   }
+
+  return null;
 }
+
+
  // ✅ POST Resume API
   Future<Map<String, dynamic>?> postResumeApi(
       Map<String, dynamic> param) async {

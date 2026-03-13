@@ -178,6 +178,17 @@ RxDouble longitude = 0.0.obs;
 RxList<CandidateData> candidateResumeList = <CandidateData>[].obs;
 
 RxBool isLoadingCandidateResume = false.obs;
+
+// filter 
+
+
+RxString filterName = "".obs;
+RxString filterCity = "".obs;
+RxString filterExperience = "".obs;
+RxString filterExpectedSalary = "".obs;
+RxBool filterAccommodation = true.obs;
+
+RxString selectedResumeJobType = "".obs;
   
 
   // ==================== INITIALIZATION ====================
@@ -196,6 +207,7 @@ RxBool isLoadingCandidateResume = false.obs;
     getJobTypeList("CAREER");
     getJobListing();
     getMyPostedJobs();
+    getCandidateResumeList();
     getCityList();
     // fetchAvailableTags();
 
@@ -618,12 +630,10 @@ for (var job in jobListing) {
 List<String> getAvailableJobTypes() {
   // Always return all 6 predefined job types
   final predefinedJobTypes = [
-    "Full Time", 
-    "Part Time", 
-    "Night Jobs", 
-    "Remote Jobs", 
-    "Freelancers", 
-    "Internships"
+    "FRESHER", 
+    "CAREER", 
+    "BUSINESS", 
+    "DOMESTIC"
   ];
   
   print("📊 Available Job Types: $predefinedJobTypes");
@@ -1341,63 +1351,70 @@ bool _tagMatchesSubcategory(String tag, String subcategory) {
 
 Future<void> getCandidateResumeList() async {
 
-  try {
+  isLoadingCandidateResume.value = true;
 
-    isLoadingCandidateResume.value = true;
+  Map<String, dynamic> param = {
+    "accessToken": accessToken,
+  };
 
-    final param = {
-      "accessToken": accessToken,
-      "category_id": selectedCategoryID.value,
-      "subcategory_id": selecteSubdCategoryId.value,
-    };
-
-    print("📤 Candidate Resume API PARAM => $param");
-
-    Map<String, dynamic>? response =
-        await WebServicesHelper().getListOfCandiateResume(param);
-
-    if (response != null) {
-
-      candidateResumeList.clear();
-
-      if (response['data'] != null && response['data'] is List) {
-
-        List list = response['data'];
-
-        for (var item in list) {
-
-          try {
-            candidateResumeList.add(
-              CandidateData.fromJson(item),
-            );
-          } catch (e) {
-            print("⚠ Candidate Parse Error => $e");
-          }
-
-        }
-
-      }
-
-      candidateResumeList.refresh();
-
-      print("✅ Total Candidates Loaded => ${candidateResumeList.length}");
-
-    } else {
-
-      print("❌ Candidate API returned null");
-
-    }
-
-  } catch (e) {
-
-    print("❌ getCandidateResumeList Exception => $e");
-
-  } finally {
-
-    isLoadingCandidateResume.value = false;
-
+  if (filterName.value.trim().isNotEmpty) {
+    param["name"] = filterName.value.trim();
   }
 
+  if (filterCity.value.trim().isNotEmpty) {
+    param["preferred_city"] = filterCity.value.trim();
+  }
+
+  if (filterExpectedSalary.value.trim().isNotEmpty) {
+    param["expected_salary"] = filterExpectedSalary.value.trim();
+  }
+
+  if (selectedCategoryID.value.isNotEmpty) {
+    param["category_id"] = selectedCategoryID.value;
+  }
+
+  if (selecteSubdCategoryId.value.isNotEmpty) {
+    param["subcategory_id"] = selecteSubdCategoryId.value;
+  }
+
+  if (selectedResumeJobType.value.isNotEmpty) {
+    param["job_type"] = selectedResumeJobType.value;
+  }
+
+  param["accommodation"] = filterAccommodation.value;
+
+  final response =
+      await WebServicesHelper().getListOfCandiateResume(param);
+
+  isLoadingCandidateResume.value = false;
+
+  if (response != null && response['status'] == 200) {
+
+    List list = response['data'] ?? [];
+
+    List<CandidateData> temp =
+        list.map((e) => CandidateData.fromJson(e)).toList();
+
+    /// ⭐ LOCAL EXPERIENCE FILTER
+    if (filterExperience.value.isNotEmpty) {
+
+      int selectedExp =
+          filterExperience.value == "10+"
+              ? 10
+              : int.tryParse(filterExperience.value) ?? 0;
+
+      temp = temp.where((e) {
+
+        int candidateExp =
+            int.tryParse(e.experience?.toString() ?? "0") ?? 0;
+
+        return candidateExp >= selectedExp;
+
+      }).toList();
+    }
+
+    candidateResumeList.value = temp;
+  }
 }
 
 /// 🏷️ Fetch all available tags from API (keep this as is)
@@ -1514,6 +1531,24 @@ void onSubCategoryFilterChanged(String? subcategory) {
     applyFilters();
   }
 
+  void onResumeJobTypeChanged(String type) {
+
+  selectedResumeJobType.value = type;
+
+  /// Reset category + subcategory
+  selectedCategoryFilter.value = "";
+  selectedSubCategoryFilter.value = "";
+  selectedCategoryID.value = "";
+  selecteSubdCategoryId.value = "";
+
+  jobCategoryListValue.clear();
+  jobSubcategoryListValue.clear();
+  jobSubTypeList.clear();
+
+  /// ⭐ Load categories according to job type
+  getJobTypeList(type);
+}
+
   // ==================== UTILITY METHODS ====================
   void clearForm() {
     List<TextEditingController> controllers = [
@@ -1582,4 +1617,29 @@ selectedSalaryType.value = "Monthly";
     accommodationList.refresh();
     jobTypeListValue.refresh();
   }
+
+  void clearResumeFilters() {
+
+  filterName.value = "";
+  filterCity.value = "";
+  filterExperience.value = "";
+  filterExpectedSalary.value = "";
+  filterAccommodation.value = true;
+
+  selectedResumeJobType.value = "";
+
+  selectedCategoryFilter.value = "";
+  selectedSubCategoryFilter.value = "";
+  selectedCategoryID.value = "";
+  selecteSubdCategoryId.value = "";
+
+  jobCategoryListValue.clear();
+  jobSubcategoryListValue.clear();
+  jobSubTypeList.clear();
+
+  /// reload default category type
+  getJobTypeList("CAREER");
+
+  getCandidateResumeList();
+}
 }

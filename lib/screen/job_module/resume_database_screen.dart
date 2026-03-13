@@ -1,228 +1,355 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:insta_grocery_customer/res/AppColor.dart';
-import 'package:insta_grocery_customer/screen/job_module/candidate_full_profile_screen.dart';
 import '../../controller/job_controller.dart';
 import '../../model/candidate_resume_model.dart';
+import '../../res/AppColor.dart';
+import 'candidate_full_profile_screen.dart';
 
 class ResumeDatabaseScreen extends StatelessWidget {
   ResumeDatabaseScreen({super.key});
 
-  final JobProviderController controller = Get.put(JobProviderController());
+  final JobProviderController controller =
+      Get.put(JobProviderController());
 
   @override
   Widget build(BuildContext context) {
-
+    Future.microtask(() {
+    if (controller.candidateResumeList.isEmpty) {
+      controller.getCandidateResumeList();
+    }
+  });
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
 
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Resume Database",
-                style: TextStyle(color: Colors.black, fontSize: 18)),
-            Text("Find candidates",
-                style: TextStyle(color: Colors.grey, fontSize: 12)),
-          ],
-        ),
+        title: const Text("Resume Database"),
+        centerTitle: true,
       ),
 
-      body: SafeArea(
-        child: Column(
-          children: [
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _openFilterSheet(context),
+        icon: const Icon(Icons.filter_alt_outlined),
+        label: const Text("Filters"),
+      ),
 
-            /// SEARCH BAR
-            Padding(
-              padding: EdgeInsets.symmetric(
-                  horizontal: width * .04, vertical: 10),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: "Search candidates",
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-            ),
+      body: Column(
+        children: [
 
-            /// FILTER DROPDOWNS
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: width * .04),
-              child: Column(
-  children: [
+          
+          /// LIST
+          Expanded(
+            child: Obx(() {
 
-    /// CATEGORY
-    Obx(() {
-      return DropdownButtonFormField<String>(
-        isExpanded: true,
-        value: controller.selectedCategoryFilter.value.isEmpty
-            ? null
-            : controller.selectedCategoryFilter.value,
-        hint: const Text("Category"),
-        items: controller.jobCategoryListValue
-            .map(
-              (e) => DropdownMenuItem(
-                value: e,
-                child: Text(
-                  e,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            )
-            .toList(),
-        onChanged: (value) {
+              if (controller.isLoadingCandidateResume.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          controller.selectedCategoryFilter.value = value ?? "";
+              if (controller.candidateResumeList.isEmpty) {
+                return const Center(child: Text("No Candidates Found"));
+              }
 
-          /// reset subcategory
-          controller.selectedSubCategoryFilter.value = "";
-          controller.selecteSubdCategoryId.value = "";
+              return ListView.builder(
+                padding: EdgeInsets.symmetric(horizontal: width * .04),
+                itemCount: controller.candidateResumeList.length,
+                itemBuilder: (_, i) {
 
-          controller.jobSubcategoryListValue.clear();
-          controller.jobSubTypeList.clear();
+                  final candidate =
+                      controller.candidateResumeList[i];
 
-          /// find category id
-          for (var category in controller.jobTypeList) {
-            if (category.name == value) {
-              controller.selectedCategoryID.value =
-                  category.id.toString();
-              break;
-            }
-          }
-          controller.getCandidateResumeList();
-          /// fetch subcategories
-          controller.getJobSubcategoryList();
-        },
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    }),
-
-    const SizedBox(height: 12),
-
-    /// SUBCATEGORY
-    Obx(() {
-      return DropdownButtonFormField<int>(
-  isExpanded: true,
-
-  value: controller.selecteSubdCategoryId.value.isEmpty
-      ? null
-      : int.tryParse(controller.selecteSubdCategoryId.value),
-
-  hint: const Text("Subcategory"),
-
-  items: controller.jobSubTypeList
-      .map(
-        (sub) => DropdownMenuItem<int>(
-          value: sub.id,
-          child: Text(
-            sub.name ?? "",
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      )
-      .toList(),
-
-  onChanged: (value) {
-
-    if (value == null) return;
-
-    controller.selecteSubdCategoryId.value = value.toString();
-
-    /// store display name
-    for (var sub in controller.jobSubTypeList) {
-      if (sub.id == value) {
-        controller.selectedSubCategoryFilter.value = sub.name ?? "";
-        break;
-      }
-    }
-
-    controller.getCandidateResumeList();
-  },
-
-  decoration: InputDecoration(
-    filled: true,
-    fillColor: Colors.white,
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-    ),
-  ),
-
-);
-    }),
-
-    const SizedBox(height: 10),
-
-Align(
-  alignment: Alignment.centerRight,
-  child: TextButton(
-    onPressed: () {
-
-      controller.selectedCategoryFilter.value = "";
-      controller.selectedSubCategoryFilter.value = "";
-      controller.selectedCategoryID.value = "";
-      controller.selecteSubdCategoryId.value = "";
-
-      controller.getCandidateResumeList();
-
-    },
-    child: const Text("Clear Filters"),
-  ),
-),
-
-  ],
-)
-            ),
-
-            const SizedBox(height: 10),
-
-            /// CANDIDATE LIST
-            Expanded(
-              child: Obx(() {
-
-                if (controller.isLoadingCandidateResume.value) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (controller.candidateResumeList.isEmpty) {
-                  return const Center(child: Text("No Candidates Found"));
-                }
-
-                return ListView.builder(
-                  padding: EdgeInsets.symmetric(horizontal: width * .04),
-                  itemCount: controller.candidateResumeList.length,
-                  itemBuilder: (context, index) {
-
-                    final candidate =
-                        controller.candidateResumeList[index];
-
-                    return CandidateCard(candidate: candidate);
-                  },
-                );
-              }),
-            )
-          ],
-        ),
+                  return CandidateCard(candidate: candidate);
+                },
+              );
+            }),
+          )
+        ],
       ),
     );
   }
+
+  /// FILTER SHEET
+  void _openFilterSheet(BuildContext context) {
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+          BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) {
+        return _filterUI();
+      },
+    );
+  }
+
+  Widget _filterUI() {
+
+  final height = MediaQuery.of(Get.context!).size.height;
+
+  return Obx(() => Container(
+    height: height * .72,   // ⭐⭐⭐ MAIN FIX (NOT FULL SCREEN)
+    padding: const EdgeInsets.all(18),
+
+    decoration: const BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(24),
+      ),
+    ),
+
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        /// DRAG HANDLE
+        Center(
+          child: Container(
+            height: 5,
+            width: 60,
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+        ),
+
+        const Text(
+          "Filter Candidates",
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
+        /// ⭐⭐⭐ SCROLL AREA (IMPORTANT)
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                _sectionTitle("Job Type"),
+
+                DropdownButtonFormField<String>(
+                  value: controller.selectedResumeJobType.value.isEmpty
+                      ? null
+                      : controller.selectedResumeJobType.value,
+                  hint: const Text("Select Job Type"),
+                  decoration: _inputDecoration(),
+                  items: controller.getAvailableJobTypes()
+                      .map((e) => DropdownMenuItem(
+                      value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      controller.onResumeJobTypeChanged(v);
+                    }
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                _sectionTitle("Category"),
+
+                DropdownButtonFormField<String>(
+                  value: controller.selectedCategoryFilter.value.isEmpty
+                      ? null
+                      : controller.selectedCategoryFilter.value,
+                  hint: const Text("Select Category"),
+                  decoration: _inputDecoration(),
+                  items: controller.jobCategoryListValue
+                      .map((e) => DropdownMenuItem(
+                      value: e, child: Text(e)))
+                      .toList(),
+                  onChanged: (value) {
+
+                    controller.selectedCategoryFilter.value = value ?? "";
+
+                    controller.selectedSubCategoryFilter.value = "";
+                    controller.selecteSubdCategoryId.value = "";
+
+                    for (var category in controller.jobTypeList) {
+                      if (category.name == value) {
+                        controller.selectedCategoryID.value =
+                            category.id.toString();
+                        break;
+                      }
+                    }
+
+                    controller.getJobSubcategoryList();
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                _sectionTitle("Sub Category"),
+
+                DropdownButtonFormField<int>(
+                  value: controller.selecteSubdCategoryId.value.isEmpty
+                      ? null
+                      : int.tryParse(
+                      controller.selecteSubdCategoryId.value),
+                  hint: const Text("Select Subcategory"),
+                  decoration: _inputDecoration(),
+                  items: controller.jobSubTypeList
+                      .map((sub) => DropdownMenuItem<int>(
+                    value: sub.id,
+                    child: Text(sub.name ?? ""),
+                  ))
+                      .toList(),
+                  onChanged: (value) {
+                    controller.selecteSubdCategoryId.value =
+                        value.toString();
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                _sectionTitle("Candidate Name"),
+
+                TextField(
+                  decoration: _inputDecoration().copyWith(
+                    hintText: "Search Candidate Name",
+                    prefixIcon: const Icon(Icons.search),
+                  ),
+                  onChanged: (v) {
+                    controller.filterName.value = v;
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                _sectionTitle("Preferred City"),
+
+                TextField(
+                  decoration: _inputDecoration().copyWith(
+                    hintText: "Enter City",
+                    prefixIcon: const Icon(Icons.location_city),
+                  ),
+                  onChanged: (v) {
+                    controller.filterCity.value = v;
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                _sectionTitle("Experience"),
+
+                DropdownButtonFormField<String>(
+                  value: controller.filterExperience.value.isEmpty
+                      ? null
+                      : controller.filterExperience.value,
+                  hint: const Text("Select Experience"),
+                  decoration: _inputDecoration(),
+                  items: ["0","1","2","3","4","5","10+"]
+                      .map((e) => DropdownMenuItem(
+                      value: e, child: Text("$e Years")))
+                      .toList(),
+                  onChanged: (v) {
+                    controller.filterExperience.value = v ?? "";
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                _sectionTitle("Expected Salary"),
+
+                TextField(
+                  decoration: _inputDecoration().copyWith(
+                    hintText: "Enter Salary",
+                    prefixIcon: const Icon(Icons.currency_rupee),
+                  ),
+                  onChanged: (v) {
+                    controller.filterExpectedSalary.value = v;
+                  },
+                ),
+
+                const SizedBox(height: 10),
+
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: SwitchListTile(
+                    title: const Text("Accommodation Required"),
+                    value: controller.filterAccommodation.value,
+                    onChanged: (v) {
+                      controller.filterAccommodation.value = v;
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+              ],
+            ),
+          ),
+        ),
+
+        /// ⭐ BUTTONS FIXED BOTTOM
+        Row(
+          children: [
+
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  controller.clearResumeFilters();
+                  Get.back();
+                },
+                child: const Text("Clear"),
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  controller.getCandidateResumeList();
+                  Get.back();
+                },
+                child: const Text("Apply"),
+              ),
+            ),
+
+          ],
+        )
+
+      ],
+    ),
+  ));
+}
+/// ⭐ SECTION TITLE
+Widget _sectionTitle(String title) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Text(
+      title,
+      style: const TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 14,
+      ),
+    ),
+  );
 }
 
+/// ⭐ INPUT DECORATION
+InputDecoration _inputDecoration() {
+  return InputDecoration(
+    filled: true,
+    fillColor: Colors.grey.shade100,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide.none,
+    ),
+  );
+}
+}
 
 class CandidateCard extends StatelessWidget {
   final CandidateData candidate;
