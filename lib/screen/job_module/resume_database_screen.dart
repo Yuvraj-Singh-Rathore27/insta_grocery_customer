@@ -34,37 +34,170 @@ class ResumeDatabaseScreen extends StatelessWidget {
         label: const Text("Filters"),
       ),
 
-      body: Column(
-        children: [
+     body: Obx(() {
+  return Column(
+    children: [
 
-          
-          /// LIST
-          Expanded(
-            child: Obx(() {
+      /// ⭐ FILTER CARD SECTION
+      Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 10,
+              color: Colors.black.withOpacity(.05),
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
 
-              if (controller.isLoadingCandidateResume.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
+        child: Column(
+          children: [
 
-              if (controller.candidateResumeList.isEmpty) {
-                return const Center(child: Text("No Candidates Found"));
-              }
+           
 
-              return ListView.builder(
-                padding: EdgeInsets.symmetric(horizontal: width * .04),
-                itemCount: controller.candidateResumeList.length,
-                itemBuilder: (_, i) {
+            const SizedBox(height: 12),
 
-                  final candidate =
-                      controller.candidateResumeList[i];
+            /// JOB TYPE
 
-                  return CandidateCard(candidate: candidate);
-                },
-              );
-            }),
-          )
-        ],
+            DropdownButtonFormField<String>(
+              value: controller.selectedResumeJobType.value.isEmpty
+                  ? null
+                  : controller.selectedResumeJobType.value,
+              hint: const Text("Select Job Type"),
+              decoration: _filterDecoration(),
+              items: controller.getAvailableJobTypes()
+                  .map((e) =>
+                  DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (v) {
+                if (v != null) {
+                  controller.onResumeJobTypeChanged(v);
+                }
+              },
+            ),
+
+            const SizedBox(height: 14),
+
+           
+
+            DropdownButtonFormField<String>(
+              value: controller.selectedCategoryFilter.value.isEmpty
+                  ? null
+                  : controller.selectedCategoryFilter.value,
+              hint: const Text("Select Category"),
+              decoration: _filterDecoration(),
+              items: controller.jobCategoryListValue
+                  .map((e) =>
+                  DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (value) {
+
+                controller.selectedCategoryFilter.value = value ?? "";
+                controller.selectedSubCategoryFilter.value = "";
+                controller.selecteSubdCategoryId.value = "";
+
+                for (var category in controller.jobTypeList) {
+                  if (category.name == value) {
+                    controller.selectedCategoryID.value =
+                        category.id.toString();
+                    break;
+                  }
+                }
+
+                controller.getJobSubcategoryList();
+                controller.getCandidateResumeList();
+              },
+            ),
+
+            const SizedBox(height: 14),
+
+            /// SUB CATEGORY
+           
+            DropdownButtonFormField<int>(
+              value: controller.selecteSubdCategoryId.value.isEmpty
+                  ? null
+                  : int.tryParse(
+                  controller.selecteSubdCategoryId.value),
+              hint: const Text("Select Subcategory"),
+              decoration: _filterDecoration(),
+              items: controller.jobSubTypeList
+                  .map((sub) => DropdownMenuItem<int>(
+                value: sub.id,
+                child: Text(sub.name ?? ""),
+              ))
+                  .toList(),
+              onChanged: (value) {
+                controller.selecteSubdCategoryId.value =
+                    value.toString();
+                    controller.getCandidateResumeList();
+                    
+              },
+            ),
+            const SizedBox(height: 10,),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15,vertical: 5),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Filter",style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold),),
+                  GestureDetector(
+                    onTap: ()=>{
+controller.clearResumeFilters(),
+                  controller.getCandidateResumeList()
+                    },
+                    child: Text("clear",style: TextStyle(color: AppColor().colorBlue,fontWeight:FontWeight.bold ),),
+                  )
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+
+      /// ⭐ LIST
+      Expanded(
+        child: controller.isLoadingCandidateResume.value
+            ? const Center(child: CircularProgressIndicator())
+            : controller.candidateResumeList.isEmpty
+            ? const Center(child: Text("No Candidates Found"))
+            : ListView.builder(
+          padding:
+          EdgeInsets.symmetric(horizontal: width * .04),
+          itemCount:
+          controller.candidateResumeList.length,
+          itemBuilder: (_, i) {
+            final candidate =
+            controller.candidateResumeList[i];
+            return CandidateCard(candidate: candidate);
+          },
+        ),
+      ),
+
+      /// ⭐ BOTTOM BUTTON BAR
+      Container(
+        padding:
+        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 8,
+              color: Colors.black.withOpacity(.06),
+            )
+          ],
+        ),
+
+        
+      )
+    ],
+  );
+})
+
+
     );
   }
 
@@ -82,6 +215,31 @@ class ResumeDatabaseScreen extends StatelessWidget {
       },
     );
   }
+
+  InputDecoration _filterDecoration() {
+  return InputDecoration(
+    filled: true,
+    fillColor: Colors.grey.shade50,
+
+    contentPadding:
+    const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(
+        color: Colors.grey.shade300,
+      ),
+    ),
+
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(
+        color: AppColor().colorPrimary,
+        width: 1.4,
+      ),
+    ),
+  );
+}
 
   Widget _filterUI() {
 
@@ -132,83 +290,7 @@ class ResumeDatabaseScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
-                _sectionTitle("Job Type"),
-
-                DropdownButtonFormField<String>(
-                  value: controller.selectedResumeJobType.value.isEmpty
-                      ? null
-                      : controller.selectedResumeJobType.value,
-                  hint: const Text("Select Job Type"),
-                  decoration: _inputDecoration(),
-                  items: controller.getAvailableJobTypes()
-                      .map((e) => DropdownMenuItem(
-                      value: e, child: Text(e)))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) {
-                      controller.onResumeJobTypeChanged(v);
-                    }
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                _sectionTitle("Category"),
-
-                DropdownButtonFormField<String>(
-                  value: controller.selectedCategoryFilter.value.isEmpty
-                      ? null
-                      : controller.selectedCategoryFilter.value,
-                  hint: const Text("Select Category"),
-                  decoration: _inputDecoration(),
-                  items: controller.jobCategoryListValue
-                      .map((e) => DropdownMenuItem(
-                      value: e, child: Text(e)))
-                      .toList(),
-                  onChanged: (value) {
-
-                    controller.selectedCategoryFilter.value = value ?? "";
-
-                    controller.selectedSubCategoryFilter.value = "";
-                    controller.selecteSubdCategoryId.value = "";
-
-                    for (var category in controller.jobTypeList) {
-                      if (category.name == value) {
-                        controller.selectedCategoryID.value =
-                            category.id.toString();
-                        break;
-                      }
-                    }
-
-                    controller.getJobSubcategoryList();
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                _sectionTitle("Sub Category"),
-
-                DropdownButtonFormField<int>(
-                  value: controller.selecteSubdCategoryId.value.isEmpty
-                      ? null
-                      : int.tryParse(
-                      controller.selecteSubdCategoryId.value),
-                  hint: const Text("Select Subcategory"),
-                  decoration: _inputDecoration(),
-                  items: controller.jobSubTypeList
-                      .map((sub) => DropdownMenuItem<int>(
-                    value: sub.id,
-                    child: Text(sub.name ?? ""),
-                  ))
-                      .toList(),
-                  onChanged: (value) {
-                    controller.selecteSubdCategoryId.value =
-                        value.toString();
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
+                
                 _sectionTitle("Candidate Name"),
 
                 TextField(

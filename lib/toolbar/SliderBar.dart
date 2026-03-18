@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:insta_grocery_customer/controller/user_profile_controller.dart';
+import 'package:insta_grocery_customer/model/internship_program.dart';
 import 'package:insta_grocery_customer/screen/address_managment/address_listing.dart';
 import 'package:insta_grocery_customer/screen/daskboard/store_job_module/store_job_detail.dart';
 import 'package:insta_grocery_customer/screen/market_place/buyer/buyer_home.dart';
 import 'package:insta_grocery_customer/screen/side_menu/event_managment/event_managment_dashboard.dart';
 import 'package:insta_grocery_customer/screen/side_menu/id_cards/idcards.dart';
+import 'package:insta_grocery_customer/screen/side_menu/internship_program.dart/internship_program.dart';
 import 'package:insta_grocery_customer/screen/side_menu/live_offer/OfferNearbyMapScreen.dart';
 import 'package:insta_grocery_customer/screen/side_menu/live_offer/live_offer.dart';
 import 'package:insta_grocery_customer/screen/side_menu/live_offer/offer_dashboard_screen.dart';
@@ -410,6 +412,36 @@ ListTile(
     
   },
 ),
+  Divider(
+                        color: Colors.grey,
+                        thickness: 1,
+                      ),
+
+
+ListTile(
+  leading: Icon(
+    Icons.local_post_office_outlined,
+    color: AppColor().blackColor,
+  ),
+  title: Text(
+    "Internship_program",
+    style: TextStyle(
+      fontSize: AppDimens().front_medium,
+      fontWeight: FontWeight.w400,
+      fontFamily: "Inter",
+      color: AppColor().blackColor,
+    ),
+  ),
+  onTap: () {
+   
+
+    // 👇 PASS JobListingModel OBJECT
+    Get.to(()=>InternshipListScreen());
+
+    
+  },
+),
+
 
                       Divider(),
                       ListTile(

@@ -3765,6 +3765,125 @@ Future<Map<String, dynamic>?> getRegisterationCustomer({
 
 
 
+ Future<Map<String, dynamic>?> getInternshipProgramCategory(
+      Map<String, dynamic> param) async {
+    Utils().customPrint("internship program Category Get api Url  url => ${ApiUrl.getstoreinternshipProgramCategory}");
+    var Url = ApiUrl.getstoreinternshipProgramCategory;
+   
+    final response = await http.get(
+      Uri.parse(Url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+    Utils().customPrint("response ====${response.body}");
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint('Login test 46');
+      return null;
+    } else if (response.statusCode == 400) {
+      final res = json.decode(response.body.toString());
+      return res;
+    } else {
+      final res = json.decode(response.body.toString());
+      // return
+      return res;
+    }
+  }
+
+
+  
+Future<Map<String, dynamic>?> getInternshipProgramSubcategory(
+    Map<String, dynamic> param) async {
+
+  String url = ApiUrl.getstoreinternshipProgramsubcategory;
+
+  // Attach query parameters
+  if (param.isNotEmpty) {
+    url += "?category_id=${param['category_id']}";
+  }
+
+  Utils().customPrint("SubCategory URL => $url");
+
+  final response = await http.get(
+    Uri.parse(url),
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    },
+  );
+
+  Utils().customPrint("response => ${response.body}");
+
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else if (response.statusCode == 401 || response.statusCode == 403) {
+    return null;
+  } else {
+    return json.decode(response.body);
+  }
+}
+
+
+
+  Future<Map<String, dynamic>?> getInternshipProgram(
+    Map<String, dynamic> param) async {
+
+  String url =
+      "${ApiUrl.getstoreinternshiProgram}"
+     
+      "?display_type=active&created_at&descending=true&page=1&size=50";
+
+
+  Utils().customPrint("GET Intternship Program URL => $url");
+
+  final response = await http.get(
+    Uri.parse(url),
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "Authorization": "Bearer ${param['access_token']}",
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  }
+  return null;
+}
+
+
+Future<Map<String, dynamic>?> postApplyInternshipProgram(
+      Map<String, dynamic> param) async {
+    String url = ApiUrl.getapplyinternship;
+    Utils().customPrint('apply internship url  =>$url');
+    Utils().customPrint('parma =>$param');
+    final response =
+        await http.post(Uri.parse(url), body: json.encode(param), headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "Authorization": 'Bearer ${param['accessToken']}',
+    });
+    Utils().customPrint("response ====${response.body}");
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      final res = json.decode(response.body.toString());
+      // return
+      return res;
+    }
+  }
+
+
+
+
+
+
+
 
 
 

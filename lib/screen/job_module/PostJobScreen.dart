@@ -470,106 +470,133 @@ class _PostJobScreenState extends State<PostJobScreen> {
                         ],
                       )),
                       const SizedBox(height: 10),
-                      Text(
-                    'Minimum Experience Range',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: "Inter",
-                      fontWeight: FontWeight.w500,
-                      color: AppColor().blackColorMore,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => {
-                      showDropDownList(
-                        controller,
-                        controller.minimumExperienceList,
-                        'minimum_experience',
-                      )
-                    },
-                    child: Container(
-                      height: AppDimens().input_text_width,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: AppColor().whiteColor,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: AppColor().blackColor.withOpacity(0.2),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Obx(() => Text(
-                                controller.selectedMinimumExperience.value == ""
-                                    ? 'Select Minimum Experience'
-                                    : '${controller.selectedMinimumExperience.value} years',
-                                style: TextStyle(
-                                  fontSize: AppDimens().front_regular,
-                                  fontFamily: "Inter",
-                                  fontWeight: FontWeight.w400,
-                                  color: AppColor().blackColor,
-                                ),
-                              )),
-                          SvgPicture.asset(ImageRes().downArrowSvg),
-                        ],
-                      ),
-                    ),
-                  ),
+                     Row(
+  children: [
 
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  Text(
-                    'Maximum Experience Range',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontFamily: "Inter",
-                      fontWeight: FontWeight.w500,
-                      color: AppColor().blackColorMore,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () {
-                      showDropDownList(controller, controller.maxExperienceList,
-                          'max_experience');
-                    },
-                    child: Container(
-                      height: AppDimens().input_text_width,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: AppColor().blackColor.withOpacity(0.2),
-                          width: 1.5,
+    /// ---------------- MIN EXPERIENCE ----------------
+    Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+
+          Text(
+            'Minimum Experience Range',
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: "Inter",
+              fontWeight: FontWeight.w500,
+              color: AppColor().blackColorMore,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          GestureDetector(
+            onTap: () {
+              showDropDownList(
+                controller,
+                controller.minimumExperienceList,
+                'minimum_experience',
+              );
+            },
+            child: Container(
+              height: AppDimens().input_text_width,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: AppColor().whiteColor,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColor().blackColor.withOpacity(0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Obx(() => Text(
+                        controller.selectedMinimumExperience.value == ""
+                            ? 'Select Min'
+                            : '${controller.selectedMinimumExperience.value} yrs',
+                        style: TextStyle(
+                          fontSize: AppDimens().front_regular,
+                          fontFamily: "Inter",
+                          fontWeight: FontWeight.w400,
+                          color: AppColor().blackColor,
                         ),
-                        color: AppColor().whiteColor,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Obx(
-                            () => Text(
-                              controller.selectedMaxExperience.value == ""
-                                  ? 'Select Maximum Experience'
-                                  : '${controller.selectedMaxExperience.value} years',
-                              style: TextStyle(
-                                fontSize: AppDimens().front_regular,
-                                fontFamily: "Inter",
-                                fontWeight: FontWeight.w400,
-                                color: AppColor().blackColor,
-                              ),
-                            ),
-                          ),
-                          SvgPicture.asset(ImageRes().downArrowSvg),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                      )),
+                  SvgPicture.asset(ImageRes().downArrowSvg),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+
+    const SizedBox(width: 12),
+
+    /// ---------------- MAX EXPERIENCE ----------------
+    Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+
+          Text(
+            'Maximum Experience Range',
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: "Inter",
+              fontWeight: FontWeight.w500,
+              color: AppColor().blackColorMore,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          GestureDetector(
+            onTap: () {
+              showDropDownList(
+                controller,
+                controller.maxExperienceList,
+                'max_experience',
+              );
+            },
+            child: Container(
+              height: AppDimens().input_text_width,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: AppColor().whiteColor,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColor().blackColor.withOpacity(0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Obx(() => Text(
+                        controller.selectedMaxExperience.value == ""
+                            ? 'Select Max'
+                            : '${controller.selectedMaxExperience.value} yrs',
+                        style: TextStyle(
+                          fontSize: AppDimens().front_regular,
+                          fontFamily: "Inter",
+                          fontWeight: FontWeight.w400,
+                          color: AppColor().blackColor,
+                        ),
+                      )),
+                  SvgPicture.asset(ImageRes().downArrowSvg),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  ],
+),
+   const SizedBox(height: 20),
                   
 Row(
   children: [

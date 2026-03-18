@@ -256,6 +256,19 @@ static const getRegisterCustomerEvent =
 
 
 
+    // internship program 
+
+    static const getstoreinternshipProgramCategory="${apiUrl}internship-program-categories/?display_type=active&order_by=id";
+    static const getstoreinternshipProgramsubcategory="${apiUrl}internship-program-subcategories/";
+    static const getstoreinternshiProgram="${apiUrl}internships-program/";
+
+
+    static const getapplyinternship="${apiUrl}internship-applications/apply/";
+
+
+
+
+
 
 
 
