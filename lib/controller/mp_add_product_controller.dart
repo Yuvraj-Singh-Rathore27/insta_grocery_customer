@@ -40,6 +40,7 @@ class MpAddProductController extends GetxController {
   var selectedSubCategory = CommonModel().obs;
   var selectedChildSubCategory = CommonModel().obs;
 
+
   // Existing controllers
   TextEditingController nameController = TextEditingController();
   TextEditingController decriptionController = TextEditingController();
@@ -87,6 +88,7 @@ class MpAddProductController extends GetxController {
     loadBrands();
     loadStates();
     loadMarketPlaceProducts();
+   
   }
 
   // load city 

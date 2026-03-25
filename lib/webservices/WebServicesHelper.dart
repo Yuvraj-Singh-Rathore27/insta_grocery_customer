@@ -2832,6 +2832,43 @@ Future<Map<String, dynamic>?> getListAppliedJobByJobId(Map<String, dynamic> para
 
 // Market place product add
   // Add this method to your WebServicesHelper class
+
+
+  
+Future<Map<String, dynamic>?> getMarketPlaceSuperCategory(
+    Map<String, dynamic> param) async {
+
+  String url = ApiUrl.API_MP_SUPERCATEGORY_LIST;
+  
+  Utils().customPrint("GET market place super category  type => $url");
+  
+  try {
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${param['access_token']}",
+      },
+    );
+
+    print("Type API Status: ${response.statusCode}");
+    print("Type API Body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      print("Parsed data structure: ${data.keys}");
+      return data;
+    } else {
+      print("Failed to load types. Status: ${response.statusCode}");
+      return null;
+    }
+  } catch (e) {
+    print("Error in API call: $e");
+    return null;
+  }
+}
+
 Future<Map<String, dynamic>?> PostMarketPlaceProduct(
   String url, 
   Map<String, dynamic> data, 
@@ -3187,31 +3224,55 @@ Future<Map<String, dynamic>?> updateMarketPlaceProduct(
 }
 
 
+Future<Map<String, dynamic>?> getMpcategoryList(
+    Map<String, dynamic> param) async {
 
-  Future<Map<String, dynamic>?> getMpcategoryList(
-      Map<String, dynamic> param) async {
-    //net connectivity check
-    // if (!await InternetConnectionChecker().hasConnection) {
-    //   return null;
-    // }
-    var Url = ApiUrl.API_MP_CATEGORY_LIST;
-    Utils().customPrint("url => ${Url}");
-    final response = await http.get(Uri.parse(Url), headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": 'Bearer ${param['access_token']}',
-    });
-    Utils().customPrint("response ===>" + '${response.body}');
+  var baseUrl = ApiUrl.API_MP_CATEGORY_LIST;
+
+  String finalUrl = baseUrl;
+
+  // ⭐ if super category filter comes → build query
+  if (param['super_category_id'] != null &&
+      param['super_category_id'].toString().isNotEmpty) {
+
+    finalUrl =
+        "$baseUrl?super_category_id=${param['super_category_id']}"
+        "&order_by=created_at"
+        "&descending=true"
+        "&display_type=active"
+        "&page=1"
+        "&size=50";
+  }
+
+  Utils().customPrint("CATEGORY URL => $finalUrl");
+
+  try {
+    final response = await http.get(
+      Uri.parse(finalUrl),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": 'Bearer ${param['access_token']}',
+      },
+    );
+
+    Utils().customPrint("CATEGORY RESPONSE => ${response.body}");
+
     if (response.statusCode == 200) {
       return json.decode(response.body.toString());
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint('Login test 46');
+    } 
+    else if (response.statusCode == 401 || response.statusCode == 403) {
       return null;
-    } else {
-      final res = json.decode(response.body.toString());
-      return res;
+    } 
+    else {
+      return json.decode(response.body.toString());
     }
+  } catch (e) {
+    Utils().customPrint("CATEGORY ERROR => $e");
+    return null;
   }
+}
+
 
   Future<Map<String, dynamic>?> getMpSubcatgory(
       Map<String, dynamic> param) async {
@@ -3879,6 +3940,211 @@ Future<Map<String, dynamic>?> postApplyInternshipProgram(
   }
 
 
+
+
+
+
+
+  Future<Map<String, dynamic>?> getSkillProgramCategory(
+      Map<String, dynamic> param) async {
+    Utils().customPrint("skill program Category Get api Url  url => ${ApiUrl.getskillprogramcategory}");
+    var Url = ApiUrl.getstoreinternshipProgramCategory;
+   
+    final response = await http.get(
+      Uri.parse(Url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+    Utils().customPrint("response ====${response.body}");
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint('Login test 46');
+      return null;
+    } else if (response.statusCode == 400) {
+      final res = json.decode(response.body.toString());
+      return res;
+    } else {
+      final res = json.decode(response.body.toString());
+      // return
+      return res;
+    }
+  }
+
+
+  
+Future<Map<String, dynamic>?> getSkillProgramSubcategory(
+    Map<String, dynamic> param) async {
+
+  String url = ApiUrl.getskillprogramsubcategory;
+
+  // Attach query parameters
+  if (param.isNotEmpty) {
+    url += "?category_id=${param['category_id']}";
+  }
+
+  Utils().customPrint("SubCategory URL => $url");
+
+  final response = await http.get(
+    Uri.parse(url),
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    },
+  );
+
+  Utils().customPrint("response => ${response.body}");
+
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else if (response.statusCode == 401 || response.statusCode == 403) {
+    return null;
+  } else {
+    return json.decode(response.body);
+  }
+}
+
+
+Future<Map<String, dynamic>?> getSkillProgramType(
+    Map<String, dynamic> param) async {
+
+  String url = ApiUrl.getskillprogramtype;
+  
+  Utils().customPrint("GET skill program type => $url");
+  
+  try {
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${param['access_token']}",
+      },
+    );
+
+    print("Type API Status: ${response.statusCode}");
+    print("Type API Body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      print("Parsed data structure: ${data.keys}");
+      return data;
+    } else {
+      print("Failed to load types. Status: ${response.statusCode}");
+      return null;
+    }
+  } catch (e) {
+    print("Error in API call: $e");
+    return null;
+  }
+}
+
+
+
+Future<Map<String, dynamic>?> getSkillProgram(
+    Map<String, dynamic> param) async {
+  
+  // Build the base URL
+  String baseUrl = ApiUrl.getskillprogram;
+  
+  // Create a list to hold query parameters
+  List<String> queryParams = [];
+  
+  // Add required parameters
+  
+  queryParams.add("order_by=created_at");
+  queryParams.add("descending=true");
+  queryParams.add("page=1");
+  queryParams.add("size=50");
+  
+  // Add filter parameters if they exist
+
+  if (param.containsKey('category_id') && param['category_id'] != null && param['category_id'] != 0) {
+    queryParams.add("category_id=${param['category_id']}");
+  }
+  
+  if (param.containsKey('subcategory_id') && param['subcategory_id'] != null && param['subcategory_id'] != 0) {
+    queryParams.add("subcategory_id=${param['subcategory_id']}");
+  }
+  
+  if (param.containsKey('type_id') && param['type_id'] != null && param['type_id'] != 0) {
+    queryParams.add("type_id=${param['type_id']}");
+  }
+  
+  if (param.containsKey('program_mode') && param['program_mode'] != null && param['program_mode'].toString().isNotEmpty) {
+    queryParams.add("program_mode=${param['program_mode']}");
+  }
+  
+  if (param.containsKey('title') && param['title'] != null && param['title'].toString().isNotEmpty) {
+    queryParams.add("title=${Uri.encodeComponent(param['title'])}");
+  }
+  
+  if (param.containsKey('min_price') && param['min_price'] != null && param['min_price'] > 0) {
+    queryParams.add("min_price=${param['min_price']}");
+  }
+  
+  if (param.containsKey('max_price') && param['max_price'] != null && param['max_price'] > 0) {
+    queryParams.add("max_price=${param['max_price']}");
+  }
+  
+  if (param.containsKey('duration') && param['duration'] != null && param['duration'].toString().isNotEmpty) {
+    queryParams.add("duration=${Uri.encodeComponent(param['duration'])}");
+  }
+  
+  if (param.containsKey('fees_type') && param['fees_type'] != null && param['fees_type'].toString().isNotEmpty) {
+    queryParams.add("fees_type=${param['fees_type']}");
+  }
+  
+  if (param.containsKey('display_type') && param['display_type'] != null && param['display_type'].toString().isNotEmpty) {
+    queryParams.add("display_type=${param['display_type']}");
+  }
+  
+  // Join all query parameters
+  String url = "$baseUrl?${queryParams.join('&')}";
+  
+  Utils().customPrint("GET Skill Program URL => $url");
+
+  final response = await http.get(
+    Uri.parse(url),
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "Authorization": "Bearer ${param['access_token']}",
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  }
+  return null;
+}
+
+
+
+Future<Map<String, dynamic>?> postApplySkillProgram(
+      Map<String, dynamic> param) async {
+    String url = ApiUrl.appliedskillprogram;
+    Utils().customPrint('apply skill program url  =>$url');
+    Utils().customPrint('parma =>$param');
+    final response =
+        await http.post(Uri.parse(url), body: json.encode(param), headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "Authorization": 'Bearer ${param['accessToken']}',
+    });
+    Utils().customPrint("response ====${response.body}");
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      final res = json.decode(response.body.toString());
+      // return
+      return res;
+    }
+  }
 
 
 

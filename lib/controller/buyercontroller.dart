@@ -6,6 +6,8 @@ import '../model/common_model.dart';
 import '../model/ProductModel.dart';
 import '../preferences/UserPreferences.dart';
 import '../webservices/WebServicesHelper.dart';
+import '../utills/Utils.dart';
+
 
 class BuyerController extends GetxController {
   // -------------------- STORAGE --------------------
@@ -19,6 +21,11 @@ class BuyerController extends GetxController {
 
   var selectedCategory = CommonModel().obs;
   var selectedSubCategory = CommonModel().obs;
+
+  RxList<MpSuperCategoryModel> superCategoryList =
+    <MpSuperCategoryModel>[].obs;
+
+var selectedSuperCategory = MpSuperCategoryModel().obs;
 
   // -------------------- PRODUCTS --------------------
   RxList<ProductModel> productList = <ProductModel>[].obs;
@@ -36,40 +43,55 @@ class BuyerController extends GetxController {
     access_token = store.read(UserPreferences.access_token) ?? "";
 
     loadCategories();
+     loadSuperCategories();
   }
 
   // ===========================================================
   //                     LOAD CATEGORIES
   // ===========================================================
   Future<void> loadCategories() async {
-    try {
-      var response = await WebServicesHelper().getMpcategoryList({
-        "access_token": access_token,
-      });
+  try {
 
-      if (response != null && response["status"] == 200) {
-        categoryList.clear();
+    Map<String, dynamic> params = {
+      "access_token": access_token,
+    };
 
-        var data = response["data"];
-        if (data is List) {
-          for (var item in data) {
-            categoryList.add(CommonModel.fromJson(item));
-          }
-        }
+    // ⭐ If super category selected → send filter
+    if (selectedSuperCategory.value.id != null) {
+      params["super_category_id"] =
+          selectedSuperCategory.value.id.toString();
+    }
 
-        // Auto-select first category
-        if (categoryList.isNotEmpty) {
-          selectedCategory.value = categoryList.first;
+    var response =
+        await WebServicesHelper().getMpcategoryList(params);
 
-          loadSubCategories(selectedCategory.value.id.toString());
-          loadMarketPlaceProducts(categoryId: selectedCategory.value.id!);
+    if (response != null && response["status"] == 200) {
+      categoryList.clear();
+
+      var data = response["data"];
+      if (data is List) {
+        for (var item in data) {
+          categoryList.add(CommonModel.fromJson(item));
         }
       }
 
-    } catch (e) {
-      print("❌ loadCategories error: $e");
+      // ⭐ Auto-select first category
+      if (categoryList.isNotEmpty) {
+        selectedCategory.value = categoryList.first;
+
+        loadSubCategories(selectedCategory.value.id.toString());
+        loadMarketPlaceProducts(
+            categoryId: selectedCategory.value.id!);
+      }
     }
+
+  } catch (e) {
+    print("❌ loadCategories error: $e");
   }
+
+  update();
+}
+
 
   // ===========================================================
   //                     LOAD SUBCATEGORIES
@@ -102,6 +124,41 @@ class BuyerController extends GetxController {
       print("❌ loadSubCategories error: $e");
     }
   }
+
+
+
+Future<void> loadSuperCategories() async {
+  print("📦 Loading Super Categories...");
+
+  try {
+    Map<String, dynamic>? response =
+        await WebServicesHelper().getMarketPlaceSuperCategory({
+      'access_token': access_token,
+    });
+
+    if (response != null && response['status'] == 200) {
+      superCategoryList.clear();
+
+      if (response['data'] != null) {
+        List<dynamic> data = response['data'];
+
+        for (var item in data) {
+          superCategoryList.add(MpSuperCategoryModel.fromJson(item));
+        }
+
+        print("✅ Loaded ${superCategoryList.length} Super Categories");
+      }
+    } else {
+      print("❌ Failed Super Category Load");
+      Utils.showCustomTosst("Failed to load super categories");
+    }
+  } catch (e) {
+    print("🔥 Error Super Category: $e");
+  }
+
+  update();
+}
+
 
 // get market place product as an inteerest 
 Future<void> getMarketPlaceInterested(int userId)async{
@@ -197,6 +254,11 @@ Future<void> getMarketPlaceInterested(int userId)async{
     print("❌ markProductMessage ERROR: $e");
     Get.snackbar("Error", "Unable to submit Message");
   }
+}
+void onSuperCategoryTap(MpSuperCategoryModel item) {
+  selectedSuperCategory.value = item;
+
+  print("Selected Super Category => ${item.name}");
 }
 
 

@@ -197,9 +197,10 @@ class ApiUrl {
   static const GET_API_INTRESTED_SERVCIES = "${apiUrl}interested-service/";
 
   //market Place
+  static const API_MP_SUPERCATEGORY_LIST="${apiUrl}admin/market-place-super-category/?display_type=active";
 
   static const API_MP_CATEGORY_LIST =
-      "${apiUrl}admin/market-place/list-categories/?order_by=created_at&descending=true";
+      "${apiUrl}admin/market-place/list-categories/";
   static const API_MP_SUB_CATEGORY_LIST =
       "${apiUrl}admin/market-place/list-sub-categories/?category_id=";
   static const Add_Product_Market_place = "${apiUrl}market-place/add-product/";
@@ -264,6 +265,14 @@ static const getRegisterCustomerEvent =
 
 
     static const getapplyinternship="${apiUrl}internship-applications/apply/";
+
+
+     // skill program api 
+    static const getskillprogramtype="${apiUrl}admin/skill-program-types/?display_type=active";
+    static const getskillprogramcategory="${apiUrl}admin/skill-program-category/?display_type=active";
+    static const getskillprogramsubcategory="${apiUrl}admin/skill-program-sub-category/";
+    static const getskillprogram="${apiUrl}admin/skill-program/";
+    static const appliedskillprogram="${apiUrl}skill-applications/apply/";
 
 
 

@@ -3,20 +3,22 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:insta_grocery_customer/controller/user_profile_controller.dart';
 import 'package:insta_grocery_customer/model/internship_program.dart';
+import 'package:insta_grocery_customer/model/skill_program.dart';
 import 'package:insta_grocery_customer/screen/address_managment/address_listing.dart';
 import 'package:insta_grocery_customer/screen/daskboard/store_job_module/store_job_detail.dart';
 import 'package:insta_grocery_customer/screen/market_place/buyer/buyer_home.dart';
+import 'package:insta_grocery_customer/screen/market_place/buyer/buyer_super_category.dart';
 import 'package:insta_grocery_customer/screen/side_menu/event_managment/event_managment_dashboard.dart';
 import 'package:insta_grocery_customer/screen/side_menu/id_cards/idcards.dart';
 import 'package:insta_grocery_customer/screen/side_menu/internship_program.dart/internship_program.dart';
 import 'package:insta_grocery_customer/screen/side_menu/live_offer/OfferNearbyMapScreen.dart';
 import 'package:insta_grocery_customer/screen/side_menu/live_offer/live_offer.dart';
 import 'package:insta_grocery_customer/screen/side_menu/live_offer/offer_dashboard_screen.dart';
+import 'package:insta_grocery_customer/screen/side_menu/skill_program/skill_program.dart';
 import 'package:insta_grocery_customer/screen/side_menu/supports/my_support_page.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../model/store_job_model.dart';
-
 
 import '../controller/vender_controller.dart';
 import '../preferences/UserPreferences.dart';
@@ -28,7 +30,6 @@ import '../screen/login/login_screen.dart';
 import '../screen/side_menu/cms_page/cms_page.dart';
 
 import '../screen/daskboard/store_job_module/store_job_detail.dart';
-
 
 class SideMenuBar extends StatelessWidget {
   UserProfileController controller = Get.put(UserProfileController());
@@ -260,7 +261,30 @@ class SideMenuBar extends StatelessWidget {
                           );
                         },
                       ),
-                      Divider(
+                      // Divider(
+                      //   color: Colors.grey,
+                      //   thickness: 1,
+                      // ),
+                      // ListTile(
+                      //   leading: ImageIcon(
+                      //     AssetImage(ImageRes().sideMenuDisplaySetting),
+                      //   ),
+                      //   title: Text(
+                      //     "Market Place",
+                      //     textAlign: TextAlign.start,
+                      //     style: TextStyle(
+                      //         fontSize: AppDimens().front_medium,
+                      //         fontWeight: FontWeight.w400,
+                      //         fontFamily: "Inter",
+                      //         color: AppColor().blackColor),
+                      //   ),
+                      //   onTap: () {
+                      //     Navigator.pop(context);
+                      //     Get.to(() => BuyerHome());
+                      //   },
+                      // ),
+
+                       Divider(
                         color: Colors.grey,
                         thickness: 1,
                       ),
@@ -279,11 +303,11 @@ class SideMenuBar extends StatelessWidget {
                         ),
                         onTap: () {
                           Navigator.pop(context);
-                          Get.to(() =>  BuyerHome());
-                      
+                          Get.to(() => MarketPlaceSuperCategoryScreen());
                         },
                       ),
-                       Divider(
+                     
+                      Divider(
                         color: Colors.grey,
                         thickness: 1,
                       ),
@@ -331,7 +355,7 @@ class SideMenuBar extends StatelessWidget {
                           // Get.to(() => const MorePage());
                         },
                       ),
-                       Divider(
+                      Divider(
                         color: Colors.grey,
                         thickness: 1,
                       ),
@@ -351,17 +375,15 @@ class SideMenuBar extends StatelessWidget {
                         ),
                         onTap: () async {
                           Navigator.pop(context);
-                         Get.to(()=> OfferDashboardScreen());
+                          Get.to(() => OfferDashboardScreen());
                           // Get.to(() => const MorePage());
                         },
                       ),
-
 
                       Divider(
                         color: Colors.grey,
                         thickness: 1,
                       ),
-
 
                       ListTile(
                         leading: Icon(
@@ -389,61 +411,76 @@ class SideMenuBar extends StatelessWidget {
                         thickness: 1,
                       ),
 
-ListTile(
-  leading: Icon(
-    Icons.local_post_office_outlined,
-    color: AppColor().blackColor,
-  ),
-  title: Text(
-    "Store Jobs",
-    style: TextStyle(
-      fontSize: AppDimens().front_medium,
-      fontWeight: FontWeight.w400,
-      fontFamily: "Inter",
-      color: AppColor().blackColor,
-    ),
-  ),
-  onTap: () {
-    Navigator.pop(context);
+                      ListTile(
+                        leading: Icon(
+                          Icons.local_post_office_outlined,
+                          color: AppColor().blackColor,
+                        ),
+                        title: Text(
+                          "Store Jobs",
+                          style: TextStyle(
+                            fontSize: AppDimens().front_medium,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: "Inter",
+                            color: AppColor().blackColor,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
 
-    // 👇 PASS JobListingModel OBJECT
-    Get.to(()=>MyPostedJobDetailScreen());
-
-    
-  },
-),
-  Divider(
+                          // 👇 PASS JobListingModel OBJECT
+                          Get.to(() => MyPostedJobDetailScreen());
+                        },
+                      ),
+                      Divider(
                         color: Colors.grey,
                         thickness: 1,
                       ),
 
-
-ListTile(
-  leading: Icon(
-    Icons.local_post_office_outlined,
-    color: AppColor().blackColor,
-  ),
-  title: Text(
-    "Internship_program",
-    style: TextStyle(
-      fontSize: AppDimens().front_medium,
-      fontWeight: FontWeight.w400,
-      fontFamily: "Inter",
-      color: AppColor().blackColor,
-    ),
-  ),
-  onTap: () {
-   
-
-    // 👇 PASS JobListingModel OBJECT
-    Get.to(()=>InternshipListScreen());
-
-    
-  },
-),
-
+                      ListTile(
+                        leading: Icon(
+                          Icons.local_post_office_outlined,
+                          color: AppColor().blackColor,
+                        ),
+                        title: Text(
+                          "Internship_program",
+                          style: TextStyle(
+                            fontSize: AppDimens().front_medium,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: "Inter",
+                            color: AppColor().blackColor,
+                          ),
+                        ),
+                        onTap: () {
+                          // 👇 PASS JobListingModel OBJECT
+                          Get.to(() => InternshipListScreen());
+                        },
+                      ),
 
                       Divider(),
+
+                      ListTile(
+                        leading: Icon(
+                          Icons.local_post_office_outlined,
+                          color: AppColor().blackColor,
+                        ),
+                        title: Text(
+                          "Skill_Program",
+                          style: TextStyle(
+                            fontSize: AppDimens().front_medium,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: "Inter",
+                            color: AppColor().blackColor,
+                          ),
+                        ),
+                        onTap: () {
+                          // 👇 PASS JobListingModel OBJECT
+                          Get.to(() => SkillProgramScreen());
+                        },
+                      ),
+
+                      Divider(),
+
                       ListTile(
                         leading: Icon(
                           Icons.insert_drive_file,
@@ -497,7 +534,7 @@ ListTile(
                           color: AppColor().blackColor,
                         ),
                         title: Text(
-                          "Switch ${pharmacycontroller.business_type.value=="b2b"? "B2C":"B2B"}",
+                          "Switch ${pharmacycontroller.business_type.value == "b2b" ? "B2C" : "B2B"}",
                           textAlign: TextAlign.start,
                           style: TextStyle(
                               fontSize: AppDimens().front_medium,
@@ -506,8 +543,9 @@ ListTile(
                               color: AppColor().blackColor),
                         ),
                         onTap: () {
-                          pharmacycontroller.business_type.value=="b2b"? pharmacycontroller.business_type.value="b2c":
-                          pharmacycontroller.business_type.value="b2b";
+                          pharmacycontroller.business_type.value == "b2b"
+                              ? pharmacycontroller.business_type.value = "b2c"
+                              : pharmacycontroller.business_type.value = "b2b";
                           pharmacycontroller.getBusinessTypecategory();
                           Navigator.pop(context);
                         },
