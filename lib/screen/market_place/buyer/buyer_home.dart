@@ -53,8 +53,8 @@ class BuyerHome extends StatelessWidget {
               buildCategorySection(),
               SizedBox(height: 10),
               // _buildFeaturedListing(),
-              SizedBox(height: 10),
-              _buildLatestListing(),
+              // SizedBox(height: 10),
+              // _buildLatestListing(),
             ],
           ),
         ),
@@ -161,79 +161,217 @@ Widget buildCategorySection() {
 
           // ---------------- CATEGORY LIST ----------------
           SizedBox(
-            height: 150,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: buyerController.categoryList.length,
-              itemBuilder: (context, index) {
-                final item = buyerController.categoryList[index];
+            width: double.infinity,
+            
+            child: // ---------------- CATEGORY LIST ----------------
+GridView.builder(
+  shrinkWrap: true,
+  physics: NeverScrollableScrollPhysics(), // parent scroll handle karega
+  itemCount: buyerController.categoryList.length,
+  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: 3, // ek row me 3 category
+    crossAxisSpacing: 12,
+    mainAxisSpacing: 6,
+    childAspectRatio:0.9,
+  ),
+  itemBuilder: (context, index) {
+    final item = buyerController.categoryList[index];
 
-                // ---------------- SAFE IMAGE PATH ----------------
-                String imagePath = "";
-                if (item.photos != null &&
-                    item.photos!.isNotEmpty &&
-                    item.photos![0].path != null &&
-                    item.photos![0].path!.isNotEmpty) {
-                  imagePath = item.photos![0].path!;
-                }
+    String imagePath = "";
+    if (item.photos != null &&
+        item.photos!.isNotEmpty &&
+        item.photos![0].path != null &&
+        item.photos![0].path!.isNotEmpty) {
+      imagePath = item.photos![0].path!;
+    }
 
-                return GestureDetector(
-                  onTap: () {
-                    buyerController.selectedCategory.value = item;
-                    buyerController.loadSubCategories(item.id.toString());
-                    Get.to(() => BuyerSubcategoryProduct());
-                  },
-                  child: Container(
-                    width: 100,
-                    margin: EdgeInsets.symmetric(horizontal: 8),
-                    child: Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(5),
-                          child: Image.network(
-                            imagePath,
-                            height: 70,
-                            width: 70,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              height: 60,
-                              width: 60,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade300,
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: Icon(Icons.image, size: 35),
-                            ),
-                          ),
-                        ),
-
-                        SizedBox(height: 10),
-
-                        Text(
-                          item.name ?? "",
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          style: TextStyle(
-                            fontSize: AppDimens().front_12,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: "Helvetica",
-                            color: Colors.black,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+    return GestureDetector(
+      onTap: () {
+        buyerController.selectedCategory.value = item;
+        buyerController.loadSubCategories(item.id.toString());
+        // Get.to(() => BuyerSubcategoryProduct());
+        openSubCategoryBottomSheet(context);
+      },
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: Image.network(
+              imagePath,
+              height: 70,
+              width: 70,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                height: 70,
+                width: 70,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Icon(Icons.image, size: 35),
+              ),
             ),
+          ),
+
+          SizedBox(height: 8),
+
+          Text(
+            item.name ?? "",
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            style: TextStyle(
+              fontSize: AppDimens().front_12,
+              fontWeight: FontWeight.w600,
+              fontFamily: "Helvetica",
+              color: Colors.black,
+            ),
+          ),
+        ],
+      ),
+    );
+  },
+),
           ),
         ],
       ),
     ),
   );
 }
+void openSubCategoryBottomSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+    ),
+    builder: (context) {
+      return DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) {
+          return Obx(() {
+            return Padding(
+              padding: EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
 
+                  /// -------- DRAG HANDLE --------
+                  Center(
+                    child: Container(
+                      height: 5,
+                      width: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade400,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: 15),
+
+                  /// -------- CATEGORY TITLE --------
+                  Text(
+                    buyerController.selectedCategory.value.name ?? "",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  /// -------- SUBCATEGORY GRID --------
+                  Expanded(
+                    child: GridView.builder(
+                      controller: scrollController,
+                      itemCount: buyerController.subCategoryList.length,
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.9,
+                      ),
+                      itemBuilder: (context, index) {
+                        final sub =
+                            buyerController.subCategoryList[index];
+
+                        String imagePath = "";
+                        if (sub.photos != null &&
+                            sub.photos!.isNotEmpty &&
+                            sub.photos![0].path != null &&
+                            sub.photos![0].path!.isNotEmpty) {
+                          imagePath = sub.photos![0].path!;
+                        }
+
+                        return GestureDetector(
+                         onTap: () async {
+
+  /// ⭐ VERY IMPORTANT → set selected subcategory
+  buyerController.selectedSubCategory.value = sub;
+
+  /// ⭐ Clear old list
+  buyerController.filteredProductList.clear();
+
+  /// ⭐ Call API and WAIT
+  await buyerController.loadMarketPlaceProducts(
+    categoryId: buyerController.selectedCategory.value.id!,
+    subCategoryId: sub.id,
+  );
+
+  /// ⭐ Close BottomSheet
+  Get.back();
+
+  /// ⭐ Open Product Screen
+  Get.to(() => BuyerSubcategoryProduct());
+},
+                          child: Column(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: Image.network(
+                                  imagePath,
+                                  height: 70,
+                                  width: 70,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      Container(
+                                    height: 70,
+                                    width: 70,
+                                    color: Colors.grey.shade300,
+                                    child: Icon(Icons.image),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                sub.name ?? "",
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          });
+        },
+      );
+    },
+  );
+}
 
   // -----------------------------------------------------------
   //                     FEATURED LISTING (STATIC)

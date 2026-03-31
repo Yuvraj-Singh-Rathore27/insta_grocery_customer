@@ -26,6 +26,9 @@ class InternshipController extends GetxController {
 
   RxList<InternshipProgram> internshipList = <InternshipProgram>[].obs;
   RxList<InternshipProgram> filteredInternshipList = <InternshipProgram>[].obs;
+  RxBool isSuperCategoryLoading = false.obs;
+RxList<InternshipSuperCategoryModel> superCategoryList =
+    <InternshipSuperCategoryModel>[].obs;
 
   /// ================= APPLIED INTERNSHIPS =================
   RxList<int> appliedInternshipIds = <int>[].obs; // Track applied internship IDs
@@ -50,25 +53,38 @@ class InternshipController extends GetxController {
     // Load initial data
     getCategory();
     getInternshipList();
+
+    getSuperCategory();
   }
 
   /// ================= CATEGORY =================
-  Future<void> getCategory() async {
-    try {
-      isCategoryLoading.value = true;
+  
+  Future<void> getCategory({int? superCategoryId}) async {
+  try {
+    isCategoryLoading.value = true;
 
-      final res = await WebServicesHelper().getInternshipProgramCategory({});
+    final params = {
+      if (superCategoryId != null && superCategoryId != 0)
+        "super_category_id": superCategoryId.toString(),
+    };
 
-      if (res != null && res['data'] != null) {
-        categoryList.assignAll(
-            List<Map<String, dynamic>>.from(res['data']));
-      } else {
-        categoryList.clear();
-      }
-    } finally {
-      isCategoryLoading.value = false;
+    final res = await WebServicesHelper()
+        .getInternshipProgramCategory(params);
+
+    Utils().customPrint("Category Response => $res");
+
+    if (res != null && res['data'] != null) {
+      categoryList.assignAll(
+          List<Map<String, dynamic>>.from(res['data']));
+    } else {
+      categoryList.clear();
     }
+  } finally {
+    isCategoryLoading.value = false;
   }
+}
+
+
 
   /// ================= SUB CATEGORY =================
   Future<void> getSubCategory(int categoryId) async {
@@ -90,6 +106,34 @@ class InternshipController extends GetxController {
       isSubCategoryLoading.value = false;
     }
   }
+
+  Future<void> getSuperCategory() async {
+  try {
+    isSuperCategoryLoading.value = true;
+
+    final res = await WebServicesHelper()
+        .getInternshipProgramSuperCategory({});
+
+    Utils().customPrint("Super Category API Response => $res");
+
+    if (res != null && res['data'] != null) {
+      List<InternshipSuperCategoryModel> tempList = [];
+
+      for (var item in res['data']) {
+        tempList.add(InternshipSuperCategoryModel.fromJson(item));
+      }
+
+      superCategoryList.assignAll(tempList);
+    } else {
+      superCategoryList.clear();
+    }
+  } catch (e) {
+    Utils().customPrint("❌ Error in Super Category API => $e");
+    superCategoryList.clear();
+  } finally {
+    isSuperCategoryLoading.value = false;
+  }
+}
 
   /// ================= INTERNSHIP LIST =================
   Future<void> getInternshipList() async {

@@ -166,3 +166,56 @@ class InternshipStore {
     );
   }
 }
+
+
+class InternshipSuperCategoryModel {
+  int? id;
+  String? name;
+  String? description;
+  bool? isActive;
+  bool? isDeleted;
+  String? createdAt;
+  String? updatedAt;
+  List<InternshipSuperCategoryImage>? images;
+
+  InternshipSuperCategoryModel({
+    this.id,
+    this.name,
+    this.description,
+    this.isActive,
+    this.isDeleted,
+    this.createdAt,
+    this.updatedAt,
+    this.images,
+  });
+
+  InternshipSuperCategoryModel.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    name = json['name'];
+    description = json['description'];
+    isActive = json['is_active'];
+    isDeleted = json['is_deleted'];
+    createdAt = json['created_at'];
+    updatedAt = json['updated_at'];
+
+    if (json['image'] != null) {
+      images = [];
+      json['image'].forEach((v) {
+        images!.add(InternshipSuperCategoryImage.fromJson(v));
+      });
+    }
+  }
+}
+
+
+class InternshipSuperCategoryImage {
+  String? name;
+  String? path;
+
+  InternshipSuperCategoryImage({this.name, this.path});
+
+  InternshipSuperCategoryImage.fromJson(Map<String, dynamic> json) {
+    name = json['name'];
+    path = json['path'];
+  }
+}

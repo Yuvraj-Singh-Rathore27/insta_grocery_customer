@@ -9,6 +9,7 @@ class MarketPlaceSuperCategoryScreen extends StatelessWidget {
   final BuyerController controller = Get.put(BuyerController());
 
   @override
+  
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff4f4f4),

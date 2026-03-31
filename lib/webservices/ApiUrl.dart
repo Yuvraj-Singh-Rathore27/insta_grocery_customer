@@ -258,16 +258,24 @@ static const getRegisterCustomerEvent =
 
 
     // internship program 
+             static const getInternshipprogramsupercategory="${apiUrl}Internship-Program-Super-Category/?display_type=active";
+
 
     static const getstoreinternshipProgramCategory="${apiUrl}internship-program-categories/?display_type=active&order_by=id";
     static const getstoreinternshipProgramsubcategory="${apiUrl}internship-program-subcategories/";
     static const getstoreinternshiProgram="${apiUrl}internships-program/";
+    static const getinternshipsupercategory="${apiUrl}Internship-Program-Super-Category/?display_type=active&order_by=id";
 
 
     static const getapplyinternship="${apiUrl}internship-applications/apply/";
 
+    // make these line simple getinternshipsupercategory
+    
+
 
      // skill program api 
+         static const getskillsupercategory="${apiUrl}admin/Skill-Program-Super-Category/?display_type=active&order_by=id";
+
     static const getskillprogramtype="${apiUrl}admin/skill-program-types/?display_type=active";
     static const getskillprogramcategory="${apiUrl}admin/skill-program-category/?display_type=active";
     static const getskillprogramsubcategory="${apiUrl}admin/skill-program-sub-category/";

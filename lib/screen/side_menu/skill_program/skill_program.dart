@@ -24,7 +24,7 @@ class _SkillProgramScreenState extends State<SkillProgramScreen> {
       if (controller.skillProgramList.isEmpty) {
         controller.getSkillProgramList();
       }
-      controller.getCategory();
+      
       controller.getType();
     });
   }
@@ -211,29 +211,7 @@ class _SkillProgramScreenState extends State<SkillProgramScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Category Dropdown
-                Obx(() => _buildDropdownField(
-                  value: controller.filterCategoryId.value == 0
-                      ? null
-                      : controller.filterCategoryId.value,
-                  hint: "Select Category",
-                  items: controller.categoryList.map((e) {
-                    return DropdownMenuItem<int>(
-                      value: e['id'],
-                      child: Text(
-                        e['name'],
-                        style: const TextStyle(fontSize: 15),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      controller.filterByCategory(val);
-                    }
-                  },
-                  isLoading: controller.isCategoryLoading.value,
-                )),
-                const SizedBox(height: 16),
+                
 
                 // Type Dropdown
                 Obx(() => _buildDropdownField(
@@ -344,54 +322,87 @@ class _SkillProgramScreenState extends State<SkillProgramScreen> {
   }
 
   Widget _buildDropdownField<T>({
-    required T? value,
-    required String hint,
-    required List<DropdownMenuItem<T>> items,
-    required Function(T?) onChanged,
-    required bool isLoading,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: DropdownButton<T>(
-          value: value,
-          isExpanded: true,
-          hint: Row(
-            children: [
-              if (isLoading)
-                SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColor().colorPrimary,
-                  ),
-                ),
-              if (isLoading) const SizedBox(width: 8),
-              Text(
-                isLoading ? "Loading..." : hint,
-                style: TextStyle(
-                  color: isLoading ? Colors.grey : Colors.black54,
-                  fontSize: 15,
-                ),
-              ),
-            ],
-          ),
-          underline: const SizedBox(),
-          icon: Icon(
-            Icons.keyboard_arrow_down,
+  required T? value,
+  required String hint,
+  required List<DropdownMenuItem<T>> items,
+  required Function(T?) onChanged,
+  required bool isLoading,
+}) {
+  return Container(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(14),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 8,
+          offset: const Offset(0, 3),
+        )
+      ],
+    ),
+    child: DropdownButtonFormField<T>(
+      value: value,
+      isExpanded: true,
+
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
             color: AppColor().colorPrimary,
+            width: 1.5,
           ),
-          items: items,
-          onChanged: isLoading ? null : onChanged,
         ),
       ),
-    );
-  }
+
+      hint: Row(
+        children: [
+          if (isLoading)
+            SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColor().colorPrimary,
+              ),
+            ),
+          if (isLoading) const SizedBox(width: 8),
+          Text(
+            isLoading ? "Loading..." : hint,
+            style: const TextStyle(fontSize: 14),
+          ),
+        ],
+      ),
+
+      icon: AnimatedRotation(
+        turns: value != null ? 0.5 : 0, // 🔥 rotate icon
+        duration: const Duration(milliseconds: 200),
+        child: Icon(
+          Icons.keyboard_arrow_down,
+          color: AppColor().colorPrimary,
+        ),
+      ),
+
+      dropdownColor: Colors.white,
+      elevation: 3,
+      borderRadius: BorderRadius.circular(12),
+
+      items: items,
+      onChanged: isLoading ? null : onChanged,
+    ),
+  );
+}
 
   Widget _buildFilterChip({
     required String label,

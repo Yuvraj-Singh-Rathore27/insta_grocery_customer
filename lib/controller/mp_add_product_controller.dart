@@ -73,6 +73,11 @@ class MpAddProductController extends GetxController {
   RxList<CommonModel> cityList=<CommonModel>[].obs;
   var selectedCity=CommonModel().obs;
 
+  RxList<MpSuperCategoryModel> superCategoryList =
+    <MpSuperCategoryModel>[].obs;
+
+var selectedSuperCategory = MpSuperCategoryModel().obs;
+
   @override
   void onInit() {
     // TODO: implement onInit
@@ -84,10 +89,11 @@ class MpAddProductController extends GetxController {
     print("Access Token: $access_token");
     
     // Load categories and brands when controller initializes
-    loadCategories();
+    
     loadBrands();
     loadStates();
     loadMarketPlaceProducts();
+    loadSuperCategories();
    
   }
 
@@ -154,63 +160,89 @@ class MpAddProductController extends GetxController {
 
   // Updated onSelectCategory method to include state
   onSelectCatrgory(var data, String type) {
-    print("Selected $type: ${data.name} (ID: ${data.id})");
-    
-    if (type == 'category') {
-      selectedMainCategory.value = data;
-      selectedSubCategory.value = CommonModel(); // Reset subcategory
-      subCategoryList.clear(); // Clear previous subcategories
-      
-      // Load subcategories for selected category
-      if (data.id != null) {
-        loadSubCategories(data.id.toString());
-      }
-    } else if (type == 'subcategory') {
-      selectedSubCategory.value = data;
-    } else if (type == 'brands') {
-      selectedBrands.value = data;
-    } else if (type == 'state') { // NEW: Handle state selection
-      selectedState.value = data;
-      // You can also set the stateIdController if needed
-    stateNameController.text = data.id?.toString() ?? '';
-       loadCities(data.id.toString());
-    } else if(type=='city'){
-      selectedCity.value=data;
-      stateNameController.text=data.id?.toString()??'';
+  print("Selected $type: ${data.name} (ID: ${data.id})");
+
+  if (type == 'super_category') {
+    selectedSuperCategory.value = data;
+
+    // 🔥 RESET BELOW DATA
+    selectedMainCategory.value = CommonModel();
+    selectedSubCategory.value = CommonModel();
+
+    categoryList.clear();
+    subCategoryList.clear();
+
+    // 🔥 LOAD CATEGORY BASED ON SUPER CATEGORY
+    if (data.id != null) {
+      loadCategoriesBySuperId(data.id.toString());
     }
-    
-    update(); // Notify listeners
   }
+
+  else if (type == 'category') {
+    selectedMainCategory.value = data;
+
+    selectedSubCategory.value = CommonModel();
+    subCategoryList.clear();
+
+    if (data.id != null) {
+      loadSubCategories(data.id.toString());
+    }
+  }
+
+  else if (type == 'subcategory') {
+    selectedSubCategory.value = data;
+  }
+
+  else if (type == 'brands') {
+    selectedBrands.value = data;
+  }
+
+  else if (type == 'state') {
+    selectedState.value = data;
+    stateNameController.text = data.id?.toString() ?? '';
+    loadCities(data.id.toString());
+  }
+
+  else if (type == 'city') {
+    selectedCity.value = data;
+    stateNameController.text = data.id?.toString() ?? '';
+  }
+
+  update();
+}
+
+Future<void> loadCategoriesBySuperId(String superId) async {
+  print("📦 Loading categories for Super Category: $superId");
+
+  try {
+    Map<String, dynamic>? response =
+        await WebServicesHelper().getMpcategoryList({
+      'access_token': access_token,
+      'super_category_id': superId, // 🔥 IMPORTANT
+    });
+
+    if (response != null && response['status'] == 200) {
+      categoryList.clear();
+
+      if (response['data'] != null) {
+        for (var item in response['data']) {
+          categoryList.add(CommonModel.fromJson(item));
+        }
+
+        print("✅ Loaded ${categoryList.length} categories");
+      }
+    } else {
+      Utils.showCustomTosst("Failed to load categories");
+    }
+  } catch (e) {
+    print("Error: $e");
+  }
+
+  update();
+}
+
 
   // Load categories method
-  Future<void> loadCategories() async {
-    print("Loading categories...");
-    try {
-      Map<String, dynamic>? response = await WebServicesHelper().getMpcategoryList({
-        'access_token': access_token,
-      });
-
-      if (response != null && response['status'] == 200) {
-        print("Categories loaded successfully");
-        categoryList.clear();
-        
-        if (response['data'] != null) {
-          List<dynamic> categoryData = response['data'];
-          for (var item in categoryData) {
-            categoryList.add(CommonModel.fromJson(item));
-          }
-          print("Loaded ${categoryList.length} categories");
-        }
-      } else {
-        print("Failed to load categories: ${response?['message']}");
-        Utils.showCustomTosst("Failed to load categories");
-      }
-    } catch (e) {
-      print("Error loading categories: $e");
-      Utils.showCustomTosst("Error loading categories");
-    }
-  }
-
   // Load brands method
   Future<void> loadBrands() async {
     print("Loading brands...");
@@ -271,6 +303,41 @@ class MpAddProductController extends GetxController {
     }
     update();
   }
+
+
+  
+Future<void> loadSuperCategories() async {
+  print("📦 Loading Super Categories...");
+
+  try {
+    Map<String, dynamic>? response =
+        await WebServicesHelper().getMarketPlaceSuperCategory({
+      'access_token': access_token,
+    });
+
+    if (response != null && response['status'] == 200) {
+      superCategoryList.clear();
+
+      if (response['data'] != null) {
+        List<dynamic> data = response['data'];
+
+        for (var item in data) {
+          superCategoryList.add(MpSuperCategoryModel.fromJson(item));
+        }
+
+        print("✅ Loaded ${superCategoryList.length} Super Categories");
+      }
+    } else {
+      print("❌ Failed Super Category Load");
+      Utils.showCustomTosst("Failed to load super categories");
+    }
+  } catch (e) {
+    print("🔥 Error Super Category: $e");
+  }
+
+  update();
+}
+
 
   // fetch latitude and longitude
   Future<void> fetchCurrentLocation() async {
@@ -796,20 +863,32 @@ Future<void> activateDeactivateProduct(int productId, bool activate) async {
   }
 
   // Refresh categories method
-  Future<void> refreshCategories() async {
-    await loadCategories();
+Future<void> refreshCategories() async {
+  if (selectedSuperCategory.value.id != null) {
+    await loadCategoriesBySuperId(
+        selectedSuperCategory.value.id.toString());
+  } else {
+    print("❌ Super Category not selected");
   }
+}
 
   // Refresh brands method
   Future<void> refreshBrands() async {
     await loadBrands();
   }
 
-  // Refresh all data
-  Future<void> refreshAllData() async {
-    await loadCategories();
-    await loadBrands();
-  }
+Future<void> refreshAllData() async {
+  await loadBrands();
 
+  // 🔥 Load categories based on selected super category
+  if (selectedSuperCategory.value.id != null) {
+    await loadCategoriesBySuperId(
+        selectedSuperCategory.value.id.toString());
+  } else {
+    categoryList.clear();
+    subCategoryList.clear();
+    print("⚠️ No super category selected");
+  }
+}
 
 }

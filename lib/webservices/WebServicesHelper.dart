@@ -2961,6 +2961,11 @@ if (params["hashtag"] != null &&
     query["mp_category_id"] = params["mp_category_id"].toString();
   }
 
+  if (params["mp_sub_category_id"] != null &&
+      params["mp_sub_category_id"].toString().isNotEmpty) {
+    query["mp_sub_category_id"] = params["mp_sub_category_id"].toString();
+  }
+
   Uri uri = Uri.parse(baseUrl).replace(queryParameters: query);
 
   print("🌐 Final URL => $uri");
@@ -3826,34 +3831,67 @@ Future<Map<String, dynamic>?> getRegisterationCustomer({
 
 
 
- Future<Map<String, dynamic>?> getInternshipProgramCategory(
-      Map<String, dynamic> param) async {
-    Utils().customPrint("internship program Category Get api Url  url => ${ApiUrl.getstoreinternshipProgramCategory}");
-    var Url = ApiUrl.getstoreinternshipProgramCategory;
-   
-    final response = await http.get(
-      Uri.parse(Url),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    );
-    Utils().customPrint("response ====${response.body}");
-    if (response.statusCode == 200) {
-      return json.decode(response.body.toString());
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint('Login test 46');
-      return null;
-    } else if (response.statusCode == 400) {
-      final res = json.decode(response.body.toString());
-      return res;
-    } else {
-      final res = json.decode(response.body.toString());
-      // return
-      return res;
-    }
+
+
+Future<Map<String, dynamic>?> getInternshipProgramSuperCategory(Map<String, dynamic> param) async {
+  Utils().customPrint("Intership program super category Get api Url  url => ${ApiUrl.getInternshipprogramsupercategory}");
+  var Url = ApiUrl.getInternshipprogramsupercategory;
+  
+  final response = await http.get(
+    Uri.parse(Url),
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    },
+  );
+  Utils().customPrint("response ====${response.body}");
+  if (response.statusCode == 200) {
+    return json.decode(response.body.toString());
+  } else if (response.statusCode == 401 || response.statusCode == 403) {
+    Utils().customPrint('Login test 46');
+    return null;
+  } else if (response.statusCode == 400) {
+    final res = json.decode(response.body.toString());
+    return res;
+  } else {
+    final res = json.decode(response.body.toString());
+    return res;
+  }
+}
+
+
+Future<Map<String, dynamic>?> getInternshipProgramCategory(
+    Map<String, dynamic> param) async {
+
+  String url = ApiUrl.getstoreinternshipProgramCategory;
+
+  /// ✅ ADD QUERY PARAM
+  if (param.isNotEmpty) {
+    final query = Uri(queryParameters: param).query;
+    url = "$url?$query";
   }
 
+  Utils().customPrint("Final URL => $url");
+
+  final response = await http.get(
+    Uri.parse(url),
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    },
+  );
+
+  Utils().customPrint("response ====${response.body}");
+
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else if (response.statusCode == 401 || response.statusCode == 403) {
+    return null;
+  } else {
+    return json.decode(response.body);
+  }
+}
+  
 
   
 Future<Map<String, dynamic>?> getInternshipProgramSubcategory(
@@ -3940,40 +3978,74 @@ Future<Map<String, dynamic>?> postApplyInternshipProgram(
   }
 
 
+  Future<Map<String, dynamic>?> getSkillProgramSuperCategory(Map<String, dynamic> param) async {
+  Utils().customPrint("skill program supercategory Get api Url  url => ${ApiUrl.getskillsupercategory}");
+  var Url = ApiUrl.getskillsupercategory;
+  
+  final response = await http.get(
+    Uri.parse(Url),
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    },
+  );
+  Utils().customPrint("response ====${response.body}");
+  if (response.statusCode == 200) {
+    return json.decode(response.body.toString());
+  } else if (response.statusCode == 401 || response.statusCode == 403) {
+    Utils().customPrint('Login test 46');
+    return null;
+  } else if (response.statusCode == 400) {
+    final res = json.decode(response.body.toString());
+    return res;
+  } else {
+    final res = json.decode(response.body.toString());
+    return res;
+  }
+}
+
+
+
 
 
 
 
 
   Future<Map<String, dynamic>?> getSkillProgramCategory(
-      Map<String, dynamic> param) async {
-    Utils().customPrint("skill program Category Get api Url  url => ${ApiUrl.getskillprogramcategory}");
-    var Url = ApiUrl.getstoreinternshipProgramCategory;
-   
-    final response = await http.get(
-      Uri.parse(Url),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    );
-    Utils().customPrint("response ====${response.body}");
-    if (response.statusCode == 200) {
-      return json.decode(response.body.toString());
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint('Login test 46');
-      return null;
-    } else if (response.statusCode == 400) {
-      final res = json.decode(response.body.toString());
-      return res;
-    } else {
-      final res = json.decode(response.body.toString());
-      // return
-      return res;
-    }
+    Map<String, dynamic> param) async {
+
+  String baseUrl = ApiUrl.getskillprogramcategory;
+
+  // 🔥 SAFE + CLEAN QUERY PARAM BUILD
+  Uri uri = Uri.parse(baseUrl).replace(
+    queryParameters: param.isNotEmpty
+        ? param.map((key, value) =>
+            MapEntry(key, value.toString()))
+        : null,
+  );
+
+  Utils().customPrint(
+      "skill program category URL => $uri");
+
+  final response = await http.get(
+    uri,
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    },
+  );
+
+  Utils().customPrint("response === ${response.body}");
+
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else if (response.statusCode == 401 ||
+      response.statusCode == 403) {
+    return null;
+  } else {
+    return json.decode(response.body);
   }
-
-
+}
   
 Future<Map<String, dynamic>?> getSkillProgramSubcategory(
     Map<String, dynamic> param) async {

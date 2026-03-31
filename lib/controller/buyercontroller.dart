@@ -281,40 +281,53 @@ void toggleInterest(ProductModel item) async {
   // ===========================================================
   //                     LOAD PRODUCTS (CATEGORY ONLY)
   // ===========================================================
-  Future<void> loadMarketPlaceProducts({required int categoryId}) async {
-    try {
-      var response = await WebServicesHelper().getMarketPlaceProduct({
-        "access_token": access_token,
-        "title": searchController.text,
-        "mp_category_id": categoryId.toString(),
-        "return_all": "false",
-        "display_type": "active",
-        "order_by": "created_at",
-        "range":"50",
-        "descending": "true",
-        "page": 1,
-        "size": 100,
-      });
+  Future<void> loadMarketPlaceProducts({
+  required int categoryId,
+  int? subCategoryId,
+}) async {
+  try {
+    productList.clear();
+    filteredProductList.clear();
 
-      if (response != null && response["status"] == 200) {
-        productList.clear();
-        filteredProductList.clear();
+    /// ⭐ CREATE BODY FIRST
+    Map<String, dynamic> body = {
+      "access_token": access_token,
+      "title": searchController.text,
+      "mp_category_id": categoryId.toString(),
+      "return_all": "false",
+      "display_type": "active",
+      "order_by": "created_at",
+      "range": "50",
+      "descending": "true",
+      "page": 1,
+      "size": 100,
+    };
 
-        var data = response["data"];
+    /// ⭐ ADD SUBCATEGORY FILTER
+    if (subCategoryId != null) {
+      body["mp_sub_category_id"] = subCategoryId.toString();
+    }
 
-        if (data is List) {
-          for (var item in data) {
-            productList.add(ProductModel.fromJson(item));
-          }
+    var response =
+        await WebServicesHelper().getMarketPlaceProduct(body);
+
+    if (response != null && response["status"] == 200) {
+      var data = response["data"];
+
+      if (data != null && data is List) {
+        for (var item in data) {
+          productList.add(ProductModel.fromJson(item));
         }
-
-        filteredProductList.assignAll(productList);
       }
 
-    } catch (e) {
-      print("❌ loadMarketPlaceProducts error: $e");
+      /// ⭐ FINAL FILTERED LIST
+      filteredProductList.assignAll(productList);
     }
+
+  } catch (e) {
+    print("❌ loadMarketPlaceProducts error: $e");
   }
+}
 
   // ===========================================================
   //                          SEARCH

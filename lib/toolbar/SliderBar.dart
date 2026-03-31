@@ -15,6 +15,7 @@ import 'package:insta_grocery_customer/screen/side_menu/live_offer/OfferNearbyMa
 import 'package:insta_grocery_customer/screen/side_menu/live_offer/live_offer.dart';
 import 'package:insta_grocery_customer/screen/side_menu/live_offer/offer_dashboard_screen.dart';
 import 'package:insta_grocery_customer/screen/side_menu/skill_program/skill_program.dart';
+import 'package:insta_grocery_customer/screen/side_menu/skill_program/skill_program_super_category.dart';
 import 'package:insta_grocery_customer/screen/side_menu/supports/my_support_page.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,6 +31,7 @@ import '../screen/login/login_screen.dart';
 import '../screen/side_menu/cms_page/cms_page.dart';
 
 import '../screen/daskboard/store_job_module/store_job_detail.dart';
+import '../screen/side_menu/internship_program.dart/internship_program_super_category.dart';
 
 class SideMenuBar extends StatelessWidget {
   UserProfileController controller = Get.put(UserProfileController());
@@ -238,6 +240,9 @@ class SideMenuBar extends StatelessWidget {
                       //   },
                       // ),
 
+
+                      
+
                       ListTile(
                         leading: Icon(
                           Icons.location_city,
@@ -261,34 +266,11 @@ class SideMenuBar extends StatelessWidget {
                           );
                         },
                       ),
-                      // Divider(
-                      //   color: Colors.grey,
-                      //   thickness: 1,
-                      // ),
-                      // ListTile(
-                      //   leading: ImageIcon(
-                      //     AssetImage(ImageRes().sideMenuDisplaySetting),
-                      //   ),
-                      //   title: Text(
-                      //     "Market Place",
-                      //     textAlign: TextAlign.start,
-                      //     style: TextStyle(
-                      //         fontSize: AppDimens().front_medium,
-                      //         fontWeight: FontWeight.w400,
-                      //         fontFamily: "Inter",
-                      //         color: AppColor().blackColor),
-                      //   ),
-                      //   onTap: () {
-                      //     Navigator.pop(context);
-                      //     Get.to(() => BuyerHome());
-                      //   },
-                      // ),
-
                        Divider(
                         color: Colors.grey,
                         thickness: 1,
-                      ),
-                      ListTile(
+                      ),  
+                      ListTile(     
                         leading: ImageIcon(
                           AssetImage(ImageRes().sideMenuDisplaySetting),
                         ),
@@ -453,7 +435,7 @@ class SideMenuBar extends StatelessWidget {
                         ),
                         onTap: () {
                           // 👇 PASS JobListingModel OBJECT
-                          Get.to(() => InternshipListScreen());
+                          Get.to(() => InternshipSuperCategoryScreen());
                         },
                       ),
 
@@ -475,7 +457,7 @@ class SideMenuBar extends StatelessWidget {
                         ),
                         onTap: () {
                           // 👇 PASS JobListingModel OBJECT
-                          Get.to(() => SkillProgramScreen());
+                          Get.to(() => SkillProgramSuperCategoryScreen());
                         },
                       ),
 

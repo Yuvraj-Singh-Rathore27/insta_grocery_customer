@@ -86,9 +86,16 @@ RxSet<int> appliedProgramIds = <int>{}.obs;
   RxString filterDisplayType = "".obs;
   RxString filterTitle = "".obs;
 
+  RxInt selectedSuperCategoryId = 0.obs;
+
   /// ================= IMAGE =================
   RxList<Map<String, dynamic>> skillProgramImageList =
       <Map<String, dynamic>>[].obs;
+
+      RxList<SkillsSuperCategoryModel> superCategoryList =
+    <SkillsSuperCategoryModel>[].obs;
+
+RxBool isSuperCategoryLoading = false.obs;
 
   /// ================= AUTHENTICATION =================
 
@@ -99,6 +106,7 @@ RxSet<int> appliedProgramIds = <int>{}.obs;
     super.onInit();
 
     _loadUserData();
+     getSuperCategories();
 
     
     
@@ -147,28 +155,77 @@ RxSet<int> appliedProgramIds = <int>{}.obs;
     getSkillProgramList();
     getCategory();
     getType();
+   
   }
 
   /// ================= CATEGORY =================
-  Future<void> getCategory() async {
-    try {
-      isCategoryLoading.value = true;
+  Future<void> getCategory({int? superCategoryId}) async {
+  try {
+    isCategoryLoading.value = true;
 
-      final res =
-          await WebServicesHelper().getSkillProgramCategory({});
-
-      if (res != null && res['data'] != null) {
-        categoryList.assignAll(
-            List<Map<String, dynamic>>.from(res['data']));
-      } else {
-        categoryList.clear();
-      }
-    } catch (e) {
-      Utils.showCustomTosstError("Failed to load categories");
-    } finally {
-      isCategoryLoading.value = false;
+    // 🔥 SAVE SELECTED SUPER CATEGORY
+    if (superCategoryId != null) {
+      selectedSuperCategoryId.value = superCategoryId;
     }
+
+    // 🔥 PARAM BUILD
+    Map<String, dynamic> param = {};
+
+    if (selectedSuperCategoryId.value != 0) {
+      param["super_category_id"] =
+          selectedSuperCategoryId.value;
+    }
+
+    final res =
+        await WebServicesHelper().getSkillProgramCategory(param);
+
+    print("=== CATEGORY RESPONSE ===");
+    print(res);
+
+    if (res != null && res['data'] != null) {
+      categoryList.assignAll(
+        List<Map<String, dynamic>>.from(res['data']),
+      );
+    } else {
+      categoryList.clear();
+    }
+  } catch (e) {
+    print("Error: $e");
+    Utils.showCustomTosstError("Failed to load categories");
+  } finally {
+    isCategoryLoading.value = false;
   }
+}
+
+
+  Future<void> getSuperCategories() async {
+  try {
+    isSuperCategoryLoading.value = true;
+
+    final res = await WebServicesHelper()
+        .getSkillProgramSuperCategory({});
+
+    print("=== SUPER CATEGORY RESPONSE ===");
+    print(res);
+
+    if (res != null && res['data'] != null) {
+      List list = res['data'];
+
+      superCategoryList.assignAll(
+        list.map((e) => SkillsSuperCategoryModel.fromJson(e)).toList(),
+      );
+
+      print("Loaded: ${superCategoryList.length}");
+    } else {
+      superCategoryList.clear();
+    }
+  } catch (e) {
+    print("Error: $e");
+    Utils.showCustomTosstError("Failed to load super categories");
+  } finally {
+    isSuperCategoryLoading.value = false;
+  }
+}
 
   /// ================= SUB CATEGORY =================
   Future<void> getSubCategory(int categoryId) async {

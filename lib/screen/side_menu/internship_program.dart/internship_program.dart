@@ -68,7 +68,7 @@ class _InternshipListScreenState extends State<InternshipListScreen> {
             return Column(
               children: [
                 // Filter Section
-                _buildFilterSection(),
+                // _buildFilterSection(),
                 
                 // Stats Section
                 _buildStatsSection(),
@@ -89,198 +89,198 @@ class _InternshipListScreenState extends State<InternshipListScreen> {
     );
   }
 
-Widget _buildFilterSection() {
-  return Container(
-    margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.shade200,
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Material(
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColor().colorPrimary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.filter_list,
-                      color: AppColor().colorPrimary,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    "Filter Internships",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (controller.selectedCategoryId.value != 0 ||
-                      controller.selectedSubCategoryId.value != 0)
-                    TextButton(
-                      onPressed: () {
-                        controller.selectedCategoryId.value = 0;
-                        controller.selectedSubCategoryId.value = 0;
-                        controller.subCategoryList.clear();
-                        controller.filteredInternshipList
-                            .assignAll(controller.internshipList);
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColor().colorPrimary,
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                      ),
-                      child: const Text("Clear All"),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 20),
+// Widget _buildFilterSection() {
+//   return Container(
+//     margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+//     decoration: BoxDecoration(
+//       color: Colors.white,
+//       borderRadius: BorderRadius.circular(20),
+//       boxShadow: [
+//         BoxShadow(
+//           color: Colors.grey.shade200,
+//           blurRadius: 10,
+//           offset: const Offset(0, 4),
+//         ),
+//       ],
+//     ),
+//     child: ClipRRect(
+//       borderRadius: BorderRadius.circular(20),
+//       child: Material(
+//         color: Colors.white,
+//         child: Padding(
+//           padding: const EdgeInsets.all(16),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               // Header
+//               Row(
+//                 children: [
+//                   Container(
+//                     padding: const EdgeInsets.all(8),
+//                     decoration: BoxDecoration(
+//                       color: AppColor().colorPrimary.withOpacity(0.1),
+//                       borderRadius: BorderRadius.circular(12),
+//                     ),
+//                     child: Icon(
+//                       Icons.filter_list,
+//                       color: AppColor().colorPrimary,
+//                       size: 20,
+//                     ),
+//                   ),
+//                   const SizedBox(width: 12),
+//                   const Text(
+//                     "Filter Internships",
+//                     style: TextStyle(
+//                       fontSize: 16,
+//                       fontWeight: FontWeight.w600,
+//                     ),
+//                   ),
+//                   const Spacer(),
+//                   if (controller.selectedCategoryId.value != 0 ||
+//                       controller.selectedSubCategoryId.value != 0)
+//                     TextButton(
+//                       onPressed: () {
+//                         controller.selectedCategoryId.value = 0;
+//                         controller.selectedSubCategoryId.value = 0;
+//                         controller.subCategoryList.clear();
+//                         controller.filteredInternshipList
+//                             .assignAll(controller.internshipList);
+//                       },
+//                       style: TextButton.styleFrom(
+//                         foregroundColor: AppColor().colorPrimary,
+//                         minimumSize: Size.zero,
+//                         padding: const EdgeInsets.symmetric(
+//                             horizontal: 12, vertical: 6),
+//                       ),
+//                       child: const Text("Clear All"),
+//                     ),
+//                 ],
+//               ),
+//               const SizedBox(height: 20),
 
-              // Category Dropdown
-              Obx(() => _buildDropdownField(
-                value: controller.selectedCategoryId.value == 0
-                    ? null
-                    : controller.selectedCategoryId.value,
-                hint: "Select Category",
-                items: controller.categoryList.map((e) {
-                  return DropdownMenuItem<int>(
-                    value: e['id'],
-                    child: Text(
-                      e['name'],
-                      style: const TextStyle(fontSize: 15),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    controller.getSubCategory(val);
-                  }
-                },
-                isLoading: controller.isCategoryLoading.value,
-              )),
-              const SizedBox(height: 16),
+//               // Category Dropdown
+//               Obx(() => _buildDropdownField(
+//                 value: controller.selectedCategoryId.value == 0
+//                     ? null
+//                     : controller.selectedCategoryId.value,
+//                 hint: "Select Category",
+//                 items: controller.categoryList.map((e) {
+//                   return DropdownMenuItem<int>(
+//                     value: e['id'],
+//                     child: Text(
+//                       e['name'],
+//                       style: const TextStyle(fontSize: 15),
+//                     ),
+//                   );
+//                 }).toList(),
+//                 onChanged: (val) {
+//                   if (val != null) {
+//                     controller.getSubCategory(val);
+//                   }
+//                 },
+//                 isLoading: controller.isCategoryLoading.value,
+//               )),
+//               const SizedBox(height: 16),
 
-              // Subcategory Dropdown - Improved with empty state handling
-              Obx(() {
-                // Check if category is selected
-                if (controller.selectedCategoryId.value == 0) {
-                  return _buildDisabledDropdownField(
-                    hint: "Select a category first",
-                    icon: Icons.lock,
-                  );
-                }
+//               // Subcategory Dropdown - Improved with empty state handling
+//               Obx(() {
+//                 // Check if category is selected
+//                 if (controller.selectedCategoryId.value == 0) {
+//                   return _buildDisabledDropdownField(
+//                     hint: "Select a category first",
+//                     icon: Icons.lock,
+//                   );
+//                 }
                 
-                // Check if loading
-                if (controller.isSubCategoryLoading.value) {
-                  return _buildDisabledDropdownField(
-                    hint: "Loading subcategories...",
-                    isLoading: true,
-                  );
-                }
+//                 // Check if loading
+//                 if (controller.isSubCategoryLoading.value) {
+//                   return _buildDisabledDropdownField(
+//                     hint: "Loading subcategories...",
+//                     isLoading: true,
+//                   );
+//                 }
                 
-                // Check if no subcategories available
-                if (controller.subCategoryList.isEmpty) {
-                  return _buildDisabledDropdownField(
-                    hint: "No subcategories available",
-                    icon: Icons.info_outline,
-                  );
-                }
+//                 // Check if no subcategories available
+//                 if (controller.subCategoryList.isEmpty) {
+//                   return _buildDisabledDropdownField(
+//                     hint: "No subcategories available",
+//                     icon: Icons.info_outline,
+//                   );
+//                 }
 
-                // Show subcategory dropdown with items
-                return _buildDropdownField(
-                  value: controller.selectedSubCategoryId.value == 0
-                      ? null
-                      : controller.selectedSubCategoryId.value,
-                  hint: "Select Subcategory",
-                  items: controller.subCategoryList.map((e) {
-                    return DropdownMenuItem<int>(
-                      value: e['id'],
-                      child: Text(
-                        e['name'],
-                        style: const TextStyle(fontSize: 15),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      controller.selectedSubCategoryId.value = val;
-                      controller.filterInternshipsBySubCategory(val);
-                    }
-                  },
-                  isLoading: false,
-                );
-              }),
+//                 // Show subcategory dropdown with items
+//                 return _buildDropdownField(
+//                   value: controller.selectedSubCategoryId.value == 0
+//                       ? null
+//                       : controller.selectedSubCategoryId.value,
+//                   hint: "Select Subcategory",
+//                   items: controller.subCategoryList.map((e) {
+//                     return DropdownMenuItem<int>(
+//                       value: e['id'],
+//                       child: Text(
+//                         e['name'],
+//                         style: const TextStyle(fontSize: 15),
+//                       ),
+//                     );
+//                   }).toList(),
+//                   onChanged: (val) {
+//                     if (val != null) {
+//                       controller.selectedSubCategoryId.value = val;
+//                       controller.filterInternshipsBySubCategory(val);
+//                     }
+//                   },
+//                   isLoading: false,
+//                 );
+//               }),
 
-              // Active Filters
-              Obx(() {
-                if (controller.selectedCategoryId.value != 0 ||
-                    controller.selectedSubCategoryId.value != 0) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        if (controller.selectedCategoryId.value != 0)
-                          _buildFilterChip(
-                            label: controller.categoryList.firstWhere(
-                              (e) => e['id'] == controller.selectedCategoryId.value,
-                              orElse: () => {'name': 'Category'},
-                            )['name'] ?? 'Category',
-                            onDelete: () {
-                              controller.selectedCategoryId.value = 0;
-                              controller.selectedSubCategoryId.value = 0;
-                              controller.subCategoryList.clear();
-                              controller.filteredInternshipList
-                                  .assignAll(controller.internshipList);
-                            },
-                          ),
-                        if (controller.selectedSubCategoryId.value != 0)
-                          _buildFilterChip(
-                            label: controller.subCategoryList.firstWhere(
-                              (e) => e['id'] == controller.selectedSubCategoryId.value,
-                              orElse: () => {'name': 'Subcategory'},
-                            )['name'] ?? 'Subcategory',
-                            onDelete: () {
-                              controller.selectedSubCategoryId.value = 0;
-                              controller.filterInternshipsBySubCategory(0);
-                            },
-                          ),
-                      ],
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              }),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
+//               // Active Filters
+//               Obx(() {
+//                 if (controller.selectedCategoryId.value != 0 ||
+//                     controller.selectedSubCategoryId.value != 0) {
+//                   return Padding(
+//                     padding: const EdgeInsets.only(top: 16),
+//                     child: Wrap(
+//                       spacing: 8,
+//                       runSpacing: 8,
+//                       children: [
+//                         if (controller.selectedCategoryId.value != 0)
+//                           _buildFilterChip(
+//                             label: controller.categoryList.firstWhere(
+//                               (e) => e['id'] == controller.selectedCategoryId.value,
+//                               orElse: () => {'name': 'Category'},
+//                             )['name'] ?? 'Category',
+//                             onDelete: () {
+//                               controller.selectedCategoryId.value = 0;
+//                               controller.selectedSubCategoryId.value = 0;
+//                               controller.subCategoryList.clear();
+//                               controller.filteredInternshipList
+//                                   .assignAll(controller.internshipList);
+//                             },
+//                           ),
+//                         if (controller.selectedSubCategoryId.value != 0)
+//                           _buildFilterChip(
+//                             label: controller.subCategoryList.firstWhere(
+//                               (e) => e['id'] == controller.selectedSubCategoryId.value,
+//                               orElse: () => {'name': 'Subcategory'},
+//                             )['name'] ?? 'Subcategory',
+//                             onDelete: () {
+//                               controller.selectedSubCategoryId.value = 0;
+//                               controller.filterInternshipsBySubCategory(0);
+//                             },
+//                           ),
+//                       ],
+//                     ),
+//                   );
+//                 }
+//                 return const SizedBox.shrink();
+//               }),
+//             ],
+//           ),
+//         ),
+//       ),
+//     ),
+//   );
+// }
 
 // Helper method for disabled dropdown fields
 Widget _buildDisabledDropdownField({
@@ -958,7 +958,7 @@ Widget _buildDropdownField({
             ),
             const SizedBox(height: 8),
             Text(
-              "Try adjusting your filters or\ncreate a new internship",
+              "Try adjusting your filters or\n find a new internship",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -967,24 +967,7 @@ Widget _buildDropdownField({
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                // Navigate to create internship
-              },
-              icon: const Icon(Icons.add),
-              label: const Text("Create Internship"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor().colorPrimary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
+            
           ],
         ),
       ),

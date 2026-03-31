@@ -100,7 +100,7 @@ class AddProduct extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 16),
+       const  SizedBox(height: 16),
 
               _buildCategoryBrandSection(),
               SizedBox(height: 20),
@@ -116,11 +116,11 @@ class AddProduct extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 16),
+          const    SizedBox(height: 16),
 
               // 2. Composition and Specification
               _buildCompositionSpecificationSection(),
-              SizedBox(height: 20),
+          const    SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
@@ -133,11 +133,11 @@ class AddProduct extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 16),
+            const  SizedBox(height: 16),
 
               // 3. Packaging and Quantity
               _buildPackagingQuantitySection(),
-              SizedBox(height: 20),
+            const  SizedBox(height: 20),
 
               // 4. Price and Discounts
               Padding(
@@ -223,6 +223,18 @@ class AddProduct extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildSectionTitle('Select Super Category *'),
+const SizedBox(height: 10),
+
+Obx(() => _buildDropdownSelector(
+  addProductController.selectedSuperCategory.value.name ??
+      'Select Super Category',
+  () => showDropDownList(
+    addProductController,
+    addProductController.superCategoryList,
+    'super_category',
+  ),
+)),
           // Category Selection
           _buildSectionTitle('Select Category *'),
           SizedBox(height: 10),
