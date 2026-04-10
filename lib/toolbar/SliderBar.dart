@@ -2,24 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:insta_grocery_customer/controller/user_profile_controller.dart';
-import 'package:insta_grocery_customer/model/internship_program.dart';
-import 'package:insta_grocery_customer/model/skill_program.dart';
+
 import 'package:insta_grocery_customer/screen/address_managment/address_listing.dart';
-import 'package:insta_grocery_customer/screen/daskboard/store_job_module/store_job_detail.dart';
-import 'package:insta_grocery_customer/screen/market_place/buyer/buyer_home.dart';
-import 'package:insta_grocery_customer/screen/market_place/buyer/buyer_super_category.dart';
+import 'package:insta_grocery_customer/screen/daskboard/store_job_module/store_job_detail.dart';import 'package:insta_grocery_customer/screen/market_place/buyer/buyer_super_category.dart';
 import 'package:insta_grocery_customer/screen/side_menu/event_managment/event_managment_dashboard.dart';
 import 'package:insta_grocery_customer/screen/side_menu/id_cards/idcards.dart';
-import 'package:insta_grocery_customer/screen/side_menu/internship_program.dart/internship_program.dart';
-import 'package:insta_grocery_customer/screen/side_menu/live_offer/OfferNearbyMapScreen.dart';
-import 'package:insta_grocery_customer/screen/side_menu/live_offer/live_offer.dart';
+
 import 'package:insta_grocery_customer/screen/side_menu/live_offer/offer_dashboard_screen.dart';
-import 'package:insta_grocery_customer/screen/side_menu/skill_program/skill_program.dart';
 import 'package:insta_grocery_customer/screen/side_menu/skill_program/skill_program_super_category.dart';
-import 'package:insta_grocery_customer/screen/side_menu/supports/my_support_page.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../model/store_job_model.dart';
 
 import '../controller/vender_controller.dart';
 import '../preferences/UserPreferences.dart';
@@ -29,9 +21,9 @@ import '../res/ImageRes.dart';
 import '../screen/job_module/base_tab_helth_job.dart';
 import '../screen/login/login_screen.dart';
 import '../screen/side_menu/cms_page/cms_page.dart';
-
-import '../screen/daskboard/store_job_module/store_job_detail.dart';
 import '../screen/side_menu/internship_program.dart/internship_program_super_category.dart';
+import '../screen/side_menu/Gig_Workers/gigWorkersHome.dart';
+
 
 class SideMenuBar extends StatelessWidget {
   UserProfileController controller = Get.put(UserProfileController());
@@ -239,6 +231,34 @@ class SideMenuBar extends StatelessWidget {
                       //     Get.to(() => const MySupportsPage());
                       //   },
                       // ),
+
+                      ListTile(
+                        leading: Icon(
+                          Icons.location_city,
+                          color: AppColor().blackColor,
+                        ),
+                        title: Text(
+                          "GIG Workers",
+                          textAlign: TextAlign.start,
+                          style: TextStyle(
+                              fontSize: AppDimens().front_medium,
+                              fontWeight: FontWeight.w400,
+                              fontFamily: "Inter",
+                              color: AppColor().blackColor),
+                        ),
+                        onTap: () async {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const GigHubHomeScreen()),
+                          );
+                        },
+                      ),
+                      Divider(
+                        color: Colors.grey,
+                        thickness: 1,
+                      ),
 
 
                       

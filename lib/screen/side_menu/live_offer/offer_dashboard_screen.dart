@@ -126,19 +126,25 @@ class _OfferDashboardScreenState
             : null;
 
     return GestureDetector(
-      onTap: () {
-        controller.selectedOfferCategoryId.value =
-            category.id ?? 0;
+     onTap: () async {
+  controller.selectedOfferCategoryId.value = category.id ?? 0;
+  controller.selectedOfferSubCategoryId.value = 0;
 
-        controller.selectedOfferSubCategoryId.value = 0;
+  /// Load subcategories
+  await controller.getOfferSubCategoriesApi(category.id ?? 0);
 
-        controller.getOfferSubCategoriesApi(
-            category.id ?? 0);
-
-        controller.filterNearbyOffersByCategory();
-
-        Get.to(() => const LiveOfferScreen());
-      },
+  /// Show BottomSheet
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) {
+      return _subCategoryBottomSheet(controller);
+    },
+  );
+},
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
@@ -234,4 +240,120 @@ class _OfferDashboardScreenState
       ),
     );
   }
+}
+
+
+Widget _subCategoryBottomSheet(PharmacyController controller) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    height: 350,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        const Text(
+          "Select Sub Category",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+
+        const SizedBox(height: 16),
+
+        Expanded(
+          child: Obx(() {
+            if (controller.offerSubCategories.isEmpty) {
+              return const Center(child: Text("No subcategories found"));
+            }
+
+            return GridView.builder(
+              itemCount: controller.offerSubCategories.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.9,
+              ),
+              itemBuilder: (context, index) {
+                final sub = controller.offerSubCategories[index];
+
+                /// ❗ Try to get image from category (fallback)
+                final imageUrl = controller.offerCategories
+                    .firstWhereOrNull(
+                        (c) => c.id == controller.selectedOfferCategoryId.value)
+                    ?.image
+                    ?.first
+                    ?.path;
+
+                return GestureDetector(
+                  onTap: () {
+                    controller.selectedOfferSubCategoryId.value = sub.id ?? 0;
+                    controller.filterNearbyOffersByCategory();
+
+                    Get.back();
+                    Get.to(() => const LiveOfferScreen());
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.shade200,
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+
+                        /// 🔥 IMAGE OR ICON
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: imageUrl != null && imageUrl.isNotEmpty
+                              ? Image.network(
+                                  imageUrl,
+                                  height: 50,
+                                  width: 50,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) {
+                                    return const Icon(
+                                      Icons.category,
+                                      size: 40,
+                                      color: Colors.green,
+                                    );
+                                  },
+                                )
+                              : const Icon(
+                                  Icons.category,
+                                  size: 40,
+                                  color: Colors.green,
+                                ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        /// NAME
+                        Text(
+                          sub.name ?? "",
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+        ),
+      ],
+    ),
+  );
 }

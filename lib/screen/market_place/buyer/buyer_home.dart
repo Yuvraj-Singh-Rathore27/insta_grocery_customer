@@ -60,7 +60,7 @@ class BuyerHome extends StatelessWidget {
         ),
       ),
 
-      bottomNavigationBar: _buildBottomButton(),
+      // bottomNavigationBar: _buildBottomButton(),
     );
   }
 
@@ -139,17 +139,17 @@ Widget buildCategorySection() {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                GestureDetector(
-                  onTap: () => Get.to(() => BuyerAllCategoryList()),
-                  child: Text(
-                    "View All",
-                    style: TextStyle(
-                      fontSize: AppDimens().front_medium,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                ),
+                // GestureDetector(
+                //   onTap: () => Get.to(() => BuyerAllCategoryList()),
+                //   child: Text(
+                //     "View All",
+                //     style: TextStyle(
+                //       fontSize: AppDimens().front_medium,
+                //       fontWeight: FontWeight.bold,
+                //       color: Colors.red,
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),

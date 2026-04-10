@@ -159,10 +159,23 @@ class _EventManagementDashboardState
       final category = sortedCategories[index];
 
       return GestureDetector(
-        onTap: () {
-          controller.filterByCategory(category.id!);
-          Get.to(() => AllEventsScreen());
-        },
+       onTap: () async {
+  controller.selectedCategoryId.value = category.id!;
+
+  /// 🔥 load subcategory
+  await controller.getCustomerEventSubCategory(category.id!);
+
+  /// show bottom sheet
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) {
+      return _eventSubCategoryBottomSheet(controller);
+    },
+  );
+},
         child: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
@@ -233,6 +246,119 @@ class _EventManagementDashboardState
     },
   );
 }),
+      ],
+    ),
+  );
+}
+
+Widget _eventSubCategoryBottomSheet(CustomerEventController controller) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    height: 350,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        const Text(
+          "Select Sub Category",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+
+        const SizedBox(height: 16),
+
+        Expanded(
+          child: Obx(() {
+            if (controller.subCategories.isEmpty) {
+              return const Center(child: Text("No subcategories"));
+            }
+
+            return GridView.builder(
+              itemCount: controller.subCategories.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.9,
+              ),
+              itemBuilder: (context, index) {
+                final sub = controller.subCategories[index];
+
+                /// 🔥 get category image (fallback)
+                final categoryImage = controller.categories
+                    .firstWhereOrNull(
+                        (c) => c.id == controller.selectedCategoryId.value)
+                    ?.image;
+
+                return GestureDetector(
+                  onTap: () {
+                    controller.selectedSubCategoryId.value = sub.id ?? 0;
+
+                    controller.applyFilters();
+
+                    Get.back();
+                    Get.to(() => AllEventsScreen());
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.shade200,
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+
+                        /// 🔥 IMAGE OR ICON
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: categoryImage != null
+                              ? Image.network(
+                                  categoryImage,
+                                  height: 50,
+                                  width: 50,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) {
+                                    return const Icon(
+                                      Icons.event,
+                                      size: 40,
+                                      color: Colors.red,
+                                    );
+                                  },
+                                )
+                              : const Icon(
+                                  Icons.event,
+                                  size: 40,
+                                  color: Colors.red,
+                                ),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        Text(
+                          sub.name ?? "",
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+        ),
       ],
     ),
   );

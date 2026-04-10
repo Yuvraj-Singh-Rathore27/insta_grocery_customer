@@ -117,10 +117,12 @@ class ApiUrl {
   static const bookingListApi = "${apiUrl}ambulance/booking/?page=1&size=50";
 
   static const placeDetailsApi =
-      "https://maps.googleapis.com/maps/api/place/details/json?place_id";
+    "https://maps.googleapis.com/maps/api/place/details/json";
   static const mapApiKey = "AIzaSyAhch18P_emZhw7RkyewrmLNk8Snhs0w4U";
 
   static const feedbackUrl = "${apiUrl}feedback/";
+    static const String autoCompleteApi =
+      "https://maps.googleapis.com/maps/api/place/autocomplete/json";
 
   //send message
   static const sendMessage = "${apiUrl}conversation/";
@@ -282,6 +284,21 @@ static const getRegisterCustomerEvent =
     static const getskillprogram="${apiUrl}admin/skill-program/";
     static const appliedskillprogram="${apiUrl}skill-applications/apply/";
 
+
+    // gigs works 
+
+    static const getGigsSuperCategory="${apiUrl}admin/gigs-works-super-category/?display_type=all";
+     static const getGigsCategory="${apiUrl}admin/Gigs-Works-category/?display_type=all";
+      static const getGigsSubCategory="${apiUrl}admin/Gigs-Works-SubCategory/?display_type=all";
+      static const addGigsProfile="${apiUrl}gigs-works-profile/";
+      static const updateGigsProfile="${apiUrl}gigs-works-profile/";
+      static const getGigsProfile="${apiUrl}gigs-works-profile";
+
+      static const hireGigs="${apiUrl}gigs-works-hire/";
+      static const getHiredGigs="${apiUrl}gigs-works-hire/?display_type=active";
+      static const updateHiredGigs="${apiUrl}gigs-works-hire/";
+// activate deactivate
+      static const actdeactGigs="${apiUrl}gigs-works-profile/";
 
 
 

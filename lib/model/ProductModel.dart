@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
-
 import 'file_model.dart';
+import 'package:geocoding/geocoding.dart';
 
 class ProductModel {
   bool isInterested = false;
@@ -37,8 +37,8 @@ class ProductModel {
   String? medicine_type;
   String? logo;
   dynamic activate;
-dynamic isActiveApi;
-dynamic status;
+  dynamic isActiveApi;
+  dynamic status;
 
   // New fields
   String? title;
@@ -64,7 +64,6 @@ dynamic status;
     this.name,
     this.description,
     this.hashtag,
-
     this.pharmacyId,
     this.isDeleted,
     this.companyName,
@@ -107,7 +106,6 @@ dynamic status;
     this.userId,
     this.createdBy,
     this.createdById,
-    
   });
 
   ProductModel.fromJson(Map<String, dynamic> json) {
@@ -122,8 +120,8 @@ dynamic status;
 
     description = json['description'] ?? '';
     print("description: $description");
-    hashtag=json['hashtag']??'';
-    print("hashtag: $hashtag",);
+    hashtag = json['hashtag'] ?? '';
+    print("hashtag: $hashtag");
 
     pharmacyId = _toInt(json['pharmacy_id']);
     print("pharmacyId: $pharmacyId");
@@ -176,8 +174,17 @@ dynamic status;
     sizes = json['sizes'];
     print("sizes: $sizes");
 
-    images = json['images'];
-    print("images: $images");
+    // FIX IMAGE ISSUE - Handle images correctly
+    if (json['images'] != null && json['images'].toString().isNotEmpty && json['images'] != "null") {
+      images = json['images'].toString();
+      print("✅ images: $images");
+      // Also populate image_url for compatibility
+      image_url = [json['images'].toString()];
+    } else {
+      images = null;
+      image_url = [];
+      print("⚠️ No images found");
+    }
 
     logo = json['logo'];
     print("logo: $logo");
@@ -190,11 +197,11 @@ dynamic status;
 
     isfavorite = json['isfavorite'] ?? false;
     print("isfavorite: $isfavorite");
-    
+
     isInterested = json['is_interested'] ?? false;
     print("isInterested: $isInterested");
-    
-    if (json['image_url'] != null) {
+
+    if (json['image_url'] != null && json['image_url'].toString().isNotEmpty) {
       image_url = json['image_url'].split('|').map((url) => url.trim()).toList().cast<String>();
       print("image_url: $image_url");
     }
@@ -234,15 +241,15 @@ dynamic status;
     print("brandId: $brandId");
 
     stateName = json['state_name'];
-    print("stateId: $stateName");
+    print("stateName: $stateName");
 
     cityName = json['city_name'];
-    print("cityId: $cityName");
+    print("cityName: $cityName");
 
-    latitude = json['latitude'];
+    latitude = json['latitude']?.toString();
     print("latitude: $latitude");
 
-    longitude = json['longitude'];
+    longitude = json['longitude']?.toString();
     print("longitude: $longitude");
 
     userId = _toInt(json['user_id']);
@@ -253,9 +260,12 @@ dynamic status;
 
     createdById = _toInt(json['created_by_id']);
     print("createdById: $createdById");
+    
     activate = json['activate'];
-isActiveApi = json['is_active'];
-status = json['status'];
+    isActiveApi = json['is_active'];
+    status = json['status'];
+    
+    print("🔘 isActive: ${this.isActive}");
   }
 
   Map<String, dynamic> toJson() {
@@ -263,7 +273,7 @@ status = json['status'];
       "title": title,
       "name": name,
       "description": description,
-      "hashtag":hashtag,
+      "hashtag": hashtag,
       "product_code": productCode,
       "self_life": selfLife,
       "manufacturer_details": manufacturerDetails,
@@ -310,21 +320,140 @@ status = json['status'];
     if (value == null) return null;
     return value.toString();
   }
+  
   bool get isActive {
-  if (activate != null) {
-    return activate == true || activate == 1 || activate == "1";
+    if (activate != null) {
+      return activate == true || activate == 1 || activate == "1";
+    }
+    if (isActiveApi != null) {
+      return isActiveApi == true || isActiveApi == 1;
+    }
+    if (status != null) {
+      return status.toString().toLowerCase() == "active";
+    }
+    return false;
   }
-  if (isActiveApi != null) {
-    return isActiveApi == true || isActiveApi == 1;
+
+  // NEW HELPER METHOD: Get valid image URL (without changing existing names)
+  String? getValidImageUrl() {
+    if (images != null && images!.isNotEmpty && images != "null") {
+      return images;
+    }
+    if (image_url != null && image_url!.isNotEmpty) {
+      return image_url!.first;
+    }
+    if (logo != null && logo!.isNotEmpty && logo != "null") {
+      return logo;
+    }
+    return null;
   }
-  if (status != null) {
-    return status.toString().toLowerCase() == "active";
+  // Add to ProductModel class
+
+Future<String> getAddressFromCoordinates() async {
+  try {
+    if (latitude != null && latitude!.isNotEmpty && 
+        longitude != null && longitude!.isNotEmpty) {
+      
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        double.parse(latitude!),
+        double.parse(longitude!),
+      );
+      
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks.first;
+        
+        // Build address from available fields
+        String address = '';
+        if (place.subLocality != null && place.subLocality!.isNotEmpty) {
+          address = place.subLocality!;
+        } else if (place.locality != null && place.locality!.isNotEmpty) {
+          address = place.locality!;
+        } else if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+          address = place.administrativeArea!;
+        } else if (place.country != null && place.country!.isNotEmpty) {
+          address = place.country!;
+        }
+        
+        if (address.isNotEmpty) {
+          return address;
+        }
+      }
+    }
+    
+    // Return city/state if available
+    if (cityName != null && cityName!.isNotEmpty) return cityName!;
+    if (stateName != null && stateName!.isNotEmpty) return stateName!;
+    
+    return "Location not provided";
+  } catch (e) {
+    print("Error getting address: $e");
+    // Fallback to city/state
+    if (cityName != null && cityName!.isNotEmpty) return cityName!;
+    if (stateName != null && stateName!.isNotEmpty) return stateName!;
+    return "Location not provided";
   }
-  return false;
 }
 
+  // NEW HELPER METHOD: Get display location (without changing existing names)
+  
+  // Add this method to ProductModel class
+Future<String> getLocationNameFromCoordinates() async {
+  if (cityName != null && cityName!.isNotEmpty) {
+    return cityName!;
+  }
+  if (stateName != null && stateName!.isNotEmpty) {
+    return stateName!;
+  }
+  if (latitude != null && latitude!.isNotEmpty && longitude != null && longitude!.isNotEmpty) {
+    // Try to get address from coordinates
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        double.parse(latitude!),
+        double.parse(longitude!),
+      );
+      
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks.first;
+        String locality = place.locality ?? '';
+        String subLocality = place.subLocality ?? '';
+        String city = place.administrativeArea ?? '';
+        
+        if (locality.isNotEmpty) return locality;
+        if (subLocality.isNotEmpty) return subLocality;
+        if (city.isNotEmpty) return city;
+        
+        // If no address found, show coordinates
+        return "📍 ${_truncateCoordinate(latitude!)}, ${_truncateCoordinate(longitude!)}";
+      }
+    } catch (e) {
+      print("Error getting location name: $e");
+      return "📍 ${_truncateCoordinate(latitude!)}, ${_truncateCoordinate(longitude!)}";
+    }
+  }
+  return "Location not provided";
 }
 
+String _truncateCoordinate(String coord) {
+  if (coord.length > 6) {
+    return coord.substring(0, 6);
+  }
+  return coord;
+}
+
+// Synchronous version for immediate display
+String getDisplayLocation() {
+  if (cityName != null && cityName!.isNotEmpty) {
+    return cityName!;
+  }
+  if (stateName != null && stateName!.isNotEmpty) {
+    return stateName!;
+  }
+  if (latitude != null && latitude!.isNotEmpty && longitude != null && longitude!.isNotEmpty) {
+    return "📍 ${_truncateCoordinate(latitude!)}, ${_truncateCoordinate(longitude!)}";
+  }
+  return "Location not provided";
+}
+}
 
 
 class MpSuperCategoryModel {

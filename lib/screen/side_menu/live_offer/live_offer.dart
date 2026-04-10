@@ -23,11 +23,11 @@ class LiveOfferScreen extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
-          bottom: TabBar(
-            indicatorColor: AppColor().colorPrimary,
-            labelColor: AppColor().colorPrimary,
+          bottom: const TabBar(
+            indicatorColor: Colors.green,
+            labelColor: Colors.green,
             unselectedLabelColor: Colors.grey,
-            tabs: const [
+            tabs: [
               Tab(text: "ACTIVE"),
               Tab(text: "EXPIRED"),
             ],
@@ -46,36 +46,22 @@ class LiveOfferScreen extends StatelessWidget {
           ],
         ),
 
-        /// 🔥 BODY
+        /// BODY
         body: Obx(() {
           if (controller.isLoadingOffer.value) {
             return const Center(
                 child: CircularProgressIndicator());
           }
 
-          /// 🔹 FILTER LOGIC (Category + Subcategory)
+          /// Filter by category only (removed subcategory filter)
           final filteredOffers =
               controller.homeOfferList.where((offer) {
-
-            // Category filter
-            if (controller.selectedOfferCategoryId.value !=
-                    0 &&
+            // Category filter only
+            if (controller.selectedOfferCategoryId.value != 0 &&
                 offer.offerCategoryId !=
-                    controller.selectedOfferCategoryId
-                        .value) {
+                    controller.selectedOfferCategoryId.value) {
               return false;
             }
-
-            // Subcategory filter
-            if (controller.selectedOfferSubCategoryId
-                        .value !=
-                    0 &&
-                offer.subcategory?.id !=
-                    controller
-                        .selectedOfferSubCategoryId.value) {
-              return false;
-            }
-
             return true;
           }).toList();
 
@@ -93,15 +79,7 @@ class LiveOfferScreen extends StatelessWidget {
 
           return Column(
             children: [
-
-              const SizedBox(height: 12),
-
-              /// 🔹 SubCategory Bar
-              _subCategoryBar(controller),
-
-              const SizedBox(height: 8),
-
-              /// 🔹 Tab View
+              /// Tab View
               Expanded(
                 child: TabBarView(
                   children: [
@@ -117,85 +95,7 @@ class LiveOfferScreen extends StatelessWidget {
     );
   }
 
-  /// 🔹 SubCategory Bar With "All"
-  Widget _subCategoryBar(
-      PharmacyController controller) {
-    if (controller.offerSubCategories.isEmpty) {
-      return const SizedBox();
-    }
-
-    return SizedBox(
-      height: 45,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10),
-        itemCount:
-            controller.offerSubCategories.length + 1,
-        itemBuilder: (context, index) {
-
-          if (index == 0) {
-            return _subChip(
-                "All", 0, controller);
-          }
-
-          final sub =
-              controller.offerSubCategories[index - 1];
-
-          return _subChip(
-              sub.name ?? "",
-              sub.id ?? 0,
-              controller);
-        },
-      ),
-    );
-  }
-
-  /// 🔹 Chip UI
-  Widget _subChip(String title, int id,
-      PharmacyController controller) {
-    return Obx(() {
-      final isSelected =
-          controller.selectedOfferSubCategoryId
-                  .value ==
-              id;
-
-      return GestureDetector(
-        onTap: () {
-          controller.selectedOfferSubCategoryId
-              .value = id;
-        },
-        child: Container(
-          margin:
-              const EdgeInsets.symmetric(horizontal: 6),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? AppColor().colorPrimary
-                : Colors.white,
-            borderRadius:
-                BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColor().colorPrimary,
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            title,
-            style: TextStyle(
-              color: isSelected
-                  ? Colors.white
-                  : AppColor().colorPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      );
-    });
-  }
-
-  /// 🔹 Offer List
+  /// Offer List
   Widget _offerList(List offers) {
     if (offers.isEmpty) {
       return const Center(
@@ -211,7 +111,7 @@ class LiveOfferScreen extends StatelessWidget {
     );
   }
 
-  /// 🔹 Offer Card
+  /// Offer Card
   Widget _offerCard(offer) {
     final imageUrl = (offer.image != null &&
             offer.image!.isNotEmpty &&

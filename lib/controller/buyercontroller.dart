@@ -1,6 +1,8 @@
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:insta_grocery_customer/screen/market_place/buyer/buyer_super_category.dart';
+import 'package:insta_grocery_customer/screen/market_place/seller/seller_home.dart';
 
 import '../model/common_model.dart';
 import '../model/ProductModel.dart';
@@ -14,6 +16,7 @@ class BuyerController extends GetxController {
   late GetStorage store;
   String userId = "";
   String access_token = "";
+  var isLoading = false.obs;
 
   // -------------------- CATEGORY / SUBCATEGORY --------------------
   RxList<CommonModel> categoryList = <CommonModel>[].obs;
@@ -32,6 +35,17 @@ var selectedSuperCategory = MpSuperCategoryModel().obs;
   RxList<ProductModel> filteredProductList = <ProductModel>[].obs;
 
   TextEditingController searchController = TextEditingController();
+   var selectedIndex = 0.obs;
+ void changeIndex(int index) {
+    selectedIndex.value = index;
+    if(index == 1){
+      Get.to(() => SellerHomePage());
+      
+    }
+    else if(index==0){
+      Get.to(MarketPlaceSuperCategoryScreen());
+    }
+  }
 
   // ========================== INIT ==========================
   @override
@@ -286,10 +300,11 @@ void toggleInterest(ProductModel item) async {
   int? subCategoryId,
 }) async {
   try {
+    isLoading.value = true; // 🔥 START LOADING
+
     productList.clear();
     filteredProductList.clear();
 
-    /// ⭐ CREATE BODY FIRST
     Map<String, dynamic> body = {
       "access_token": access_token,
       "title": searchController.text,
@@ -303,7 +318,6 @@ void toggleInterest(ProductModel item) async {
       "size": 100,
     };
 
-    /// ⭐ ADD SUBCATEGORY FILTER
     if (subCategoryId != null) {
       body["mp_sub_category_id"] = subCategoryId.toString();
     }
@@ -320,14 +334,16 @@ void toggleInterest(ProductModel item) async {
         }
       }
 
-      /// ⭐ FINAL FILTERED LIST
       filteredProductList.assignAll(productList);
     }
 
   } catch (e) {
     print("❌ loadMarketPlaceProducts error: $e");
+  } finally {
+    isLoading.value = false; // 🔥 STOP LOADING
   }
 }
+
 
   // ===========================================================
   //                          SEARCH

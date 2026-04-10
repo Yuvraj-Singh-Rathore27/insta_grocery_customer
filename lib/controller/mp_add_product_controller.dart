@@ -15,6 +15,8 @@ import '../webservices/ApiUrl.dart';
 import '../webservices/WebServicesHelper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'dart:convert';
 
 
 class MpAddProductController extends GetxController {
@@ -77,6 +79,8 @@ class MpAddProductController extends GetxController {
     <MpSuperCategoryModel>[].obs;
 
 var selectedSuperCategory = MpSuperCategoryModel().obs;
+final RxBool isLoading = false.obs;
+RxList<dynamic> placeSuggestions = <dynamic>[].obs;
 
   @override
   void onInit() {
@@ -346,14 +350,12 @@ Future<void> loadSuperCategories() async {
   bool serviceEnabled;
   LocationPermission permission;
 
-  // Check service enabled
   serviceEnabled = await Geolocator.isLocationServiceEnabled();
   if (!serviceEnabled) {
     Utils.showCustomTosst("Location services are disabled");
     return;
   }
 
-  // Check permissions
   permission = await Geolocator.checkPermission();
   if (permission == LocationPermission.denied) {
     permission = await Geolocator.requestPermission();
@@ -364,22 +366,42 @@ Future<void> loadSuperCategories() async {
   }
 
   if (permission == LocationPermission.deniedForever) {
-    Utils.showCustomTosst("Location permissions are permanently denied");
+    Utils.showCustomTosst("Location permanently denied");
     return;
   }
 
-  // Get location
+  // ✅ GET LAT LNG
   Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high);
 
-  print("📍 Location Found: ${position.latitude}, ${position.longitude}");
+  double lat = position.latitude;
+  double lng = position.longitude;
 
-  latitudeController.text = position.latitude.toString();
-  longitudeController.text = position.longitude.toString();
+  print("📍 Location: $lat , $lng");
+
+  latitudeController.text = lat.toString();
+  longitudeController.text = lng.toString();
+
+  // 🔥 NEW: GET ADDRESS FROM LAT LNG
+  List<Placemark> placemarks =
+      await placemarkFromCoordinates(lat, lng);
+
+  if (placemarks.isNotEmpty) {
+    Placemark place = placemarks.first;
+
+    print("📍 State: ${place.administrativeArea}");
+    print("📍 City: ${place.locality}");
+
+    // ✅ SET STATE & CITY
+    selectedState.value = CommonModel(name: place.administrativeArea);
+    selectedCity.value = CommonModel(name: place.locality);
+
+    stateNameController.text = place.administrativeArea ?? "";
+    cityNameController.text = place.locality ?? "";
+  }
 
   update();
 }
-
   
 
   getFromGallery(isCamera, booking_id) async {
@@ -479,11 +501,7 @@ Future<void> postMarketPlaceProduct() async {
     Utils.showCustomTosstError("Please select main category");
     return;
   }
-  if (selectedBrands.value.id == null) {
-    Utils.showCustomTosstError("Please select brand");
-    return;
-  }
-
+  
   // -------------------------
   //   IMAGE PATH
   // -------------------------
@@ -520,7 +538,7 @@ Future<void> postMarketPlaceProduct() async {
     "bar_code": barCodeController.text,
     "mp_category_id": selectedMainCategory.value.id ?? 0,
     "mp_sub_category_id": selectedSubCategory.value.id ?? 0,
-    "brand_id": selectedBrands.value.id ?? 0,
+    "brand_id": null,
     "state_name": selectedState.value.name ?? "",
     "city_name": selectedCity.value.name ?? "",
     "latitude": latitudeController.text,
@@ -528,11 +546,14 @@ Future<void> postMarketPlaceProduct() async {
     "created_at": DateTime.now().toIso8601String(),
     "updated_at": DateTime.now().toIso8601String(),
     "user_id": int.tryParse(userId) ?? 0,
-    "created_by": 1,
-    "created_by_id": 1,
-    "updated_by": 1,
-    "updated_by_id": 1
+    "created_by": int.tryParse(userId) ?? 0,
+    "created_by_id": int.tryParse(userId) ?? 0,
+    "updated_by": int.tryParse(userId) ?? 0,
+    "updated_by_id": int.tryParse(userId) ?? 0
   };
+
+
+
 
   print("=== FINAL PARAM SENT TO API ===");
   print(param);
@@ -584,8 +605,10 @@ Future<void> loadMarketPlaceProducts() async {
   print("📦 Loading marketplace products...");
 
   try {
+    isLoading.value = true;  // ✅ Set loading to true
+    
     String keyword = searchController.text.trim();
-
+  
     Map<String, dynamic> params = {
       "access_token": access_token,
       "return_all": "false",
@@ -598,24 +621,22 @@ Future<void> loadMarketPlaceProducts() async {
 
     // Decide search type
     if (keyword.isNotEmpty) {
+      // if user types only "#", don't call API
+      if (keyword == "#") {
+        return;
+      }
 
-  // if user types only "#", don't call API
-  if (keyword == "#") {
-    return;
-  }
-
-  if (keyword.startsWith("#") && keyword.length > 1) {
-    params["hashtag"] = keyword;
-  } else {
-    params["title"] = keyword;
-  }
-}
+      if (keyword.startsWith("#") && keyword.length > 1) {
+        params["hashtag"] = keyword;
+      } else {
+        params["title"] = keyword;
+      }
+    }
 
     Map<String, dynamic>? response =
         await WebServicesHelper().getMarketPlaceProduct(params);
 
     if (response != null && response['status'] == 200) {
-
       productList.clear();
       filteredProductList.clear();
 
@@ -629,11 +650,11 @@ Future<void> loadMarketPlaceProducts() async {
     }
   } catch (e) {
     print("Error: $e");
+  } finally {
+    isLoading.value = false;  // ✅ Set loading to false
+    update();
   }
-
-  update();
 }
-
 
 // update product 
 Future<void> updateMarketPlaceProduct(int productId) async {
@@ -641,7 +662,7 @@ Future<void> updateMarketPlaceProduct(int productId) async {
 
   print("=== Starting Product Update for ID: $productId ===");
 
-  // Validation same as Post
+  // ---------------- VALIDATION ----------------
   if (titleController.text.isEmpty) {
     Utils.showCustomTosst("Please enter product title");
     return;
@@ -652,48 +673,62 @@ Future<void> updateMarketPlaceProduct(int productId) async {
     return;
   }
 
-  // Image path
+  // ---------------- IMAGE ----------------
   String imagePath = "";
   if (fileList.isNotEmpty) {
     imagePath = fileList.first.path ?? "";
   }
 
-  // Build param
- final param = {
-  "product_id": productId.toString(),
-  "access_token": access_token,
+  // ---------------- GET ORIGINAL PRODUCT ----------------
+  ProductModel? originalProduct =
+      productList.firstWhereOrNull((p) => p.id == productId);
 
-  "title": titleController.text,
-  "description": decriptionController.text,
-  "product_code": productCodeController.text,
-  "self_life": selfLifeController.text,
-  "manufacturer_details": manufacturerDetailsController.text,
-  "discount_price": productOfferpriceController.text.isNotEmpty
-      ? productOfferpriceController.text
-      : "0",
-  "discount_percentage": discountPercentageController.text,
-  "price": double.tryParse(productpriceController.text) ?? 0.0,
-  "images": imagePath,
-  "logo": imagePath,
-  "compositions": compositionsController.text,
-  "sizes": sizesController.text,
-  "quantity": int.tryParse(quantityController.text) ?? 0,
-  "company_name": companyNameController.text,
-  "strength": strengthController.text,
-  "pack_size": int.tryParse(packSizeController.text) ?? 0,
-  "specification": [],
-  "bar_code": barCodeController.text,
-  "mp_category_id": selectedMainCategory.value.id ?? 0,
-  "mp_sub_category_id": selectedSubCategory.value.id ?? 0,
-  "brand_id": selectedBrands.value.id ?? 0,
-  "state_name": selectedState.value.name ?? "",
-  "city_name": selectedCity.value.name ?? "",
-  "latitude": latitudeController.text,
-  "longitude": longitudeController.text,
+  // ---------------- FINAL PARAM ----------------
+  final param = {
+    "product_id": productId.toString(),
+    "access_token": access_token,
 
-  // ✔ update_at only
-  "updated_at": DateTime.now().toIso8601String(),
-};
+    "title": titleController.text,
+    "description": decriptionController.text,
+    "product_code": productCodeController.text,
+    "self_life": selfLifeController.text,
+    "manufacturer_details": manufacturerDetailsController.text,
+    "discount_price": productOfferpriceController.text.isNotEmpty
+        ? productOfferpriceController.text
+        : "0",
+    "discount_percentage": discountPercentageController.text,
+    "price": double.tryParse(productpriceController.text) ?? 0.0,
+
+    "images": imagePath,
+    "logo": imagePath,
+
+    "compositions": compositionsController.text,
+    "sizes": sizesController.text,
+    "quantity": int.tryParse(quantityController.text) ?? 0,
+    "company_name": companyNameController.text,
+    "strength": strengthController.text,
+    "pack_size": int.tryParse(packSizeController.text) ?? 0,
+    "specification": [],
+
+    "bar_code": barCodeController.text,
+    "mp_category_id": selectedMainCategory.value.id ?? 0,
+    "mp_sub_category_id": selectedSubCategory.value.id ?? 0,
+    "brand_id": selectedBrands.value.id ?? 0,
+
+    "state_name": selectedState.value.name ?? "",
+    "city_name": selectedCity.value.name ?? "",
+    "latitude": latitudeController.text,
+    "longitude": longitudeController.text,
+
+    // ✅ IMPORTANT FIELDS
+    "created_at": originalProduct?.createdAt ??
+        DateTime.now().toIso8601String(),
+    "updated_at": DateTime.now().toIso8601String(),
+
+    // 🔥🔥 FIX (THIS WAS MISSING)
+    "updated_by": 1,
+    "updated_by_id": 1,
+  };
 
   print("=== FINAL PUT PARAM ===");
   print(param);
@@ -701,26 +736,41 @@ Future<void> updateMarketPlaceProduct(int productId) async {
   showLoaderDialog(context!);
 
   try {
-    var response = await WebServicesHelper().updateMarketPlaceProduct(param);
+    isLoading.value = true;
+
+    var response =
+        await WebServicesHelper().updateMarketPlaceProduct(param);
 
     hideProgress(context);
 
     if (response != null && response["status"] == 200) {
-      Utils.showCustomTosst("Product updated successfully");
-      Get.back(); // Close screen
-      await loadMarketPlaceProducts(); // Refresh list
+      Utils.showCustomTosst("✅ Product updated successfully");
+
+      Get.back(); // close screen
+
+      await loadMarketPlaceProducts(); // refresh list
     } else {
-      Utils.showCustomTosst(response?["message"] ?? "Failed to update");
+      Utils.showCustomTosst(
+          response?["message"] ?? "❌ Failed to update");
     }
   } catch (e) {
     hideProgress(context);
     print("PUT Error: $e");
+
+    Utils.showCustomTosst("❌ Error updating product");
+  } finally {
+    isLoading.value = false;
+    update();
   }
 }
 // PREFILL ALL FIELDS FOR EDIT PRODUCT
-void loadProductForEdit(ProductModel product) {
+Future loadProductForEdit(ProductModel product) async {
   print("📌 Loading product in edit mode: ${product.id}");
 
+  // Store original created_at in a temporary variable
+  _originalCreatedAt = product.createdAt;
+  _originalProductId = product.id;
+  
   // Basic Info
   titleController.text = product.title ?? "";
   nameController.text = product.name ?? "";
@@ -744,8 +794,10 @@ void loadProductForEdit(ProductModel product) {
   discountPercentageController.text = product.discountPercentage ?? "";
 
   // Location
-  selectedState.value.name = product.stateName;
-  selectedCity.value.name = product.cityName;
+  selectedState.value = CommonModel(name: product.stateName, id: 0);
+  selectedCity.value = CommonModel(name: product.cityName, id: 0);
+  stateNameController.text = product.stateName ?? "";
+  cityNameController.text = product.cityName ?? "";
   latitudeController.text = product.latitude ?? "";
   longitudeController.text = product.longitude ?? "";
 
@@ -754,8 +806,20 @@ void loadProductForEdit(ProductModel product) {
   manufacturerDetailsController.text = product.manufacturerDetails ?? "";
 
   // Dropdown selections (IDs only)
-  selectedMainCategory.value.id = product.mpCategoryId;
-  selectedSubCategory.value.id = product.mpSubCategoryId;
+ // ✅ Set category properly
+selectedMainCategory.value = CommonModel(
+  id: product.mpCategoryId,
+);
+
+// 🔥 IMPORTANT: Load subcategories FIRST
+if (product.mpCategoryId != null) {
+  await loadSubCategories(product.mpCategoryId.toString());
+}
+
+// ✅ Then set subcategory
+selectedSubCategory.value = CommonModel(
+  id: product.mpSubCategoryId,
+);
   selectedBrands.value.id = product.brandId;
 
   // Image
@@ -767,13 +831,21 @@ void loadProductForEdit(ProductModel product) {
   update();
 }
 
-
+// Add these variables at the top of your controller
+String? _originalCreatedAt;
+int? _originalProductId;
 // Petch api for 
 // Activate or Deactivate Product
+
 Future<void> activateDeactivateProduct(int productId, bool activate) async {
   print("🔄 Updating product status... ID: $productId | Activate: $activate");
 
+  // Show loading toast
+  Utils.showCustomTosst(activate ? "Activating product..." : "Deactivating product...");
+
   try {
+    isLoading.value = true;
+    
     Map<String, dynamic>? response =
         await WebServicesHelper().petchProductById({
       "product_id": productId,
@@ -782,23 +854,88 @@ Future<void> activateDeactivateProduct(int productId, bool activate) async {
     });
 
     if (response != null && response["status"] == 200) {
+      // Success toast with proper styling
       Utils.showCustomTosst(
-          activate ? "Product activated successfully" : "Product deactivated");
+        activate ? "✓ Product activated successfully" : "✓ Product deactivated successfully",
+      );
 
       // Refresh product list
       await loadMarketPlaceProducts();
     } else {
-      Utils.showCustomTosst(response?["message"] ?? "Failed to update status");
+      // Error toast
+      Utils.showCustomTosstError(
+        response?["message"] ?? "Failed to update product status",
+      );
     }
   } catch (e) {
     print("❌ Error: $e");
-    Utils.showCustomTosst("Error updating product status");
+    // Error toast
+    Utils.showCustomTosstError("Error updating product status. Please try again.");
+  } finally {
+    isLoading.value = false;
+    update();
+  }
+}
+
+
+Future<void> searchCity(String input) async {
+  if (input.isEmpty) return;
+
+  final response =
+      await WebServicesHelper().getPlaceAutocomplete(input);
+
+  final data = jsonDecode(response.body);
+
+ placeSuggestions.value = data['predictions'] ?? [];
+}
+
+Future<void> selectPlace(String placeId) async {
+  final response =
+      await WebServicesHelper().getPlaceDetails(placeId);
+
+  if (response.statusCode != 200) {
+    print("❌ API Error");
+    return;
+  }
+
+  final data = jsonDecode(response.body);
+
+  /// ✅ CHECK STATUS FIRST
+  if (data['status'] != "OK") {
+    print("❌ Google API Error: ${data['status']}");
+    return;
+  }
+
+  /// ✅ SAFE ACCESS
+  final result = data['result'];
+
+  if (result == null || result['geometry'] == null) {
+    print("❌ Invalid result data");
+    return;
+  }
+
+  double lat = result['geometry']['location']['lat'];
+  double lng = result['geometry']['location']['lng'];
+
+  latitudeController.text = lat.toString();
+  longitudeController.text = lng.toString();
+
+  /// 🔥 GET CITY/STATE
+  List<Placemark> placemarks =
+      await placemarkFromCoordinates(lat, lng);
+
+  if (placemarks.isNotEmpty) {
+    Placemark place = placemarks.first;
+
+    selectedCity.value = CommonModel(name: place.locality);
+    selectedState.value = CommonModel(name: place.administrativeArea);
+
+    cityNameController.text = place.locality ?? "";
+    stateNameController.text = place.administrativeArea ?? "";
   }
 
   update();
 }
-
-
 
 
   // Method to clear form after submission

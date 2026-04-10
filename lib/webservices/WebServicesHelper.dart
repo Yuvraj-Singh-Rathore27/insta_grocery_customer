@@ -1751,6 +1751,21 @@ class WebServicesHelper {
     }
   }
 
+  Future<dynamic> getPlaceAutocomplete(String input) async {
+  final url =
+      "${ApiUrl.autoCompleteApi}?input=$input&key=${ApiUrl.mapApiKey}";
+
+  return await http.get(Uri.parse(url));
+}
+
+Future<dynamic> getPlaceDetails(String placeId) async {
+  final url =
+      "${ApiUrl.placeDetailsApi}?place_id=$placeId&key=${ApiUrl.mapApiKey}";
+
+  print("URL: $url"); // debug
+
+  return await http.get(Uri.parse(url));
+}
   Future<Map<String, dynamic>?> getBannerList(
       Map<String, dynamic> param) async {
     String url = ApiUrl.bannerListApi + "banner_type=" + param['banner_type'];
@@ -4217,6 +4232,480 @@ Future<Map<String, dynamic>?> postApplySkillProgram(
       return res;
     }
   }
+
+// gigs works 
+
+
+/// 🔥 GET GIGS SUPER CATEGORY
+/// This API fetches all active gig super categories
+Future<Map<String, dynamic>?> getGigsSuperCategory(
+    Map<String, dynamic> param) async {
+
+  final String url = ApiUrl.getGigsSuperCategory;
+
+  Utils().customPrint("Gigs SuperCategory API => $url");
+
+  try {
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("Response => ${response.body}");
+
+    // ✅ SUCCESS
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+
+    // 🔐 AUTH ERROR
+    else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint("Unauthorized Access");
+      return null;
+    }
+
+    // ⚠️ OTHER ERRORS
+    else {
+      return json.decode(response.body);
+    }
+
+  } catch (e) {
+    Utils().customPrint("Exception => $e");
+    return null;
+  }
+}
+
+/// 🔥 GET GIGS CATEGORY (BASED ON SUPER CATEGORY)
+Future<Map<String, dynamic>?> getGigsCategory(
+    Map<String, dynamic> param) async {
+
+  final String baseUrl = ApiUrl.getGigsCategory;
+
+  /// ✅ Example param: { "super_category_id": 1 }
+  Uri uri = Uri.parse(baseUrl).replace(
+    queryParameters: param.map(
+      (key, value) => MapEntry(key, value.toString()),
+    ),
+  );
+
+  Utils().customPrint("Category URL => $uri");
+
+  try {
+    final response = await http.get(uri, headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    });
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      return json.decode(response.body);
+    }
+
+  } catch (e) {
+    Utils().customPrint("Error => $e");
+    return null;
+  }
+}
+
+/// 🔥 GET GIGS SUBCATEGORY (BASED ON CATEGORY)
+Future<Map<String, dynamic>?> getGigsSubCategory(
+    Map<String, dynamic> param) async {
+
+  final String baseUrl = ApiUrl.getGigsSubCategory;
+
+  /// ✅ Example param: { "category_id": 5 }
+  Uri uri = Uri.parse(baseUrl).replace(
+    queryParameters: param.map(
+      (key, value) => MapEntry(key, value.toString()),
+    ),
+  );
+
+  Utils().customPrint("SubCategory URL => $uri");
+
+  try {
+    final response = await http.get(uri, headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    });
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      return json.decode(response.body);
+    }
+
+  } catch (e) {
+    Utils().customPrint("Error => $e");
+    return null;
+  }
+}
+
+
+Future<Map<String, dynamic>?> postGigsWorksProfile(
+      Map<String, dynamic> param) async {
+    String url = ApiUrl.addGigsProfile;
+    Utils().customPrint('Gigs works porfile  =>$url');
+    Utils().customPrint('parma =>$param');
+    final response =
+        await http.post(Uri.parse(url), body: json.encode(param), headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "Authorization": 'Bearer ${param['accessToken']}',
+    });
+    Utils().customPrint("response ====${response.body}");
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      final res = json.decode(response.body.toString());
+      // return
+      return res;
+    }
+  }
+
+
+  /// 🔥 UPDATE GIG PROFILE
+Future<Map<String, dynamic>?> updateGigsWorksProfile(
+    Map<String, dynamic> param, int gigId) async {
+  try {
+    final url = "${ApiUrl.updateGigsProfile}$gigId";
+
+    print("UPDATE URL => $url");
+    print("PARAM => $param");
+
+    final response = await http.put(
+      Uri.parse(url),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${param["accessToken"]}",
+      },
+      body: jsonEncode(param),
+    );
+
+    print("STATUS CODE => ${response.statusCode}");
+    print("RAW RESPONSE => ${response.body}");
+
+    if (response.body.isEmpty) {
+      return {
+        "status": response.statusCode,
+        "message": "Empty response"
+      };
+    }
+
+    return jsonDecode(response.body);
+
+  } catch (e) {
+    print("UPDATE ERROR => $e");
+    return null;
+  }
+}
+
+
+
+Future<Map<String, dynamic>?> getUserGigProfile(
+    Map<String, dynamic> param) async {
+
+  try {
+    /// 🔴 ONLY access_token REQUIRED
+    if (param['access_token'] == null ||
+        param['access_token'].toString().isEmpty) {
+      return {
+        'status': 401,
+        'data': null,
+        'message': 'Access token is required'
+      };
+    }
+
+    /// 🔥 BUILD URL (OPTIONAL USER ID)
+    String baseUrl = ApiUrl.getGigsProfile;
+    String url;
+
+    if (param['user_id'] != null &&
+        param['user_id'].toString().isNotEmpty) {
+
+      /// ✅ WITH USER ID
+      url =
+          "$baseUrl?user_id=${param['user_id']}&display_type=active&page=1&size=50";
+
+    } else {
+
+      /// ✅ WITHOUT USER ID (DEFAULT PROFILE)
+      url =
+          "$baseUrl?is_active=true&page=1&size=50";
+    }
+
+    Utils().customPrint("✅ URL => $url");
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Authorization": "Bearer ${param['access_token']}",
+      },
+    );
+
+    Utils().customPrint("STATUS => ${response.statusCode}");
+    Utils().customPrint("BODY => ${response.body}");
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      if (data['data'] != null) {
+
+        /// 🔥 LIST HANDLE
+        if (data['data'] is List) {
+          List list = data['data'];
+
+          if (list.isNotEmpty) {
+            return {
+              'status': 200,
+              'data': list,
+              'message': 'Profile found'
+            };
+          }
+        }
+
+        /// 🔥 OBJECT HANDLE
+        if (data['data'] is Map<String, dynamic>) {
+          return {
+            'status': 200,
+            'data': data['data'],
+            'message': 'Profile found'
+          };
+        }
+      }
+
+      return {
+        'status': 404,
+        'data': null,
+        'message': 'No profile found'
+      };
+    }
+
+    return {
+      'status': response.statusCode,
+      'data': null,
+      'message': 'Something went wrong'
+    };
+
+  } catch (e) {
+    Utils().customPrint("❌ ERROR => $e");
+
+    return {
+      'status': 500,
+      'data': null,
+      'message': 'Internal error'
+    };
+  }
+}
+
+
+Future<Map<String, dynamic>?> hireGigsWorksProfile(
+      Map<String, dynamic> param) async {
+    String url = ApiUrl.hireGigs;
+    Utils().customPrint('hire Gigs works porfile  =>$url');
+    Utils().customPrint('parma =>$param');
+    final response =
+        await http.post(Uri.parse(url), body: json.encode(param), headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "Authorization": 'Bearer ${param['accessToken']}',
+    });
+    Utils().customPrint("response ====${response.body}");
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      final res = json.decode(response.body.toString());
+      // return
+      return res;
+    }
+  }
+
+
+Future<Map<String, dynamic>?> getHireGigs(
+    Map<String, dynamic> param) async {
+
+  try {
+    /// 🔴 ONLY access_token REQUIRED
+    if (param['access_token'] == null ||
+        param['access_token'].toString().isEmpty) {
+      return {
+        'status': 401,
+        'data': null,
+        'message': 'Access token is required'
+      };
+    }
+
+    /// 🔥 BUILD URL (OPTIONAL USER ID)
+    String baseUrl = ApiUrl.getHiredGigs;
+    String url;
+
+    if (param['user_id'] != null &&
+        param['user_id'].toString().isNotEmpty) {
+
+      /// ✅ WITH USER ID
+      url =
+          "$baseUrl?user_id=${param['user_id']}&display_type=active&page=1&size=50";
+
+    } else {
+
+      /// ✅ WITHOUT USER ID (DEFAULT PROFILE)
+      url =
+          "$baseUrl?display_type=active&page=1&size=50";
+    }
+
+    Utils().customPrint("✅ URL => $url");
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Authorization": "Bearer ${param['access_token']}",
+      },
+    );
+
+    Utils().customPrint("STATUS => ${response.statusCode}");
+    Utils().customPrint("BODY => ${response.body}");
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+
+      if (data['data'] != null) {
+
+        /// 🔥 LIST HANDLE
+        if (data['data'] is List) {
+          List list = data['data'];
+
+          if (list.isNotEmpty) {
+            return {
+              'status': 200,
+              'data': list,
+              'message': 'Profile found'
+            };
+          }
+        }
+
+        /// 🔥 OBJECT HANDLE
+        if (data['data'] is Map<String, dynamic>) {
+          return {
+            'status': 200,
+            'data': data['data'],
+            'message': 'Profile found'
+          };
+        }
+      }
+
+      return {
+        'status': 404,
+        'data': null,
+        'message': 'No profile found'
+      };
+    }
+
+    return {
+      'status': response.statusCode,
+      'data': null,
+      'message': 'Something went wrong'
+    };
+
+  } catch (e) {
+    Utils().customPrint("❌ ERROR => $e");
+
+    return {
+      'status': 500,
+      'data': null,
+      'message': 'Internal error'
+    };
+  }
+}
+
+Future<Map<String, dynamic>?> updateGigsWorks(
+    Map<String, dynamic> param, int gigId) async {
+  try {
+    final url = "${ApiUrl.updateHiredGigs}$gigId";
+
+    print("UPDATE hired gigs => $url");
+    print("PARAM => $param");
+
+    final response = await http.put(
+      Uri.parse(url),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${param["accessToken"]}",
+      },
+      body: jsonEncode(param),
+    );
+
+    print("STATUS CODE => ${response.statusCode}");
+    print("RAW RESPONSE => ${response.body}");
+
+    if (response.body.isEmpty) {
+      return {
+        "status": response.statusCode,
+        "message": "Empty response"
+      };
+    }
+
+    return jsonDecode(response.body);
+
+  } catch (e) {
+    print("UPDATE ERROR => $e");
+    return null;
+  }
+}
+
+
+Future<Map<String, dynamic>?> toggleGigActivation(
+    Map<String, dynamic> param,
+    bool activate,
+) async {
+
+  String url =
+      "${ApiUrl.actdeactGigs}${param['hire_id']}/status?activate=$activate";
+
+  Utils().customPrint('ACTIVATE/DEACTIVATE API URL => $url');
+
+  try {
+    final response = await http.patch(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Authorization": 'Bearer ${param['accessToken']}',
+      },
+    );
+
+    Utils().customPrint("Response ==== ${response.body}");
+    Utils().customPrint("Status ==== ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      return {
+        "status": response.statusCode,
+        "message": activate
+            ? "Failed to activate hire"
+            : "Failed to deactivate hire"
+      };
+    }
+  } catch (e) {
+    return {
+      "status": 500,
+      "message": "Network error: $e"
+    };
+  }
+}
+
+
+
+
+
 
 
 

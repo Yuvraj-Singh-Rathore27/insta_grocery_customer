@@ -1,19 +1,31 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../controller/mp_add_product_controller.dart';
-import '../../../res/AppColor.dart';
-import '../../../res/AppDimens.dart';
-import '../../../toolbar/TopBar.dart';
-import 'add_product.dart';
+import 'package:insta_grocery_customer/controller/sellercontroller.dart';
+import 'package:insta_grocery_customer/controller/mp_add_product_controller.dart';
 
-class SellerProductListingPage extends StatelessWidget {
-  final MpAddProductController buyerController = Get.find();
+import 'package:insta_grocery_customer/res/AppColor.dart';
+import 'package:insta_grocery_customer/res/AppDimens.dart';
+import 'package:insta_grocery_customer/toolbar/TopBar.dart';
+import '../../../model/ProductModel.dart';
+import 'package:insta_grocery_customer/screen/market_place/seller/seller_product_listing.dart';
+
+
+class FavouriteProduct extends StatefulWidget {
+  const FavouriteProduct({super.key});
+
+  @override
+  State<FavouriteProduct> createState() => _FavouriteProductState();
+}
+
+class _FavouriteProductState extends State<FavouriteProduct> {
+  final SellerController sellerController = Get.put(SellerController());
+  final MpAddProductController productController = Get.put(MpAddProductController());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: TopBar(
         title: '',
         menuicon: false,
@@ -22,261 +34,363 @@ class SellerProductListingPage extends StatelessWidget {
         is_wallaticon: true,
         is_supporticon: false,
         is_whatsappicon: false,
-        onPressed: () {},
-        onTitleTapped: () {},
+        onPressed: () => {},
+        onTitleTapped: () => {},
       ),
-
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await buyerController.loadMarketPlaceProducts();
-        },
-
-        child: SingleChildScrollView(
-          physics: AlwaysScrollableScrollPhysics(),
-          child: Container(
-            margin: EdgeInsets.all(10),
-            child: Column(
-              children: [
-                // ---------------------- SEARCH BAR ----------------------
-                Container(
-                  height: 50,
-                  margin: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: TextField(
-                    controller: buyerController.searchController,
-                    keyboardType: TextInputType.text,
-                    style: TextStyle(
-                      color: AppColor().blackColor,
-                      fontSize: AppDimens().front_regular,
-                    ),
-                    onChanged: (value) {
-                      buyerController.loadMarketPlaceProducts();
-                    },
-                    decoration: InputDecoration(
-                      hintText: "Search products...",
-                      prefixIcon:
-                          Icon(Icons.search, color: Colors.grey.shade700),
-                      filled: true,
-                      fillColor: Colors.grey.shade200,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ),
-
-                // ---------------------- PRODUCT LIST ----------------------
-                Obx(() {
-                  if (buyerController.productList.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 50),
-                        child: Text(
-                          "No products found",
-                          style: TextStyle(
-                              fontSize: 18, color: Colors.grey[700]),
-                        ),
-                      ),
-                    );
-                  }
-
-                  final activeProducts = buyerController.productList
-                      .where((p) => p.isActive)
-                      .toList();
-
-                  final inactiveProducts = buyerController.productList
-                      .where((p) => !p.isActive)
-                      .toList();
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ACTIVE SECTION
-                      if (activeProducts.isNotEmpty)
-                        Padding(
-                          padding:
-                              const EdgeInsets.only(left: 12, top: 10, bottom: 5),
-                          child: Text(
-                            "Active Products",
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      buildProductList(activeProducts),
-
-                      SizedBox(height: 20),
-
-                      // INACTIVE SECTION
-                      if (inactiveProducts.isNotEmpty)
-                        Padding(
-                          padding:
-                              const EdgeInsets.only(left: 12, top: 10, bottom: 5),
-                          child: Text(
-                            "Inactive Products",
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      buildProductList(inactiveProducts),
-                    ],
-                  );
-                }),
-              ],
-            ),
-          ),
-        ),
-      ),
-
-      // ---------------------- BOTTOM ADD BUTTON ----------------------
-      bottomNavigationBar: Container(
-        height: 80,
-        color: Colors.white,
-        child: Center(
-          child: GestureDetector(
-            onTap: () => Get.to(() => AddProduct()),
-            child: Container(
-              height: 50,
-              width: 300,
-              decoration: BoxDecoration(
-                color: AppColor().colorPrimary,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Center(
-                child: Text(
-                  'Add Product',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColor().whiteColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
+      body: SingleChildScrollView(
+        child: Container(
+          margin: const EdgeInsets.all(10),
+          child: Column(
+            children: [
+              // Header Section
+              // Buyer Interested Section
+              _buildInterestedProductsSection(),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // ==========================================================
-  // PRODUCT CARD BUILDER
-  // ==========================================================
-  Widget buildProductList(List<dynamic> list) {
-    return ListView.builder(
-      physics: NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      itemCount: list.length,
-      itemBuilder: (context, index) {
-        final item = list[index];
-
-        return Container(
-          margin: EdgeInsets.only(bottom: 12),
-          padding: EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-            ],
-          ),
-
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // IMAGE
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  item.images ?? "",
-                  height: 100,
-                  width: 100,
-                  fit: BoxFit.cover,
-                  errorBuilder: (c, o, s) =>
-                      Icon(Icons.image_not_supported, size: 50),
-                ),
-              ),
-
-              SizedBox(width: 12),
-
-              // DETAILS
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      capitalizeFirstLetter(item.title ?? ''),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    SizedBox(height: 5),
-                    Text(
-                      "₹ ${item.price ?? 0}",
-                      style: TextStyle(
-                          fontSize: 15, color: AppColor().colorPrimary),
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      item.cityName ?? 'Location Not Provided',
-                      style:
-                          TextStyle(color: Colors.grey[600], fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ACTIONS (EDIT + TOGGLE)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+  Widget _buildInterestedProductsSection() {
+    return Obx(() => Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(5),
+        color: AppColor().whiteColor,
+      ),
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(5),
+              color: AppColor().whiteColor,
+            ),
+            width: double.infinity,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // EDIT BUTTON
-                  ElevatedButton(
-                    onPressed: () {
-                      Get.to(() =>
-                          AddProduct(product: item, isEdit: true));
-                    },
-                    child: Icon(Icons.edit),
-                  ),
-
-                  // TOGGLE BUTTON
-                  IconButton(
-                    icon: Icon(
-                      item.isActive
-                          ? Icons.toggle_on
-                          : Icons.toggle_off,
-                      color: item.isActive ? Colors.green : Colors.grey,
-                      size: 35,
-                    ),
-                    onPressed: () async {
-                      await buyerController.activateDeactivateProduct(
-                        item.id!,
-                        !item.isActive,
-                      );
-                      buyerController.loadMarketPlaceProducts();
-                    },
-                  ),
-
-                  SizedBox(height: 20),
                   Text(
-                    timeAgo(item.createdAt ?? ""),
-                    style:
-                        TextStyle(color: Colors.grey[600], fontSize: 12),
+                    "Buyer Interested (${sellerController.enquiriesCount.value})",
+                    style: TextStyle(
+                      fontSize: AppDimens().front_medium,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: "Helvetica",
+                      color: Colors.black,
+                    ),
+                  ),
+                  // Refresh button
+                  IconButton(
+                    onPressed: () => sellerController.refreshInterestedProducts(),
+                    icon: Icon(Icons.refresh, color: Colors.blue),
+                    tooltip: 'Refresh',
                   ),
                 ],
-              )
-            ],
+              ),
+            ),
           ),
-        );
-      },
+
+          if (sellerController.isLoading.value)
+            _buildLoadingIndicator()
+          else if (sellerController.errorMessage.isNotEmpty)
+            _buildErrorWidget()
+          else if (sellerController.interestedProducts.isEmpty)
+            _buildEmptyWidget()
+          else
+            _buildInterestedProductsList(),
+        ],
+      ),
+    ));
+  }
+
+  Widget _buildLoadingIndicator() {
+    return Container(
+      height: 100,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 10),
+            Text(
+              'Loading interested buyers...',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  Widget _buildErrorWidget() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red, size: 40),
+          SizedBox(height: 10),
+          Text(
+            sellerController.errorMessage.value,
+            style: TextStyle(color: Colors.red),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () => sellerController.refreshInterestedProducts(),
+            child: Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyWidget() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Icon(Icons.people_outline, color: Colors.grey, size: 40),
+          SizedBox(height: 10),
+          Text(
+            'No interested buyers found',
+            style: TextStyle(color: Colors.grey, fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 5),
+          Text(
+            'When buyers show interest in your products, they will appear here.',
+            style: TextStyle(color: Colors.grey, fontSize: 12),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInterestedProductsList() {
+    return Obx(() => ListView.builder(
+      physics: NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      padding: EdgeInsets.all(12),
+      itemCount: sellerController.interestedProducts.length,
+      itemBuilder: (context, index) {
+        final product = sellerController.interestedProducts[index];
+        return _buildProductItem(product);
+      },
+    ));
+  }
+
+  Widget _buildProductItem(ProductModel product) {
+    return GestureDetector(
+      // onTap: () {
+      //   // Navigate to product details if needed
+      //   Get.to(() => SellerProductListingPage());
+      // },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product Image with error handling
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: _buildProductImage(product),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                   
+                    capitalizeFirstLetter(product.title ?? product.name ?? 'Product ${product.product_id}'),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 4),
+                  _buildPriceWidget(product),
+                  SizedBox(height: 4),
+                  if (product.cityName != null || product.stateName != null)
+                    _buildLocationWidget(product),
+                  SizedBox(height: 4),
+                  Text(
+                    product.description ?? "Buyer interested in this product",
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Icon(
+                  product.isInterested ? Icons.favorite : Icons.favorite_border,
+                  color: product.isInterested ? Colors.red : Colors.grey[700],
+                ),
+                SizedBox(height: 40),
+                Text(
+                  timeAgo(product.createdAt ?? ''),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductImage(ProductModel product) {
+    // Check if we have real images or just placeholder
+    bool hasRealImages = product.image_url != null && 
+                        product.image_url!.isNotEmpty &&
+                        !(product.image_url!.first.contains('example.com'));
+    
+    if (hasRealImages) {
+      return Image.network(
+        product.image_url!.first,
+        height: 80,
+        width: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildPlaceholderImage();
+        },
+      );
+    } else {
+      return _buildPlaceholderImage();
+    }
+  }
+
+  Widget _buildPlaceholderImage() {
+    return Container(
+      height: 80,
+      width: 80,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey[200],
+      ),
+      child: Icon(Icons.shopping_bag, color: Colors.grey[400], size: 40),
+    );
+  }
+
+  Widget _buildPriceWidget(ProductModel product) {
+    // Check if we have real price or placeholder
+    bool hasRealPrice = product.price != null && 
+                       product.price != "0" && 
+                       product.price != "Contact for price";
+    
+    if (hasRealPrice) {
+      return Row(
+        children: [
+          if (product.discount_price != null && product.discount_price != "0")
+            Text(
+              '₹${product.price ?? '0'}',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+                decoration: TextDecoration.lineThrough,
+              ),
+            ),
+          SizedBox(width: 8),
+          Text(
+            '₹${product.discount_price ?? product.price ?? '0'}',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: Colors.green,
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Text(
+        product.price ?? "Contact for price",
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.orange,
+        ),
+      );
+    }
+  }
+
+  Widget _buildLocationWidget(ProductModel product) {
+    return Row(
+      children: [
+        Icon(Icons.location_on, size: 14, color: Colors.grey),
+        SizedBox(width: 4),
+        Text(
+          '${product.cityName ?? ''}${product.cityName != null && product.stateName != null ? ', ' : ''}${product.stateName ?? ''}',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryBox(String value, String label, Color bgColor) {
+    return Expanded(
+      child: Container(
+        height: 100,
+        padding: EdgeInsets.symmetric(vertical: 8),
+        margin: EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              value,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black87, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    print("🎯 FavouriteProduct initState called");
   }
 }
 
-// ==========================================================
-// HELPER FUNCTIONS
-// ==========================================================
 String timeAgo(String dateString) {
   try {
     DateTime created = DateTime.parse(dateString);
@@ -289,11 +403,15 @@ String timeAgo(String dateString) {
 
     return "${created.day}/${created.month}/${created.year}";
   } catch (e) {
-    return "";
+    return "Recently";
   }
 }
 
-String capitalizeFirstLetter(String name) {
-  if (name.isEmpty) return "";
-  return name[0].toUpperCase() + name.substring(1);
+String capitalizeFirstLetter(String text) {
+  if (text.isEmpty) return "";
+  return text[0].toUpperCase() + text.substring(1);
 }
+
+
+
+
