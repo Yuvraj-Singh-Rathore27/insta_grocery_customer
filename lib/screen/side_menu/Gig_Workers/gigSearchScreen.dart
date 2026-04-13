@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:insta_grocery_customer/res/AppColor.dart';
+import 'package:insta_grocery_customer/screen/market_place/buyer/buyer_home.dart';
 import '../../../controller/gigs_works_controller.dart';
 import './gig_worker_detail_screen.dart';
 
@@ -15,7 +16,7 @@ class _GigSearchScreenState extends State<GigSearchScreen> {
   final GigsController controller = Get.find<GigsController>();
 
   int selectedFilter = 0;
-  final filters = ["All Workers", "Available Now", "Top Rated"];
+ 
 
   @override
   void initState() {
@@ -25,7 +26,7 @@ class _GigSearchScreenState extends State<GigSearchScreen> {
 
   Future<void> _loadData() async {
     /// Load all gigs
-    await controller.loadMyProfile();
+    await controller.getGigsBySubCategory();
 
     /// Load hired gigs to know which ones are hired by current user
     await controller.getMyHiredGigs();
@@ -114,41 +115,7 @@ class _GigSearchScreenState extends State<GigSearchScreen> {
             ),
 
             /// FILTERS
-            SizedBox(
-              height: 40,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: filters.length,
-                itemBuilder: (context, index) {
-                  final isSelected = selectedFilter == index;
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() => selectedFilter = index);
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 10),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColor().colorPrimary : Colors.white,
-                        borderRadius: BorderRadius.circular(25),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Text(
-                        filters[index],
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : AppColor().colorPrimary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
+            
             const SizedBox(height: 12),
 
             /// COUNT & SORT
@@ -244,7 +211,7 @@ class _GigSearchScreenState extends State<GigSearchScreen> {
                       children: [
                         Expanded(
                           child: Text(
-                            gig['full_name'] ?? "No Name",
+                            capitalizeFirstLetter(gig['full_name'] ?? "No Name"),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -277,7 +244,7 @@ class _GigSearchScreenState extends State<GigSearchScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      gig['title'] ?? "",
+                     capitalizeFirstLetter( gig['title'] ?? "",),
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 13,
@@ -317,7 +284,7 @@ class _GigSearchScreenState extends State<GigSearchScreen> {
               Icon(Icons.location_on, size: 14, color: Colors.grey[500]),
               const SizedBox(width: 4),
               Text(
-                gig['city'] ?? "",
+               capitalizeFirstLetter( gig['city'] ?? ""),
                 style: TextStyle(color: Colors.grey[600], fontSize: 12),
               ),
             ],

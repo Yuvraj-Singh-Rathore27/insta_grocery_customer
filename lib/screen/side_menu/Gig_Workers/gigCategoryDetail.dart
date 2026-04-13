@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:insta_grocery_customer/model/candidate_resume_model.dart';
 import 'package:insta_grocery_customer/res/AppColor.dart';
 import '../../../controller/gigs_works_controller.dart';
 import './gigSearchScreen.dart';
@@ -82,22 +83,15 @@ class CategoryDetailScreen extends StatelessWidget {
         }
         
         // Responsive grid
-        int crossAxisCount;
-        if (isDesktop) {
-          crossAxisCount = 5;
-        } else if (isTablet) {
-          crossAxisCount = 3;
-        } else {
-          crossAxisCount = 2;
-        }
+       int crossAxisCount = 3;
         
         return GridView.builder(
           padding: const EdgeInsets.all(16),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            childAspectRatio: 1.0,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
+            childAspectRatio: 0.72,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
           itemCount: controller.categoryList.length,
           itemBuilder: (context, index) {
@@ -123,6 +117,7 @@ class CategoryDetailScreen extends StatelessWidget {
         onTap: () {
           // Show bottom sheet with subcategories
           _showSubCategoryBottomSheet(context, category, controller);
+          print("Category tapped: ${category.image}");
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -137,11 +132,20 @@ class CategoryDetailScreen extends StatelessWidget {
                   color:  AppColor().colorPrimary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child:  Icon(
-                  Icons.category,
-                  size: 30,
-                  color: AppColor().colorPrimary,
-                ),
+                 child: (category.image != null && category.image.toString().isNotEmpty)
+    ? ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          category.image.toString(),
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.image_not_supported, size: 40);
+          },
+        ),
+      )
+    : const Icon(Icons.image_not_supported, size: 40),
               ),
               const SizedBox(height: 12),
               Text(
@@ -149,6 +153,7 @@ class CategoryDetailScreen extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
+                  
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
@@ -178,8 +183,8 @@ class CategoryDetailScreen extends StatelessWidget {
           minChildSize: 0.5,
           maxChildSize: 0.9,
           builder: (_, scrollController) {
-            final screenWidth = MediaQuery.of(context).size.width;
-            final crossAxisCount = screenWidth < 600 ? 2 : 3;
+           
+            final crossAxisCount =  3;
             
             return Container(
               decoration: const BoxDecoration(
@@ -211,11 +216,21 @@ class CategoryDetailScreen extends StatelessWidget {
                             color: AppColor().colorPrimary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child:  Icon(
-                            Icons.category,
-                            size: 24,
-                            color: AppColor().colorPrimary,
-                          ),
+                           child: (category.image != null && category.image.toString().isNotEmpty)
+    ? ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          category.image.toString(),
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.image_not_supported, size: 40);
+          },
+        ),
+      )
+    : const Icon(Icons.image_not_supported, size: 40),
+  
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -281,7 +296,7 @@ class CategoryDetailScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(16),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: crossAxisCount,
-                          childAspectRatio: 1.0,
+                          childAspectRatio: 0.70,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
@@ -341,11 +356,20 @@ class CategoryDetailScreen extends StatelessWidget {
                 color: AppColor().colorPrimary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child:  Icon(
-                Icons.subdirectory_arrow_right,
-                size: 28,
-                color: AppColor().colorPrimary
-              ),
+               child: (subCategory.image != null && subCategory.image.toString().isNotEmpty)
+    ? ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          subCategory.image.toString(),
+          width: 60,
+          height: 60,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.image_not_supported, size: 40);
+          },
+        ),
+      )
+    : const Icon(Icons.image_not_supported, size: 40),
             ),
             const SizedBox(height: 8),
             Text(
@@ -366,78 +390,5 @@ class CategoryDetailScreen extends StatelessWidget {
   );
 }
 
-  void _showActionBottomSheet(
-  BuildContext context,
-  dynamic subCategory,
-  GigsController controller,
-  dynamic parentCategory,
-) {
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (BuildContext context) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Text(
-              subCategory.name,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              parentCategory.name,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: const Icon(Icons.list_alt, color: Color(0xFF3B82F6)),
-              title: const Text('View All Gigs'),
-              onTap: () {
-                controller.setSubCategory(subCategory.id, subCategory.name);
-                Navigator.pop(context); // Close action bottom sheet
-                Navigator.pop(context); // Close subcategory bottom sheet
-                
-                // Navigate to GigSearchScreen
-                Get.to(() => const GigSearchScreen());
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.add_business, color: Color(0xFF10B981)),
-              title: const Text('Create Gig Profile'),
-              onTap: () {
-                controller.setSubCategory(subCategory.id, subCategory.name);
-                Navigator.pop(context); // Close action bottom sheet
-                Navigator.pop(context); // Close subcategory bottom sheet
-                Get.toNamed('/create-profile');
-              },
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+ 
 }

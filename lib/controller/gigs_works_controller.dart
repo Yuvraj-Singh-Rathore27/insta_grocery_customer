@@ -10,7 +10,8 @@ import '../webservices/WebServicesHelper.dart';
 import '../model/gigs_works_model.dart';
 import '../utills/Utils.dart';
 import '../preferences/UserPreferences.dart';
-
+import 'dart:convert';
+import 'dart:async';
 
 class GigsController extends GetxController {
 
@@ -93,8 +94,12 @@ RxList<Map<String, dynamic>> hiredGigsList = <Map<String, dynamic>>[].obs;
 RxSet<int> hiredGigIds = <int>{}.obs;
 RxBool isLoadingHiredGigs = false.obs;
 RxBool isProfileActive = true.obs;
+RxList placeSuggestions = [].obs;
   
   /// ================= ADD SKILL METHOD =================
+  /// 
+RxBool isFresher = true.obs;
+final experienceController = TextEditingController();
   
   /// ================= INIT =================
   @override
@@ -203,6 +208,18 @@ RxBool isProfileActive = true.obs;
     profileImageList.clear();
     profileImagePath.value = "";
   }
+
+  void setFresher(bool value) {
+  isFresher.value = value;
+
+  if (value) {
+    experienceLevel.value = "0";
+    experienceController.text = "0";
+  } else {
+    experienceLevel.value = "";
+    experienceController.clear();
+  }
+}
 
   /// ================= GET CURRENT LOCATION =================
   Future<void> getCurrentLocation() async {
@@ -447,6 +464,44 @@ RxBool isProfileActive = true.obs;
       isSubCategoryLoading.value = false;
     }
   }
+
+
+  // get gigs by subcategory 
+
+  Future<void> getGigsBySubCategory() async {
+  try {
+    isLoadingProfile.value = true;
+
+    final Map<String, dynamic> param = {
+      "access_token": accessToken,
+      "subcategory_id": selectedSubCategoryId.value, // 🔥 IMPORTANT
+    };
+
+    print("=== FILTER PARAM ===");
+    print(param);
+
+    final res = await WebServicesHelper().getUserGigProfile(param);
+
+    print("=== FILTER RESPONSE ===");
+    print(res);
+
+    if (res != null && res['status'] == 200 && res['data'] != null) {
+      if (res['data'] is List) {
+        gigsList.assignAll(List<Map<String, dynamic>>.from(res['data']));
+      } else {
+        gigsList.assignAll([res['data']]);
+      }
+    } else {
+      gigsList.clear();
+    }
+
+  } catch (e) {
+    print("❌ ERROR => $e");
+    gigsList.clear();
+  } finally {
+    isLoadingProfile.value = false;
+  }
+}
   
   /// =========================================================
   /// 🔥 SET SUB CATEGORY
@@ -508,7 +563,9 @@ RxBool isProfileActive = true.obs;
         "category_id": selectedCategoryId.value,
         "subcategory_id": selectedSubCategoryId.value,
         "skills": selectedSkillsList,
-        "experience_level": experienceLevel.value,
+        "experience_level": isFresher.value
+    ? "0"
+    : experienceController.text,
         "price": double.tryParse(priceController.text) ?? 0,
         "bio": bioController.text.trim(),
         "user_id": int.tryParse(userId) ?? 0,
@@ -578,7 +635,9 @@ RxBool isProfileActive = true.obs;
         "category_id": selectedCategoryId.value,
         "subcategory_id": selectedSubCategoryId.value,
         "skills": selectedSkillsList,
-        "experience_level": experienceLevel.value,
+        "experience_level": isFresher.value
+    ? "0"
+    : experienceController.text,
         "price": double.tryParse(priceController.text) ?? 0,
         "bio": bioController.text.trim(),
         "updated_by": int.tryParse(userId) ?? 0,
@@ -597,7 +656,7 @@ RxBool isProfileActive = true.obs;
           .updateGigsWorksProfile(param, gigId);
 
       if (res != null && res['status'] == 200) {
-        Utils.showCustomTosst("Gig Updated Successfully");
+        Utils.showCustomTosst("Profile Updated Successfully");
         return true;
       } else {
         Utils.showCustomTosstError(
@@ -996,7 +1055,7 @@ Future<bool> updateHireMessage(
     print(res);
 
     if (res != null && res['status'] == 200) {
-      Utils.showCustomTosst("Message Updated Successfully");
+      Utils.showCustomTosst("Message send Successfully");
       return true;
     } else {
       Utils.showCustomTosstError(res?['message'] ?? "Update failed");
@@ -1066,6 +1125,60 @@ void _handleProfileResponse(Map<String, dynamic>? res) {
   } else {
     gigsList.clear();
     hasExistingProfile.value = false;
+  }
+}
+
+
+// these is for show a city serch 
+
+Timer? _debounce;
+
+Future<void> searchCity(String input) async {
+  if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+  _debounce = Timer(const Duration(milliseconds: 500), () async {
+    if (input.isEmpty) return;
+
+    final response =
+        await WebServicesHelper().getPlaceAutocomplete(input);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      placeSuggestions.value = data['predictions'] ?? [];
+    }
+  });
+}
+Future<void> selectPlace(String placeId) async {
+  final response =
+      await WebServicesHelper().getPlaceDetails(placeId);
+
+  if (response.statusCode != 200) return;
+
+  final data = jsonDecode(response.body);
+
+  if (data['status'] != "OK") return;
+
+  final result = data['result'];
+
+  double lat = result['geometry']['location']['lat'];
+  double lng = result['geometry']['location']['lng'];
+
+  latitude.value = lat;
+  longitude.value = lng;
+
+  /// 🔥 GET CITY FROM GEO
+  List<Placemark> placemarks =
+      await placemarkFromCoordinates(lat, lng);
+
+  if (placemarks.isNotEmpty) {
+    Placemark place = placemarks.first;
+
+    /// ✅ SET CITY (IMPORTANT)
+    cityController.text = place.locality ?? "";
+
+    /// ✅ SET ADDRESS
+    locationController.text =
+        "${place.street}, ${place.locality}, ${place.administrativeArea}";
   }
 }
 

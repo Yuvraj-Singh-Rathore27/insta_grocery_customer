@@ -83,20 +83,29 @@ class GigsSubCategoryModel {
   final String name;
   final int? categoryId;
   final String categoryName;
+  final String ?image;
 
   GigsSubCategoryModel({
     required this.id,
     required this.name,
     this.categoryId,
     required this.categoryName,
+    this.image,
   });
 
   factory GigsSubCategoryModel.fromJson(Map<String, dynamic> json) {
+    String ?imageUrl;
+     if (json['image'] != null &&
+        json['image'] is List &&
+        json['image'].isNotEmpty) {
+      imageUrl = json['image'][0]['path']; // ✅ FIX HERE
+    }
     return GigsSubCategoryModel(
       id: json['id'] ?? 0,
       name: json['name'] ?? "",
       categoryId: json['category_id'],
       categoryName: json['gigs_works_category']?['name'] ?? "",
+      image: imageUrl
     );
   }
 }
@@ -105,21 +114,33 @@ class GigsCategoryModel {
   final int id;
   final String name;
   final int? superCategoryId;
+  final String? image;
 
   GigsCategoryModel({
     required this.id,
     required this.name,
     this.superCategoryId,
+    this.image,
   });
 
   factory GigsCategoryModel.fromJson(Map<String, dynamic> json) {
+     String? imageUrl;
+     if (json['image'] != null &&
+        json['image'] is List &&
+        json['image'].isNotEmpty) {
+      imageUrl = json['image'][0]['path']; // ✅ FIX HERE
+    }
+
     return GigsCategoryModel(
       id: json['id'] ?? 0,
       name: json['name'] ?? "",
       superCategoryId: json['super_category_id'],
+      image: imageUrl,
+     
     );
   }
 }
+
 
 class GigsSuperCategoryModel {
   final int id;

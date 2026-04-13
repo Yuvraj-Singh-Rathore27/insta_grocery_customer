@@ -50,7 +50,7 @@ class _GigHubHomeScreenState extends State<GigHubHomeScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const GigSearchScreen(),
+    // const GigSearchScreen(),
     const CreateProfileScreen(),
     const MyGigsScreen(),
      ProfileScreen(),
@@ -96,11 +96,11 @@ class _GigHubHomeScreenState extends State<GigHubHomeScreen> {
             activeIcon: Icon(Icons.home),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_outlined),
-            activeIcon: Icon(Icons.search),
-            label: 'Search',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.search_outlined),
+          //   activeIcon: Icon(Icons.search),
+          //   label: 'Search',
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.add_circle_outline),
             activeIcon: Icon(Icons.add_circle),

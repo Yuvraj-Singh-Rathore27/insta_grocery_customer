@@ -4411,7 +4411,6 @@ Future<Map<String, dynamic>?> getUserGigProfile(
     Map<String, dynamic> param) async {
 
   try {
-    /// 🔴 ONLY access_token REQUIRED
     if (param['access_token'] == null ||
         param['access_token'].toString().isEmpty) {
       return {
@@ -4421,28 +4420,37 @@ Future<Map<String, dynamic>?> getUserGigProfile(
       };
     }
 
-    /// 🔥 BUILD URL (OPTIONAL USER ID)
     String baseUrl = ApiUrl.getGigsProfile;
-    String url;
 
+    /// 🔥 ADD QUERY PARAMS DYNAMICALLY
+    Map<String, String> queryParams = {
+      "page": "1",
+      "size": "50",
+    };
+
+    /// ✅ USER ID (optional)
     if (param['user_id'] != null &&
         param['user_id'].toString().isNotEmpty) {
-
-      /// ✅ WITH USER ID
-      url =
-          "$baseUrl?user_id=${param['user_id']}&display_type=active&page=1&size=50";
-
+      queryParams["user_id"] = param['user_id'].toString();
+      queryParams["display_type"] = "active";
     } else {
-
-      /// ✅ WITHOUT USER ID (DEFAULT PROFILE)
-      url =
-          "$baseUrl?is_active=true&page=1&size=50";
+      queryParams["is_active"] = "true";
     }
 
-    Utils().customPrint("✅ URL => $url");
+    /// 🔥 NEW: SUBCATEGORY FILTER
+    if (param['subcategory_id'] != null &&
+        param['subcategory_id'].toString().isNotEmpty) {
+      queryParams["subcategory_id"] =
+          param['subcategory_id'].toString();
+    }
+
+    /// 🔥 BUILD FINAL URL
+    final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
+
+    Utils().customPrint("✅ FINAL URL => $uri");
 
     final response = await http.get(
-      Uri.parse(url),
+      uri,
       headers: {
         "Accept": "application/json",
         "Authorization": "Bearer ${param['access_token']}",
@@ -4456,21 +4464,14 @@ Future<Map<String, dynamic>?> getUserGigProfile(
       final Map<String, dynamic> data = json.decode(response.body);
 
       if (data['data'] != null) {
-
-        /// 🔥 LIST HANDLE
         if (data['data'] is List) {
-          List list = data['data'];
-
-          if (list.isNotEmpty) {
-            return {
-              'status': 200,
-              'data': list,
-              'message': 'Profile found'
-            };
-          }
+          return {
+            'status': 200,
+            'data': data['data'],
+            'message': 'Profile found'
+          };
         }
 
-        /// 🔥 OBJECT HANDLE
         if (data['data'] is Map<String, dynamic>) {
           return {
             'status': 200,
@@ -4503,6 +4504,7 @@ Future<Map<String, dynamic>?> getUserGigProfile(
     };
   }
 }
+
 
 
 Future<Map<String, dynamic>?> hireGigsWorksProfile(
