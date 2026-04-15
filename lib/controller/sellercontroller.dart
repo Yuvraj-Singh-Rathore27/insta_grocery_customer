@@ -89,7 +89,7 @@ class SellerController extends GetxController {
 
               var productDetail = await fetchProductDetails(productId);
               if (productDetail != null) {
-                productDetail.isInterested = true;
+                productDetail.isInterested.value =true;
                 interestedProducts.add(productDetail);
                 print("🟢 Added product: ${productDetail.title ?? productDetail.name}");
               }
@@ -112,6 +112,8 @@ class SellerController extends GetxController {
       isLoading.value = false;
     }
   }
+
+
 
   // ===========================================================
   //     GET PRODUCT DETAILS BY ID
@@ -158,6 +160,8 @@ class SellerController extends GetxController {
     if (value is String) return int.tryParse(value);
     return null;
   }
+
+  
 
   // ===========================================================
   //     CLEAR DATA

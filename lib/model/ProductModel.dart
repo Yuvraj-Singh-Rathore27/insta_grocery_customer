@@ -3,7 +3,7 @@ import 'file_model.dart';
 import 'package:geocoding/geocoding.dart';
 
 class ProductModel {
-  bool isInterested = false;
+  RxBool  isInterested = false.obs;
 
   String? productSubType;
   String? product_id;
@@ -57,6 +57,7 @@ class ProductModel {
   int? userId;
   int? createdBy;
   int? createdById;
+  UserModel? user;
 
   ProductModel({
     this.productSubType,
@@ -106,6 +107,7 @@ class ProductModel {
     this.userId,
     this.createdBy,
     this.createdById,
+    this.user,
   });
 
   ProductModel.fromJson(Map<String, dynamic> json) {
@@ -198,7 +200,7 @@ class ProductModel {
     isfavorite = json['isfavorite'] ?? false;
     print("isfavorite: $isfavorite");
 
-    isInterested = json['is_interested'] ?? false;
+    isInterested = (json['is_interested'] == true).obs;
     print("isInterested: $isInterested");
 
     if (json['image_url'] != null && json['image_url'].toString().isNotEmpty) {
@@ -266,6 +268,14 @@ class ProductModel {
     status = json['status'];
     
     print("🔘 isActive: ${this.isActive}");
+
+    if (json['user'] != null) {
+if (json['user'] != null && json['user'] is Map<String, dynamic>) {
+  user = UserModel.fromJson(json['user']);
+}  print("👤 user: ${user?.userName}");
+}
+
+
   }
 
   Map<String, dynamic> toJson() {
@@ -302,6 +312,12 @@ class ProductModel {
       "created_by_id": createdById,
       "updated_by": updatedBy,
       "updated_by_id": updatedById,
+      "user": user != null ? {
+  "id": user!.id,
+  "user_name": user!.userName,
+  "contact_number": user!.contactNumber,
+  "email": user!.email,
+} : null,
     };
   }
 
@@ -504,5 +520,35 @@ class SuperCategoryImage {
   SuperCategoryImage.fromJson(Map<String, dynamic> json) {
     name = json['name'];
     path = json['path'];
+  }
+}
+
+class UserModel {
+  int? id;
+  String? userName;
+  String? contactNumber;
+  String? email;
+  bool? isActive;
+  bool? isContactVerified;
+  bool? isEmailVerified;
+
+  UserModel({
+    this.id,
+    this.userName,
+    this.contactNumber,
+    this.email,
+    this.isActive,
+    this.isContactVerified,
+    this.isEmailVerified,
+  });
+
+  UserModel.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    userName = json['user_name'];
+    contactNumber = json['contact_number'];
+    email = json['email'];
+    isActive = json['is_active'];
+    isContactVerified = json['is_contact_verified'];
+    isEmailVerified = json['is_email_verified'];
   }
 }

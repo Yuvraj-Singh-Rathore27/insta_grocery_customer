@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:insta_grocery_customer/screen/job_module/myPostedJobScreen.dart';
+import 'package:insta_grocery_customer/screen/market_place/buyer/buyer_home.dart';
 import 'package:insta_grocery_customer/screen/side_menu/Gig_Workers/gigWorkerAddProfile.dart';
 import '../../../controller/gigs_works_controller.dart';
 
@@ -100,8 +102,7 @@ Widget build(BuildContext context) {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
-              // Navigate to create profile screen
-              Get.toNamed('/create-profile');
+             Get.to(() => CreateProfileScreen());
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
@@ -187,9 +188,9 @@ Widget build(BuildContext context) {
 
         /// NAME
         Text(
-          controller.fullNameController.text.isEmpty
+          capitalize(controller.fullNameController.text.isEmpty
               ? "Your Name"
-              : controller.fullNameController.text,
+              : controller.fullNameController.text,),
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -198,9 +199,9 @@ Widget build(BuildContext context) {
 
         /// TITLE
         Text(
-          controller.titleController.text.isEmpty
+          capitalizeFirstLetter(controller.titleController.text.isEmpty
               ? "Your Title"
-              : controller.titleController.text,
+              : controller.titleController.text,),
           style: TextStyle(color: Colors.grey.shade600),
         ),
 
@@ -324,80 +325,6 @@ Widget _buildCameraIcon() {
   );
 }
 
-Widget _buildStatusToggle() {
-  return Obx(() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          controller.isProfileActive.value ? "Active" : "Inactive",
-          style: TextStyle(
-            color: controller.isProfileActive.value
-                ? Colors.green
-                : Colors.red,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(width: 10),
-
-        Switch(
-          value: controller.isProfileActive.value,
-          onChanged: (value) {
-            controller.toggleProfileStatus(value);
-          },
-        ),
-      ],
-    );
-  });
-}
-  Widget _buildWorkPreference() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: controller.workPreference.value == "remote"
-            ? Colors.green.shade50
-            : Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            controller.workPreference.value == "remote"
-                ? Icons.home_work
-                : Icons.location_on,
-            size: 16,
-            color: controller.workPreference.value == "remote"
-                ? Colors.green
-                : Colors.orange,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            controller.workPreference.value == "remote"
-                ? "Available for Remote Work"
-                : "Available for On-site Work",
-            style: TextStyle(
-              color: controller.workPreference.value == "remote"
-                  ? Colors.green
-                  : Colors.orange,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStats() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: const [
-        _StatItem("4.9", "Rating"),
-        _StatItem("124", "Jobs"),
-        _StatItem("98%", "Success"),
-      ],
-    );
-  }
 
   Widget _buildActionButtons() {
     return Row(
@@ -468,7 +395,7 @@ $bio
         runSpacing: 8,
         children: controller.selectedSkillsList
             .map((skill) => Chip(
-                  label: Text(skill),
+                  label: Text(capitalizeFirstLetter(skill)),
                   backgroundColor: Colors.blue.shade50,
                   labelStyle: TextStyle(color: Colors.blue.shade700),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -596,6 +523,15 @@ $bio
           children: [
             Icon(Icons.currency_rupee, size: 20, color: Colors.green.shade700),
             const SizedBox(width: 4),
+             Text(
+             capitalizeFirstLetter( controller.priceType.value,),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.green.shade700,
+              ),
+            ),
+            const SizedBox(width: 10),
             Text(
               controller.priceController.text,
               style: TextStyle(

@@ -14,7 +14,6 @@ import 'dart:convert';
 import 'dart:async';
 
 class GigsController extends GetxController {
-
   /// ================= STORAGE =================
   late GetStorage store;
   String userId = "";
@@ -34,21 +33,20 @@ class GigsController extends GetxController {
   RxList<GigsSuperCategoryModel> superCategoryList =
       <GigsSuperCategoryModel>[].obs;
 
-  RxList<GigsCategoryModel> categoryList =
-      <GigsCategoryModel>[].obs;
+  RxList<GigsCategoryModel> categoryList = <GigsCategoryModel>[].obs;
 
-  RxList<GigsSubCategoryModel> subCategoryList =
-      <GigsSubCategoryModel>[].obs;
+  RxList<GigsSubCategoryModel> subCategoryList = <GigsSubCategoryModel>[].obs;
 
   /// ================= SELECTION =================
   RxInt selectedSuperCategoryId = 0.obs;
   RxInt selectedCategoryId = 0.obs;
   RxInt selectedSubCategoryId = 0.obs;
-  
+
   /// ================= TEXT FIELDS STRING VALUES (for UI binding) =================
   RxString selectedSuperCategoryName = "".obs;
   RxString selectedCategoryName = "".obs;
   RxString selectedSubCategoryName = "".obs;
+  RxString priceType = "hourly".obs;
 
   /// ================= TEXT CONTROLLERS =================
   final fullNameController = TextEditingController();
@@ -71,36 +69,36 @@ class GigsController extends GetxController {
 
   /// ================= SKILLS =================
   RxList<String> selectedSkillsList = <String>[].obs;
-  
+
   /// ================= SKILL INPUT CONTROLLER =================
   final skillInputController = TextEditingController();
-  
+
   /// ================= IMAGE =================
   RxList<Map<String, dynamic>> profileImageList = <Map<String, dynamic>>[].obs;
   RxString profileImagePath = "".obs;
-  
+
   /// ================= EDIT MODE =================
   RxBool isEditMode = false.obs;
   RxInt editingGigId = 0.obs;
   RxBool hasExistingProfile = false.obs;
-  
+
   /// ================= STORED EDIT DATA =================
   Map<String, dynamic>? editData;
 
   RxList<Map<String, dynamic>> gigsList = <Map<String, dynamic>>[].obs;
 
   /// ================= HIRED GIGS =================
-RxList<Map<String, dynamic>> hiredGigsList = <Map<String, dynamic>>[].obs;
-RxSet<int> hiredGigIds = <int>{}.obs;
-RxBool isLoadingHiredGigs = false.obs;
-RxBool isProfileActive = true.obs;
-RxList placeSuggestions = [].obs;
-  
+  RxList<Map<String, dynamic>> hiredGigsList = <Map<String, dynamic>>[].obs;
+  RxSet<int> hiredGigIds = <int>{}.obs;
+  RxBool isLoadingHiredGigs = false.obs;
+  RxBool isProfileActive = true.obs;
+  RxList placeSuggestions = [].obs;
+
   /// ================= ADD SKILL METHOD =================
-  /// 
-RxBool isFresher = true.obs;
-final experienceController = TextEditingController();
-  
+  ///
+  RxBool isFresher = true.obs;
+  final experienceController = TextEditingController();
+
   /// ================= INIT =================
   @override
   void onInit() {
@@ -122,7 +120,11 @@ final experienceController = TextEditingController();
       Utils.showCustomTosstError("Skill already added");
     }
   }
-  
+
+  void setPriceType(String type) {
+  priceType.value = type;
+}
+
   /// ================= REMOVE SKILL METHOD =================
   void removeSkill(String skill) {
     selectedSkillsList.remove(skill);
@@ -166,7 +168,6 @@ final experienceController = TextEditingController();
 
       File imageFile = File(image.path);
       await uploadProfileImage(imageFile);
-      
     } catch (e) {
       Utils.showCustomTosstError("Failed to pick image: ${e.toString()}");
     }
@@ -176,7 +177,8 @@ final experienceController = TextEditingController();
     try {
       isUploadingImage.value = true;
 
-      final uploadRes = await WebServicesHelper().fileUpload("image", imageFile);
+      final uploadRes =
+          await WebServicesHelper().fileUpload("image", imageFile);
 
       if (uploadRes == null || uploadRes['status'] != 200) {
         Utils.showCustomTosstError("Image upload failed");
@@ -194,9 +196,8 @@ final experienceController = TextEditingController();
       profileImageList.clear();
       profileImageList.add(imageForApi);
       profileImagePath.value = uploadRes['data']['path'];
-      
+
       Utils.showCustomTosst("Image uploaded successfully");
-      
     } catch (e) {
       Utils.showCustomTosstError("Image upload failed: ${e.toString()}");
     } finally {
@@ -210,16 +211,16 @@ final experienceController = TextEditingController();
   }
 
   void setFresher(bool value) {
-  isFresher.value = value;
+    isFresher.value = value;
 
-  if (value) {
-    experienceLevel.value = "0";
-    experienceController.text = "0";
-  } else {
-    experienceLevel.value = "";
-    experienceController.clear();
+    if (value) {
+      experienceLevel.value = "0";
+      experienceController.text = "0";
+    } else {
+      experienceLevel.value = "";
+      experienceController.clear();
+    }
   }
-}
 
   /// ================= GET CURRENT LOCATION =================
   Future<void> getCurrentLocation() async {
@@ -242,7 +243,8 @@ final experienceController = TextEditingController();
       }
 
       if (permission == LocationPermission.deniedForever) {
-        Utils.showCustomTosstError('Location permissions are permanently denied');
+        Utils.showCustomTosstError(
+            'Location permissions are permanently denied');
         return;
       }
 
@@ -260,25 +262,33 @@ final experienceController = TextEditingController();
 
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
-        
+
         List<String> addressParts = [];
-        
-        if (place.name != null && place.name!.isNotEmpty) addressParts.add(place.name!);
-        if (place.street != null && place.street!.isNotEmpty) addressParts.add(place.street!);
-        if (place.locality != null && place.locality!.isNotEmpty) addressParts.add(place.locality!);
-        if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) addressParts.add(place.administrativeArea!);
-        if (place.country != null && place.country!.isNotEmpty) addressParts.add(place.country!);
-        
+
+        if (place.name != null && place.name!.isNotEmpty)
+          addressParts.add(place.name!);
+        if (place.street != null && place.street!.isNotEmpty)
+          addressParts.add(place.street!);
+        if (place.locality != null && place.locality!.isNotEmpty)
+          addressParts.add(place.locality!);
+        if (place.administrativeArea != null &&
+            place.administrativeArea!.isNotEmpty)
+          addressParts.add(place.administrativeArea!);
+        if (place.country != null && place.country!.isNotEmpty)
+          addressParts.add(place.country!);
+
         String address = addressParts.isNotEmpty ? addressParts.join(", ") : "";
-        
+
         if (address.isNotEmpty) {
           locationController.text = address;
         }
-        
-        if (cityController.text.isEmpty && place.locality != null && place.locality!.isNotEmpty) {
+
+        if (cityController.text.isEmpty &&
+            place.locality != null &&
+            place.locality!.isNotEmpty) {
           cityController.text = place.locality!;
         }
-        
+
         Utils.showCustomTosst("Location detected successfully");
       } else {
         Utils.showCustomTosstError("Could not get address from location");
@@ -292,68 +302,65 @@ final experienceController = TextEditingController();
 
   /// ================= CHECK EXISTING PROFILE =================
   Future<void> checkAndLoadProfile() async {
-  try {
-    isLoadingProfile.value = true;
+    try {
+      isLoadingProfile.value = true;
 
-    final res = await WebServicesHelper().getUserGigProfile({
-      "user_id": userId,
-      "access_token": accessToken,
-    });
+      final res = await WebServicesHelper().getUserGigProfile({
+        "user_id": userId,
+        "access_token": accessToken,
+      });
 
-    print("=== CHECK PROFILE RESPONSE ===");
-    print(res);
-    print("DATA TYPE => ${res?['data'].runtimeType}");
+      print("=== CHECK PROFILE RESPONSE ===");
+      print(res);
+      print("DATA TYPE => ${res?['data'].runtimeType}");
 
-    if (res != null && res['status'] == 200 && res['data'] != null) {
+      if (res != null && res['status'] == 200 && res['data'] != null) {
+        Map<String, dynamic> profileData = {};
 
-      Map<String, dynamic> profileData = {};
-
-      /// 🔥 HANDLE BOTH CASES
-      if (res['data'] is List) {
-        if (res['data'].isNotEmpty) {
-          profileData = res['data'][0];
+        /// 🔥 HANDLE BOTH CASES
+        if (res['data'] is List) {
+          if (res['data'].isNotEmpty) {
+            profileData = res['data'][0];
+          }
+        } else if (res['data'] is Map) {
+          profileData = res['data'];
         }
-      } else if (res['data'] is Map) {
-        profileData = res['data'];
-      }
 
-      if (profileData.isNotEmpty) {
-        hasExistingProfile.value = true;
-        isEditMode.value = true;
+        if (profileData.isNotEmpty) {
+          hasExistingProfile.value = true;
+          isEditMode.value = true;
 
-        editingGigId.value = profileData['id'] ?? 0;
+          editingGigId.value = profileData['id'] ?? 0;
 
-        editData = profileData;
+          editData = profileData;
 
-        setEditData(profileData);
+          setEditData(profileData);
+        } else {
+          hasExistingProfile.value = false;
+          isEditMode.value = false;
+          editData = null;
+        }
       } else {
         hasExistingProfile.value = false;
         isEditMode.value = false;
         editData = null;
       }
+    } catch (e) {
+      print("❌ Error checking profile: $e");
 
-    } else {
       hasExistingProfile.value = false;
       isEditMode.value = false;
       editData = null;
+    } finally {
+      isLoadingProfile.value = false;
     }
-
-  } catch (e) {
-    print("❌ Error checking profile: $e");
-
-    hasExistingProfile.value = false;
-    isEditMode.value = false;
-    editData = null;
-
-  } finally {
-    isLoadingProfile.value = false;
   }
-}
 
   void _loadUserData() {
     store = GetStorage();
-    userId = store.read(UserPreferences.user_id) ?? "";;
-     print("=================GigsController UserId => $userId");
+    userId = store.read(UserPreferences.user_id) ?? "";
+    ;
+    print("=================GigsController UserId => $userId");
     accessToken = store.read("access_token") ?? "";
   }
 
@@ -364,8 +371,7 @@ final experienceController = TextEditingController();
     try {
       isSuperCategoryLoading.value = true;
 
-      final res = await WebServicesHelper()
-          .getGigsSuperCategory({});
+      final res = await WebServicesHelper().getGigsSuperCategory({});
 
       if (res != null && res['data'] != null) {
         superCategoryList.assignAll(
@@ -376,7 +382,6 @@ final experienceController = TextEditingController();
       } else {
         superCategoryList.clear();
       }
-
     } catch (e) {
       Utils.showCustomTosstError("Failed to load super categories");
     } finally {
@@ -387,7 +392,8 @@ final experienceController = TextEditingController();
   /// =========================================================
   /// 🔥 2. GET CATEGORY
   /// =========================================================
-  Future<void> getCategory({required int superCategoryId, String? superCategoryName}) async {
+  Future<void> getCategory(
+      {required int superCategoryId, String? superCategoryName}) async {
     try {
       isCategoryLoading.value = true;
 
@@ -404,11 +410,11 @@ final experienceController = TextEditingController();
       selectedSubCategoryName.value = "";
 
       final res = await WebServicesHelper()
-          .getGigsCategory({
-        "super_category_id": superCategoryId
-      });
+          .getGigsCategory({"super_category_id": superCategoryId});
 
-      if (res != null && res['data'] != null && (res['data'] as List).isNotEmpty) {
+      if (res != null &&
+          res['data'] != null &&
+          (res['data'] as List).isNotEmpty) {
         categoryList.assignAll(
           (res['data'] as List)
               .map((e) => GigsCategoryModel.fromJson(e))
@@ -417,7 +423,6 @@ final experienceController = TextEditingController();
       } else {
         categoryList.clear();
       }
-
     } catch (e) {
       Utils.showCustomTosstError("Failed to load categories");
       categoryList.clear();
@@ -443,11 +448,11 @@ final experienceController = TextEditingController();
       selectedSubCategoryName.value = "";
 
       final res = await WebServicesHelper()
-          .getGigsSubCategory({
-        "category_id": categoryId
-      });
+          .getGigsSubCategory({"category_id": categoryId});
 
-      if (res != null && res['data'] != null && (res['data'] as List).isNotEmpty) {
+      if (res != null &&
+          res['data'] != null &&
+          (res['data'] as List).isNotEmpty) {
         subCategoryList.assignAll(
           (res['data'] as List)
               .map((e) => GigsSubCategoryModel.fromJson(e))
@@ -456,7 +461,6 @@ final experienceController = TextEditingController();
       } else {
         subCategoryList.clear();
       }
-
     } catch (e) {
       Utils.showCustomTosstError("Failed to load subcategories");
       subCategoryList.clear();
@@ -465,44 +469,42 @@ final experienceController = TextEditingController();
     }
   }
 
-
-  // get gigs by subcategory 
+  // get gigs by subcategory
 
   Future<void> getGigsBySubCategory() async {
-  try {
-    isLoadingProfile.value = true;
+    try {
+      isLoadingProfile.value = true;
 
-    final Map<String, dynamic> param = {
-      "access_token": accessToken,
-      "subcategory_id": selectedSubCategoryId.value, // 🔥 IMPORTANT
-    };
+      final Map<String, dynamic> param = {
+        "access_token": accessToken,
+        "subcategory_id": selectedSubCategoryId.value, // 🔥 IMPORTANT
+      };
 
-    print("=== FILTER PARAM ===");
-    print(param);
+      print("=== FILTER PARAM ===");
+      print(param);
 
-    final res = await WebServicesHelper().getUserGigProfile(param);
+      final res = await WebServicesHelper().getUserGigProfile(param);
 
-    print("=== FILTER RESPONSE ===");
-    print(res);
+      print("=== FILTER RESPONSE ===");
+      print(res);
 
-    if (res != null && res['status'] == 200 && res['data'] != null) {
-      if (res['data'] is List) {
-        gigsList.assignAll(List<Map<String, dynamic>>.from(res['data']));
+      if (res != null && res['status'] == 200 && res['data'] != null) {
+        if (res['data'] is List) {
+          gigsList.assignAll(List<Map<String, dynamic>>.from(res['data']));
+        } else {
+          gigsList.assignAll([res['data']]);
+        }
       } else {
-        gigsList.assignAll([res['data']]);
+        gigsList.clear();
       }
-    } else {
+    } catch (e) {
+      print("❌ ERROR => $e");
       gigsList.clear();
+    } finally {
+      isLoadingProfile.value = false;
     }
-
-  } catch (e) {
-    print("❌ ERROR => $e");
-    gigsList.clear();
-  } finally {
-    isLoadingProfile.value = false;
   }
-}
-  
+
   /// =========================================================
   /// 🔥 SET SUB CATEGORY
   /// =========================================================
@@ -510,21 +512,21 @@ final experienceController = TextEditingController();
     selectedSubCategoryId.value = subCategoryId;
     selectedSubCategoryName.value = subCategoryName;
   }
-  
+
   /// =========================================================
   /// 🔥 SET WORK PREFERENCE
   /// =========================================================
   void setWorkPreference(String value) {
     workPreference.value = value;
   }
-  
+
   /// =========================================================
   /// 🔥 SET EXPERIENCE LEVEL
   /// =========================================================
   void setExperienceLevel(String value) {
     experienceLevel.value = value;
   }
-  
+
   /// =========================================================
   /// 🔥 SET SERVICE RADIUS
   /// =========================================================
@@ -544,7 +546,6 @@ final experienceController = TextEditingController();
           phoneController.text.isEmpty ||
           selectedCategoryId.value == 0 ||
           selectedSubCategoryId.value == 0) {
-
         Utils.showCustomTosstError("Please fill all required fields");
         return false;
       }
@@ -560,12 +561,11 @@ final experienceController = TextEditingController();
         "latitude": latitude.value,
         "longitude": longitude.value,
         "work_preference": workPreference.value,
+        "price_type": priceType.value,
         "category_id": selectedCategoryId.value,
         "subcategory_id": selectedSubCategoryId.value,
         "skills": selectedSkillsList,
-        "experience_level": isFresher.value
-    ? "0"
-    : experienceController.text,
+        "experience_level": isFresher.value ? "0" : experienceController.text,
         "price": double.tryParse(priceController.text) ?? 0,
         "bio": bioController.text.trim(),
         "user_id": int.tryParse(userId) ?? 0,
@@ -573,7 +573,7 @@ final experienceController = TextEditingController();
         "created_by_id": int.tryParse(userId) ?? 0,
         "accessToken": accessToken,
       };
-      
+
       if (profileImageList.isNotEmpty) {
         param["image"] = profileImageList;
       }
@@ -581,8 +581,7 @@ final experienceController = TextEditingController();
       print("=== CREATE GIG PARAM ===");
       print(param);
 
-      final res = await WebServicesHelper()
-          .postGigsWorksProfile(param);
+      final res = await WebServicesHelper().postGigsWorksProfile(param);
 
       if (res != null && res['status'] == 200) {
         Utils.showCustomTosst("Gig Created Successfully");
@@ -591,11 +590,9 @@ final experienceController = TextEditingController();
         editingGigId.value = res['data']['id'] ?? 0;
         return true;
       } else {
-        Utils.showCustomTosstError(
-            res?['message'] ?? "Something went wrong");
+        Utils.showCustomTosstError(res?['message'] ?? "Something went wrong");
         return false;
       }
-
     } catch (e) {
       Utils.showCustomTosstError("Error: ${e.toString()}");
       return false;
@@ -616,7 +613,6 @@ final experienceController = TextEditingController();
           phoneController.text.isEmpty ||
           selectedCategoryId.value == 0 ||
           selectedSubCategoryId.value == 0) {
-
         Utils.showCustomTosstError("Please fill all required fields");
         return false;
       }
@@ -632,19 +628,18 @@ final experienceController = TextEditingController();
         "latitude": latitude.value,
         "longitude": longitude.value,
         "work_preference": workPreference.value,
+        "price_type": priceType.value,
         "category_id": selectedCategoryId.value,
         "subcategory_id": selectedSubCategoryId.value,
         "skills": selectedSkillsList,
-        "experience_level": isFresher.value
-    ? "0"
-    : experienceController.text,
+        "experience_level": isFresher.value ? "0" : experienceController.text,
         "price": double.tryParse(priceController.text) ?? 0,
         "bio": bioController.text.trim(),
         "updated_by": int.tryParse(userId) ?? 0,
         "updated_by_id": int.tryParse(userId) ?? 0,
         "accessToken": accessToken,
       };
-      
+
       if (profileImageList.isNotEmpty) {
         param["image"] = profileImageList;
       }
@@ -652,18 +647,16 @@ final experienceController = TextEditingController();
       print("=== UPDATE GIG PARAM ===");
       print(param);
 
-      final res = await WebServicesHelper()
-          .updateGigsWorksProfile(param, gigId);
+      final res =
+          await WebServicesHelper().updateGigsWorksProfile(param, gigId);
 
       if (res != null && res['status'] == 200) {
         Utils.showCustomTosst("Profile Updated Successfully");
         return true;
       } else {
-        Utils.showCustomTosstError(
-            res?['message'] ?? "Something went wrong");
+        Utils.showCustomTosstError(res?['message'] ?? "Something went wrong");
         return false;
       }
-
     } catch (e) {
       Utils.showCustomTosstError("Error: ${e.toString()}");
       return false;
@@ -673,54 +666,54 @@ final experienceController = TextEditingController();
   }
 
   Future<void> hireGig(Map<String, dynamic> gig) async {
-  try {
-    isLoadingProfile.value = true;
+    try {
+      isLoadingProfile.value = true;
 
-    /// 🔥 PARAM BUILD (IMPORTANT)
-    final Map<String, dynamic> param = {
-      "profile_id": gig['id'],                  // 👈 REQUIRED
-      "user_id": userId,                    // 👈 logged in user
-      "accessToken": accessToken,           // 👈 token
-    };
+      /// 🔥 PARAM BUILD (IMPORTANT)
+      final Map<String, dynamic> param = {
+        "profile_id": gig['id'], // 👈 REQUIRED
+        "user_id": userId, // 👈 logged in user
+        "accessToken": accessToken, // 👈 token
+      };
 
-    print("=== HIRE PARAM ===");
-    print(param);
+      print("=== HIRE PARAM ===");
+      print(param);
 
-    /// 🔥 API CALL
-    final res = await WebServicesHelper().hireGigsWorksProfile(param);
+      /// 🔥 API CALL
+      final res = await WebServicesHelper().hireGigsWorksProfile(param);
 
-    print("=== HIRE RESPONSE ===");
-    print(res);
+      print("=== HIRE RESPONSE ===");
+      print(res);
 
-    /// ✅ SUCCESS
-    if (res != null && res['status'] == 200) {
-      Get.snackbar(
-        "Success ✅",
-        "Gig hired successfully",
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } 
-    /// ❌ ERROR FROM API
-    else {
+      /// ✅ SUCCESS
+      if (res != null && res['status'] == 200) {
+        Get.snackbar(
+          "Success ✅",
+          "Gig hired successfully",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+
+      /// ❌ ERROR FROM API
+      else {
+        Get.snackbar(
+          "Error ❌",
+          res?['message'] ?? "Failed to hire gig",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      print("❌ ERROR => $e");
+
       Get.snackbar(
         "Error ❌",
-        res?['message'] ?? "Failed to hire gig",
+        "Something went wrong",
         snackPosition: SnackPosition.BOTTOM,
       );
+    } finally {
+      isLoadingProfile.value = false;
     }
-
-  } catch (e) {
-    print("❌ ERROR => $e");
-
-    Get.snackbar(
-      "Error ❌",
-      "Something went wrong",
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  } finally {
-    isLoadingProfile.value = false;
   }
-}
 
   /// =========================================================
   /// 🔥 SET EDIT DATA (Load existing gig data for editing)
@@ -728,10 +721,10 @@ final experienceController = TextEditingController();
   void setEditData(Map<String, dynamic> gigData) {
     print("=== SETTING EDIT DATA ===");
     print(gigData);
-    
+
     isEditMode.value = true;
     editingGigId.value = gigData['id'] ?? 0;
-    
+
     // Basic Info
     fullNameController.text = gigData['full_name'] ?? "";
     titleController.text = gigData['title'] ?? "";
@@ -743,22 +736,24 @@ final experienceController = TextEditingController();
     priceController.text = (gigData['price'] ?? 0).toString();
     bioController.text = gigData['bio'] ?? "";
     isProfileActive.value = gigData['is_active'] ?? true;
-    
+
     // Dropdown values
     workPreference.value = gigData['work_preference'] ?? "";
     experienceLevel.value = gigData['experience_level'] ?? "";
-    
+
     // Location
     latitude.value = (gigData['latitude'] ?? 0).toDouble();
     longitude.value = (gigData['longitude'] ?? 0).toDouble();
-    
+
     // Skills
     if (gigData['skills'] != null && gigData['skills'] is List) {
       selectedSkillsList.assignAll(List<String>.from(gigData['skills']));
     }
-    
+
     // Image
-    if (gigData['image'] != null && gigData['image'] is List && (gigData['image'] as List).isNotEmpty) {
+    if (gigData['image'] != null &&
+        gigData['image'] is List &&
+        (gigData['image'] as List).isNotEmpty) {
       var imageData = gigData['image'][0];
       profileImagePath.value = imageData['path'] ?? "";
       profileImageList.add({
@@ -768,44 +763,51 @@ final experienceController = TextEditingController();
         "type": "profile",
       });
     }
-    
+
     // Set Super Category and load categories
-    if (gigData['super_category_id'] != null && gigData['super_category_id'] != 0) {
+    if (gigData['super_category_id'] != null &&
+        gigData['super_category_id'] != 0) {
       selectedSuperCategoryId.value = gigData['super_category_id'];
       selectedSuperCategoryName.value = gigData['super_category_name'] ?? "";
-      
+
       // Load categories after super category is set
       _loadCategoriesForEdit(
-        gigData['super_category_id'], 
-        gigData['category_id'] ?? 0, 
-        gigData['category_name'] ?? "",
-        gigData['subcategory_id'] ?? 0,
-        gigData['subcategory_name'] ?? ""
-      );
+          gigData['super_category_id'],
+          gigData['category_id'] ?? 0,
+          gigData['category_name'] ?? "",
+          gigData['subcategory_id'] ?? 0,
+          gigData['subcategory_name'] ?? "");
     }
   }
 
   /// Helper method to load categories for edit
-  void _loadCategoriesForEdit(int superCategoryId, int savedCategoryId, String savedCategoryName, int savedSubCategoryId, String savedSubCategoryName) async {
+  void _loadCategoriesForEdit(
+      int superCategoryId,
+      int savedCategoryId,
+      String savedCategoryName,
+      int savedSubCategoryId,
+      String savedSubCategoryName) async {
     try {
-      final res = await WebServicesHelper().getGigsCategory({
-        "super_category_id": superCategoryId
-      });
-      
-      if (res != null && res['data'] != null && (res['data'] as List).isNotEmpty) {
+      final res = await WebServicesHelper()
+          .getGigsCategory({"super_category_id": superCategoryId});
+
+      if (res != null &&
+          res['data'] != null &&
+          (res['data'] as List).isNotEmpty) {
         categoryList.assignAll(
           (res['data'] as List)
               .map((e) => GigsCategoryModel.fromJson(e))
               .toList(),
         );
-        
+
         // Set selected category if exists
         if (savedCategoryId != 0) {
           selectedCategoryId.value = savedCategoryId;
           selectedCategoryName.value = savedCategoryName;
-          
+
           // Load subcategories
-          _loadSubCategoriesForEdit(savedCategoryId, savedSubCategoryId, savedSubCategoryName);
+          _loadSubCategoriesForEdit(
+              savedCategoryId, savedSubCategoryId, savedSubCategoryName);
         }
       }
     } catch (e) {
@@ -814,19 +816,21 @@ final experienceController = TextEditingController();
   }
 
   /// Helper method to load subcategories for edit
-  void _loadSubCategoriesForEdit(int categoryId, int savedSubCategoryId, String savedSubCategoryName) async {
+  void _loadSubCategoriesForEdit(int categoryId, int savedSubCategoryId,
+      String savedSubCategoryName) async {
     try {
-      final res = await WebServicesHelper().getGigsSubCategory({
-        "category_id": categoryId
-      });
-      
-      if (res != null && res['data'] != null && (res['data'] as List).isNotEmpty) {
+      final res = await WebServicesHelper()
+          .getGigsSubCategory({"category_id": categoryId});
+
+      if (res != null &&
+          res['data'] != null &&
+          (res['data'] as List).isNotEmpty) {
         subCategoryList.assignAll(
           (res['data'] as List)
               .map((e) => GigsSubCategoryModel.fromJson(e))
               .toList(),
         );
-        
+
         // Set selected subcategory if exists
         if (savedSubCategoryId != 0) {
           selectedSubCategoryId.value = savedSubCategoryId;
@@ -850,339 +854,321 @@ final experienceController = TextEditingController();
   }
 
   Future<void> loadMyProfile() async {
-  try {
-    isLoadingProfile.value = true;
+    try {
+      isLoadingProfile.value = true;
 
-    final res = await WebServicesHelper().getUserGigProfile({
-      "access_token": accessToken,
-    });
+      final res = await WebServicesHelper().getUserGigProfile({
+        "access_token": accessToken,
+      });
 
-    _handleProfileResponse(res);
-
-  } catch (e) {
-    print("Error: $e");
-  } finally {
-    isLoadingProfile.value = false;
+      _handleProfileResponse(res);
+    } catch (e) {
+      print("Error: $e");
+    } finally {
+      isLoadingProfile.value = false;
+    }
   }
-}
-
 
 // Add these methods anywhere in your GigsController class (before onClose)
 
-/// =========================================================
-/// 🔥 GET HIRED GIGS (Workers hired by current user)
-/// =========================================================
-Future<void> getMyHiredGigs() async {
-  try {
-    isLoadingHiredGigs.value = true;
+  /// =========================================================
+  /// 🔥 GET HIRED GIGS (Workers hired by current user)
+  /// =========================================================
+  Future<void> getMyHiredGigs() async {
+    try {
+      isLoadingHiredGigs.value = true;
 
-    final Map<String, dynamic> param = {
-      "access_token": accessToken,
-      "user_id": userId,
-    };
+      final Map<String, dynamic> param = {
+        "access_token": accessToken,
+        "user_id": userId,
+      };
 
-    print("=== GET MY HIRED GIGS PARAM ===");
-    print(param);
+      print("=== GET MY HIRED GIGS PARAM ===");
+      print(param);
 
-    final res = await WebServicesHelper().getHireGigs(param);
+      final res = await WebServicesHelper().getHireGigs(param);
 
-    print("=== GET MY HIRED GIGS RESPONSE ===");
-    print(res);
+      print("=== GET MY HIRED GIGS RESPONSE ===");
+      print(res);
 
-    if (res != null && res['status'] == 200 && res['data'] != null) {
-      
-      List<Map<String, dynamic>> allData = [];
+      if (res != null && res['status'] == 200 && res['data'] != null) {
+        List<Map<String, dynamic>> allData = [];
 
-      /// 🔥 HANDLE LIST / MAP
-      if (res['data'] is List) {
-        allData = List<Map<String, dynamic>>.from(res['data']);
-      } else if (res['data'] is Map<String, dynamic>) {
-        allData = [res['data']];
-      }
-
-      /// 🔥 FILTER ONLY CURRENT USER
-      int currentUserId = int.tryParse(userId) ?? 0;
-
-      hiredGigsList.value = allData.where((hire) {
-        /// handle multiple structures
-        int hireUserId =
-            hire['user_id'] ??
-            hire['user']?['id'] ??
-            0;
-
-        return hireUserId == currentUserId;
-      }).toList();
-
-      /// 🔥 FIX LOOP (ONLY ONE LOOP)
-      hiredGigIds.clear();
-
-      for (var hire in hiredGigsList) {
-        int profileId = hire['profile_id'] ?? 0;
-        int hireId = hire['id'] ?? 0;
-
-        if (profileId != 0) {
-          hiredGigIds.add(profileId);
-          hire['hire_id'] = hireId;
+        /// 🔥 HANDLE LIST / MAP
+        if (res['data'] is List) {
+          allData = List<Map<String, dynamic>>.from(res['data']);
+        } else if (res['data'] is Map<String, dynamic>) {
+          allData = [res['data']];
         }
+
+        /// 🔥 FILTER ONLY CURRENT USER
+        int currentUserId = int.tryParse(userId) ?? 0;
+
+        hiredGigsList.value = allData.where((hire) {
+          /// handle multiple structures
+          int hireUserId = hire['user_id'] ?? hire['user']?['id'] ?? 0;
+
+          return hireUserId == currentUserId;
+        }).toList();
+
+        /// 🔥 FIX LOOP (ONLY ONE LOOP)
+        hiredGigIds.clear();
+
+        for (var hire in hiredGigsList) {
+          int profileId = hire['profile_id'] ?? 0;
+          int hireId = hire['id'] ?? 0;
+
+          if (profileId != 0) {
+            hiredGigIds.add(profileId);
+            hire['hire_id'] = hireId;
+          }
+        }
+
+        print("✅ FILTERED GIGS COUNT => ${hiredGigsList.length}");
+        print("✅ Hired Profile IDs => ${hiredGigIds.toList()}");
+      } else {
+        hiredGigsList.clear();
+        hiredGigIds.clear();
+        print("⚠️ No hired gigs found");
       }
-
-      print("✅ FILTERED GIGS COUNT => ${hiredGigsList.length}");
-      print("✅ Hired Profile IDs => ${hiredGigIds.toList()}");
-
-    } else {
+    } catch (e) {
+      print("❌ Error fetching hired gigs: $e");
       hiredGigsList.clear();
       hiredGigIds.clear();
-      print("⚠️ No hired gigs found");
+    } finally {
+      isLoadingHiredGigs.value = false;
     }
-
-  } catch (e) {
-    print("❌ Error fetching hired gigs: $e");
-    hiredGigsList.clear();
-    hiredGigIds.clear();
-  } finally {
-    isLoadingHiredGigs.value = false;
   }
-}
-/// =========================================================
-/// 🔥 CHECK IF A WORKER IS HIRED BY CURRENT USER
-/// =========================================================
-bool isWorkerHiredByMe(int profileId) {
-  return hiredGigIds.contains(profileId);
-}
 
-/// =========================================================
-/// 🔥 UPDATE HIRE GIG METHOD (Add to local list on success)
-/// =========================================================
-/// =========================================================
-/// 🔥 HIRE GIG WITH DESCRIPTION/MESSAGE
-/// =========================================================
-Future<bool> hireGigWithTracking(Map<String, dynamic> gig, {String? description}) async {
-  try {
-    isLoadingProfile.value = true;
+  /// =========================================================
+  /// 🔥 CHECK IF A WORKER IS HIRED BY CURRENT USER
+  /// =========================================================
+  bool isWorkerHiredByMe(int profileId) {
+    return hiredGigIds.contains(profileId);
+  }
 
-    final Map<String, dynamic> param = {
-      "profile_id": gig['id'],
-      "user_id": int.tryParse(userId) ?? 0,
-      "accessToken": accessToken,
-      "description": description ?? "Hired for gig work", // Default message if not provided
-    };
+  /// =========================================================
+  /// 🔥 UPDATE HIRE GIG METHOD (Add to local list on success)
+  /// =========================================================
+  /// =========================================================
+  /// 🔥 HIRE GIG WITH DESCRIPTION/MESSAGE
+  /// =========================================================
+  Future<bool> hireGigWithTracking(Map<String, dynamic> gig,
+      {String? description}) async {
+    try {
+      isLoadingProfile.value = true;
 
-    print("=== HIRE PARAM ===");
-    print(param);
-
-    final res = await WebServicesHelper().hireGigsWorksProfile(param);
-
-    print("=== HIRE RESPONSE ===");
-    print(res);
-
-    if (res != null && res['status'] == 200) {
-      // Add to hired list locally
-      hiredGigIds.add(gig['id']);
-      
-      // Also add to hiredGigsList with the description
-      Map<String, dynamic> hiredRecord = {
-         "hire_id": res['data']['id'] ?? DateTime.now().millisecondsSinceEpoch,
+      final Map<String, dynamic> param = {
         "profile_id": gig['id'],
-        "profile": gig,
-        "user": {
-          "first_name": "You", // Current user
-          "last_name": "",
-        },
-        "description": description ?? "Hired for gig work",
-        "is_active": true,
-        "created_at": DateTime.now().toIso8601String(),
+        "user_id": int.tryParse(userId) ?? 0,
+        "accessToken": accessToken,
+        "description": description ??
+            "Hired for gig work", // Default message if not provided
       };
-      hiredGigsList.insert(0, hiredRecord);
-      
-      // Show success message
-      Get.snackbar(
-        "Success! 🎉",
-        "${gig['full_name']} has been hired successfully",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-      );
-      
-      return true;
-    } else {
+
+      print("=== HIRE PARAM ===");
+      print(param);
+
+      final res = await WebServicesHelper().hireGigsWorksProfile(param);
+
+      print("=== HIRE RESPONSE ===");
+      print(res);
+
+      if (res != null && res['status'] == 200) {
+        // Add to hired list locally
+        hiredGigIds.add(gig['id']);
+
+        // Also add to hiredGigsList with the description
+        Map<String, dynamic> hiredRecord = {
+          "hire_id": res['data']['id'] ?? DateTime.now().millisecondsSinceEpoch,
+          "profile_id": gig['id'],
+          "profile": gig,
+          "user": {
+            "first_name": "You", // Current user
+            "last_name": "",
+          },
+          "description": description ?? "Hired for gig work",
+          "is_active": true,
+          "created_at": DateTime.now().toIso8601String(),
+        };
+        hiredGigsList.insert(0, hiredRecord);
+
+        // Show success message
+        Get.snackbar(
+          "Success! 🎉",
+          "${gig['full_name']} has been hired successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+        );
+
+        return true;
+      } else {
+        Get.snackbar(
+          "Error ❌",
+          res?['message'] ?? "Failed to hire. Please try again.",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+    } catch (e) {
+      print("❌ ERROR => $e");
       Get.snackbar(
         "Error ❌",
-        res?['message'] ?? "Failed to hire. Please try again.",
+        "Something went wrong. Please try again.",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
       return false;
+    } finally {
+      isLoadingProfile.value = false;
     }
-
-  } catch (e) {
-    print("❌ ERROR => $e");
-    Get.snackbar(
-      "Error ❌",
-      "Something went wrong. Please try again.",
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-    );
-    return false;
-  } finally {
-    isLoadingProfile.value = false;
   }
-}
 
-Future<bool> updateHireMessage(
-  int hireId,
-  String description,
-) async {
-  try {
-    isUpdating.value = true;
+  Future<bool> updateHireMessage(
+    int hireId,
+    String description,
+  ) async {
+    try {
+      isUpdating.value = true;
 
-    final param = {
-      "description": description,
-      "updated_by": int.tryParse(userId) ?? 0,
-      "updated_by_id": int.tryParse(userId) ?? 0,
-     
-    };
+      final param = {
+        "description": description,
+        "updated_by": int.tryParse(userId) ?? 0,
+        "updated_by_id": int.tryParse(userId) ?? 0,
+      };
 
-    print("=== UPDATE MESSAGE PARAM ===");
-    print(param);
+      print("=== UPDATE MESSAGE PARAM ===");
+      print(param);
 
-    final res = await WebServicesHelper()
-        .updateGigsWorks(param, hireId); // 👈 YOUR API
+      final res = await WebServicesHelper()
+          .updateGigsWorks(param, hireId); // 👈 YOUR API
 
-    print("=== UPDATE RESPONSE ===");
-    print(res);
+      print("=== UPDATE RESPONSE ===");
+      print(res);
 
-    if (res != null && res['status'] == 200) {
-      Utils.showCustomTosst("Message send Successfully");
-      return true;
-    } else {
-      Utils.showCustomTosstError(res?['message'] ?? "Update failed");
+      if (res != null && res['status'] == 200) {
+        Utils.showCustomTosst("Message send Successfully");
+        return true;
+      } else {
+        Utils.showCustomTosstError(res?['message'] ?? "Update failed");
+        return false;
+      }
+    } catch (e) {
+      print("❌ UPDATE ERROR => $e");
+      Utils.showCustomTosstError("Something went wrong");
       return false;
+    } finally {
+      isUpdating.value = false;
     }
-
-  } catch (e) {
-    print("❌ UPDATE ERROR => $e");
-    Utils.showCustomTosstError("Something went wrong");
-    return false;
-  } finally {
-    isUpdating.value = false;
   }
-}
-
-
 
 // activate deavtivate controller
 
-Future<void> toggleProfileStatus(bool activate) async {
-  try {
-    isLoadingProfile.value = true;
+  Future<void> toggleProfileStatus(bool activate) async {
+    try {
+      isLoadingProfile.value = true;
 
-    final param = {
-      "hire_id": editingGigId.value,  // or profile_id
-      "accessToken": accessToken,
-    };
+      final param = {
+        "hire_id": editingGigId.value, // or profile_id
+        "accessToken": accessToken,
+      };
 
-    final res = await WebServicesHelper()
-        .toggleGigActivation(param, activate);
+      final res =
+          await WebServicesHelper().toggleGigActivation(param, activate);
 
-    if (res != null && res['status'] == 200) {
+      if (res != null && res['status'] == 200) {
+        /// ✅ UPDATE UI STATE HERE
+        isProfileActive.value = activate;
 
-      /// ✅ UPDATE UI STATE HERE
-      isProfileActive.value = activate;
+        Utils.showCustomTosst(
+          activate ? "Profile Activated ✅" : "Profile Deactivated ❌",
+        );
+      } else {
+        Utils.showCustomTosstError(
+          res?['message'] ?? "Failed to update status",
+        );
+      }
+    } catch (e) {
+      print("❌ ERROR => $e");
+    } finally {
+      isLoadingProfile.value = false;
+    }
+  }
 
-      Utils.showCustomTosst(
-        activate ? "Profile Activated ✅" : "Profile Deactivated ❌",
-      );
+  void _handleProfileResponse(Map<String, dynamic>? res) {
+    if (res != null && res['status'] == 200 && res['data'] != null) {
+      /// 🔥 IF LIST (MULTIPLE GIGS)
+      if (res['data'] is List) {
+        gigsList.assignAll(List<Map<String, dynamic>>.from(res['data']));
+      }
 
+      /// 🔥 IF SINGLE OBJECT
+      else {
+        gigsList.assignAll([res['data']]);
+      }
+
+      hasExistingProfile.value = true;
     } else {
-      Utils.showCustomTosstError(
-        res?['message'] ?? "Failed to update status",
-      );
+      gigsList.clear();
+      hasExistingProfile.value = false;
     }
-
-  } catch (e) {
-    print("❌ ERROR => $e");
-  } finally {
-    isLoadingProfile.value = false;
   }
-}
-void _handleProfileResponse(Map<String, dynamic>? res) {
-  if (res != null && res['status'] == 200 && res['data'] != null) {
 
-    /// 🔥 IF LIST (MULTIPLE GIGS)
-    if (res['data'] is List) {
-      gigsList.assignAll(List<Map<String, dynamic>>.from(res['data']));
-    } 
-    /// 🔥 IF SINGLE OBJECT
-    else {
-      gigsList.assignAll([res['data']]);
+// these is for show a city serch
+
+  Timer? _debounce;
+
+  Future<void> searchCity(String input) async {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      if (input.isEmpty) return;
+
+      final response = await WebServicesHelper().getPlaceAutocomplete(input);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        placeSuggestions.value = data['predictions'] ?? [];
+      }
+    });
+  }
+
+  Future<void> selectPlace(String placeId) async {
+    final response = await WebServicesHelper().getPlaceDetails(placeId);
+
+    if (response.statusCode != 200) return;
+
+    final data = jsonDecode(response.body);
+
+    if (data['status'] != "OK") return;
+
+    final result = data['result'];
+
+    double lat = result['geometry']['location']['lat'];
+    double lng = result['geometry']['location']['lng'];
+
+    latitude.value = lat;
+    longitude.value = lng;
+
+    /// 🔥 GET CITY FROM GEO
+    List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
+
+    if (placemarks.isNotEmpty) {
+      Placemark place = placemarks.first;
+
+      /// ✅ SET CITY (IMPORTANT)
+      cityController.text = place.locality ?? "";
+
+      /// ✅ SET ADDRESS
+      locationController.text =
+          "${place.street}, ${place.locality}, ${place.administrativeArea}";
     }
-
-    hasExistingProfile.value = true;
-
-  } else {
-    gigsList.clear();
-    hasExistingProfile.value = false;
   }
-}
-
-
-// these is for show a city serch 
-
-Timer? _debounce;
-
-Future<void> searchCity(String input) async {
-  if (_debounce?.isActive ?? false) _debounce!.cancel();
-
-  _debounce = Timer(const Duration(milliseconds: 500), () async {
-    if (input.isEmpty) return;
-
-    final response =
-        await WebServicesHelper().getPlaceAutocomplete(input);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      placeSuggestions.value = data['predictions'] ?? [];
-    }
-  });
-}
-Future<void> selectPlace(String placeId) async {
-  final response =
-      await WebServicesHelper().getPlaceDetails(placeId);
-
-  if (response.statusCode != 200) return;
-
-  final data = jsonDecode(response.body);
-
-  if (data['status'] != "OK") return;
-
-  final result = data['result'];
-
-  double lat = result['geometry']['location']['lat'];
-  double lng = result['geometry']['location']['lng'];
-
-  latitude.value = lat;
-  longitude.value = lng;
-
-  /// 🔥 GET CITY FROM GEO
-  List<Placemark> placemarks =
-      await placemarkFromCoordinates(lat, lng);
-
-  if (placemarks.isNotEmpty) {
-    Placemark place = placemarks.first;
-
-    /// ✅ SET CITY (IMPORTANT)
-    cityController.text = place.locality ?? "";
-
-    /// ✅ SET ADDRESS
-    locationController.text =
-        "${place.street}, ${place.locality}, ${place.administrativeArea}";
-  }
-}
-
-
 
   /// =========================================================
   /// 🔥 DISPOSE

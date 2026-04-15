@@ -120,15 +120,22 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                     textField("Phone Number", controller.phoneController),
                     TextFiledTitle("Enter Your Email Address"),
                     textField("Email Address", controller.emailController),
-                    TextFiledTitle("Enter Your Price Per Hour"),
+                    TextFiledTitle("Select Your Price Option"),
+                    Row(
+                      children: [
+                        buildPriceOption("hourly", "Hourly"),
+                        buildPriceOption("day", "Per Day"),
+                        buildPriceOption("project", "Project"),
+                      ],
+                    ),
+                    const SizedBox(height: 10,),
                     textField("Enter Price", controller.priceController),
-                      TextFiledTitle("Enter Descreption"),
-                    textField("Enter Desecription", controller.bioController),
+                    TextFiledTitle("Enter Bio"),
+                    textField("Enter ", controller.bioController,maxLines: 5),
                   ],
                 ),
               ),
 
-            
               /// CATEGORY
               Obx(() => buildCard(
                     child: Column(
@@ -402,7 +409,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                 ),
               ),
 
-                /// LOCATION
+              /// LOCATION
               buildCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,7 +476,6 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                   ],
                 ),
               ),
-
 
               Obx(() => buildCard(
                     child: Column(
@@ -589,6 +595,69 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
     );
   }
 
+  Widget buildPriceOption(String value, String label) {
+  return Expanded(
+    child: Obx(() {
+      bool isSelected = controller.priceType.value == value;
+
+      return GestureDetector(
+        onTap: () => controller.setPriceType(value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.red.shade50 : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? Colors.red : Colors.grey.shade300,
+              width: 1.5,
+            ),
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _getIcon(value),
+                color: isSelected ? Colors.red : Colors.grey,
+                size: 26,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.red : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }),
+  );
+}
+
+IconData _getIcon(String value) {
+  switch (value) {
+    case "hourly":
+      return Icons.access_time;
+    case "day":
+      return Icons.calendar_today;
+    case "project":
+      return Icons.work_outline;
+    default:
+      return Icons.attach_money;
+  }
+}
   void _openCityPicker() {
     Get.bottomSheet(
       Container(
@@ -697,19 +766,20 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
   }
 
   Widget textField(String hint, TextEditingController controller,
-    {int maxLines = 1}) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: TextField(
-      controller: controller,
-      maxLines: maxLines, // 👈 IMPORTANT
-      minLines: maxLines > 1 ? 3 : 1, // 👈 good UI
-      keyboardType:
-          maxLines > 1 ? TextInputType.multiline : TextInputType.text,
-      decoration: inputDecoration(hint),
-    ),
-  );
-}
+      {int maxLines = 1}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        maxLines: maxLines, // 👈 IMPORTANT
+        minLines: maxLines > 1 ? 3 : 1, // 👈 good UI
+        keyboardType:
+            maxLines > 1 ? TextInputType.multiline : TextInputType.text,
+        decoration: inputDecoration(hint),
+      ),
+    );
+  }
+
   InputDecoration inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,

@@ -9,6 +9,8 @@ class CreateGigModel {
   double latitude;
   double longitude;
   String workPreference;
+  String priceType;
+  List<Map<String, dynamic>>? image;
 
   int categoryId;
   int subcategoryId;
@@ -49,6 +51,8 @@ class CreateGigModel {
     required this.createdById,
     this.superCategory,
     this.category,
+    this.image,
+    required this.priceType,
     this.subCategory,
   });
 
@@ -72,6 +76,8 @@ class CreateGigModel {
       "price": price,
       "bio": bio,
       "user_id": userId,
+      "image":image,
+      "price_type": priceType,
       "created_by": createdBy,
       "created_by_id": createdById,
     };

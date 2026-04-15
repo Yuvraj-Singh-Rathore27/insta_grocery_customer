@@ -245,10 +245,14 @@ class _FavouriteProductState extends State<FavouriteProduct> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Icon(
-                  product.isInterested ? Icons.favorite : Icons.favorite_border,
-                  color: product.isInterested ? Colors.red : Colors.grey[700],
-                ),
+              Obx(() => Icon(
+  product.isInterested.value
+      ? Icons.favorite
+      : Icons.favorite_border,
+  color: product.isInterested.value
+      ? Colors.red
+      : Colors.grey[700],
+)),
                 SizedBox(height: 40),
                 Text(
                   timeAgo(product.createdAt ?? ''),

@@ -251,22 +251,42 @@ Future<void> getMarketPlaceInterested(int userId)async{
 
     if (response != null && response["status"] == 200) {
       print("🟢 Message  Success -> ${response["message"]}");
-      Get.snackbar(
-        "Success",
-        response["message"] ?? "Marked as message",
-        snackPosition: SnackPosition.BOTTOM,
-      );
+     Get.snackbar(
+  "Message Sent ✅",
+  response["message"] ?? "Your message has been sent successfully",
+  snackPosition: SnackPosition.BOTTOM,
+  backgroundColor: Colors.green.shade600,
+  colorText: Colors.white,
+  margin: EdgeInsets.all(12),
+  borderRadius: 10,
+  icon: Icon(Icons.check_circle, color: Colors.white),
+  duration: Duration(seconds: 2),
+);
     } else {
       print("🔴 Message Sent Failed -> ${response?["message"]}");
-      Get.snackbar(
-        "Failed",
-        response?["message"] ?? "Something went wrong",
-        snackPosition: SnackPosition.BOTTOM,
-      );
+     Get.snackbar(
+  "Failed ❌",
+  response?["message"] ?? "Something went wrong",
+  snackPosition: SnackPosition.BOTTOM,
+  backgroundColor: Colors.red.shade600,
+  colorText: Colors.white,
+  margin: EdgeInsets.all(12),
+  borderRadius: 10,
+  icon: Icon(Icons.error, color: Colors.white),
+);
     }
   } catch (e) {
     print("❌ markProductMessage ERROR: $e");
-    Get.snackbar("Error", "Unable to submit Message");
+    Get.snackbar(
+  "Error ⚠️",
+  "Unable to send message",
+  snackPosition: SnackPosition.BOTTOM,
+  backgroundColor: Colors.orange.shade700,
+  colorText: Colors.white,
+  margin: EdgeInsets.all(12),
+  borderRadius: 10,
+  icon: Icon(Icons.warning, color: Colors.white),
+);
   }
 }
 void onSuperCategoryTap(MpSuperCategoryModel item) {
@@ -277,15 +297,9 @@ void onSuperCategoryTap(MpSuperCategoryModel item) {
 
 
 // toggle button for interseted
-void toggleInterest(ProductModel item) async {
-  item.isInterested = !item.isInterested; // update UI
-  productList.refresh();                  // refresh list
-
-  if (item.isInterested) {
-    await markProductAsInterested(item.id!);
-  }
+void toggleInterest(ProductModel product) {
+  product.isInterested.toggle();
 }
-
 
 
 
@@ -361,6 +375,17 @@ void toggleInterest(ProductModel item) async {
       ),
     );
   }
+ String cleanPhoneNumber(String phone) {
+  // Remove everything except digits
+  String cleaned = phone.replaceAll(RegExp(r'[^0-9]'), '');
+
+  // Add country code if missing (India)
+  if (cleaned.length == 10) {
+    cleaned = "91$cleaned";
+  }
+
+  return "+$cleaned";
+}
 
 
   // ===========================================================

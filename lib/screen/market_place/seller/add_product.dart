@@ -181,9 +181,7 @@ class AddProduct extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            // Regular Price
+                       
                             Text(
                               '₹${addProductController.productpriceController.text.isEmpty ? '0' : addProductController.productpriceController.text}',
                               style: TextStyle(
@@ -192,38 +190,10 @@ class AddProduct extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            // Offer Price (if exists)
-                            if (addProductController.productOfferpriceController.text.isNotEmpty &&
-                                addProductController.productOfferpriceController.text != '0') ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                '₹${addProductController.productOfferpriceController.text}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade500,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade50,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  '${_calculateDiscountPercentage()}% OFF',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.green.shade700,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
+                           
+                           
                           ],
-                        ),
-                      ],
+                      
                     ),
                   ),
                 ],
@@ -374,20 +344,6 @@ Widget _buildCategoryRow(String label, String value, IconData icon) {
 }
 
 // Helper: Calculate discount percentage
-String _calculateDiscountPercentage() {
-  final priceText = addProductController.productpriceController.text;
-  final offerText = addProductController.productOfferpriceController.text;
-  
-  if (priceText.isEmpty || offerText.isEmpty) return '0';
-  
-  final price = double.tryParse(priceText) ?? 0;
-  final offer = double.tryParse(offerText) ?? 0;
-  
-  if (price <= 0 || offer <= 0 || offer >= price) return '0';
-  
-  final discount = ((price - offer) / price * 100).round();
-  return discount.toString();
-}
 
 
   // ==================== BASIC INFO SECTION ====================
@@ -409,29 +365,14 @@ String _calculateDiscountPercentage() {
           icon: Icons.person_outline,
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildTextField(
+         _buildTextField(
                 controller: addProductController.productpriceController,
                 label: 'Price (₹)',
                 hint: '0',
                 icon: Icons.currency_rupee,
                 keyboardType: TextInputType.number,
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildTextField(
-                controller: addProductController.productOfferpriceController,
-                label: 'Offer Price (₹)',
-                hint: '0',
-                icon: Icons.local_offer_outlined,
-                keyboardType: TextInputType.number,
-              ),
-            ),
-          ],
-        ),
+        
       ],
     );
   }
@@ -486,7 +427,7 @@ String _calculateDiscountPercentage() {
             padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: Colors.black),
               borderRadius: BorderRadius.circular(12),
               color: Colors.white,
             ),
@@ -508,14 +449,14 @@ String _calculateDiscountPercentage() {
                           hasLocation ? FontWeight.w500 : FontWeight.normal,
                       color: hasLocation
                           ? Colors.black
-                          : Colors.grey.shade600,
+                          : Colors.black,
                     ),
                   ),
                 ),
 
                 /// ➡️ ICON
                 Icon(Icons.arrow_forward_ios,
-                    size: 14, color: Colors.grey.shade400),
+                    size: 14, color: Colors.black),
               ],
             ),
           ),
@@ -862,7 +803,7 @@ void _publishProduct() {
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: Colors.black),
           ),
           child: TextField(
             controller: controller,
@@ -875,10 +816,10 @@ void _publishProduct() {
             },
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+              hintStyle: TextStyle(fontSize: 12, color: AppColor().blackColor),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              prefixIcon: icon != null ? Icon(icon, size: 18, color: Colors.grey.shade500) : null,
+              prefixIcon: icon != null ? Icon(icon, size: 18, color: Colors.black) : null,
             ),
           ),
         ),
@@ -910,7 +851,7 @@ void _publishProduct() {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: Colors.black),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -919,7 +860,7 @@ void _publishProduct() {
                   child: Row(
                     children: [
                       if (icon != null) ...[
-                        Icon(icon, size: 18, color: Colors.grey.shade500),
+                        Icon(icon, size: 18, color: AppColor().blackColor),
                         const SizedBox(width: 8),
                       ],
                       Expanded(
@@ -927,7 +868,7 @@ void _publishProduct() {
                           value,
                           style: TextStyle(
                             fontSize: 14,
-                            color: value.contains('Select') ? Colors.grey.shade500 : Colors.black,
+                            color: value.contains('Select') ? AppColor().blackColor : Colors.black,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -968,7 +909,7 @@ void _publishProduct() {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: Colors.black,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1017,7 +958,7 @@ void _publishProduct() {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: Colors.black,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
