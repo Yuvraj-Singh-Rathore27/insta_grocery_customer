@@ -302,6 +302,23 @@ static const getRegisterCustomerEvent =
 
 
 
+      // vechile Mangement api 
+
+      static const vechileCategory="${apiUrl}vehicle-category";
+      static const vechileSubCategory="${apiUrl}vehicles-subcategories";
+      static const driver="${apiUrl}drivers/";
+      static const updateDriver="${apiUrl}drivers/";
+      static const vechilRegister="${apiUrl}vehicles/";
+      static const getDriverProfile="${apiUrl}drivers/";
+      static const getVehicle="${apiUrl}vehicles/";
+      static const updateVehicle="${apiUrl}vehicles/";
+      static const patchVechile="${apiUrl}vehicles/";
+      static const getVechile = "${apiUrl}vehicles/nearby";
+
+
+
+
+
 
 
 

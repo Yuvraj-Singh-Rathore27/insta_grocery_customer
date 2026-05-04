@@ -215,5 +215,6 @@ class ImageRes {
 
   // team member image 
   var team_member_image="assets/images/team_member.jpeg";
+  var car1="assets/images/car1.png";
 
 }

@@ -263,19 +263,34 @@ class EventCategory {
 class EventSubCategory {
   int? id;
   String? name;
+   String? image;
 
-  EventSubCategory({this.id, this.name});
+
+  EventSubCategory({this.id, this.name,this.image});
 
   factory EventSubCategory.fromJson(Map<String, dynamic> json) {
+     String? imagePath;
+
+    final imageData = json['image'];
+
+    if (imageData != null && imageData is List && imageData.isNotEmpty) {
+      final firstImage = imageData.first;
+
+      if (firstImage is Map<String, dynamic>) {
+        imagePath = firstImage['path']?.toString();
+      }
+    }
     return EventSubCategory(
       id: json['id'],
-      name: json['name'],    );
+      name: json['name'],  
+      image: imagePath,  );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
+      'image': image,
     };
   }
 }

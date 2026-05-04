@@ -128,7 +128,7 @@ class PusherController extends GetxController{
     log("onEvent: $event");
   }
 
-  void onSubscriptionSucceeded(String channelName, dynamic data) {
+   void onSubscriptionSucceeded(String channelName, dynamic data) {
     log("onSubscriptionSucceeded: $channelName data: $data");
     final me = pusher.getChannel(channelName)?.me;
     log("Me: $me");

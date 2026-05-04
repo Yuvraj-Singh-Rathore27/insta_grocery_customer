@@ -316,6 +316,31 @@ class Utils {
     }
   }
 
+    static void showLoaderDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
+  static void hideProgress(BuildContext context) {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+  }
+  
+
   static Future<void> alertForLocationRestrictionCounty(
       BuildContext context) async {
     switch (await showDialog(

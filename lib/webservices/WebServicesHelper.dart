@@ -4704,16 +4704,368 @@ Future<Map<String, dynamic>?> toggleGigActivation(
   }
 }
 
+// these is an function or module we aree create for a vechile managemnet
 
 
+Future<Map<String, dynamic>?> vechileCategory(
+    Map<String, dynamic> param) async {
+
+  final String url = ApiUrl.vechileCategory;
+
+  Utils().customPrint("Vechile Category API => $url");
+
+  try {
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("Response => ${response.body}");
+
+    // ✅ SUCCESS
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+
+    // 🔐 AUTH ERROR
+    else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint("Unauthorized Access");
+      return null;
+    }
+
+    // ⚠️ OTHER ERRORS
+    else {
+      return json.decode(response.body);
+    }
+
+  } catch (e) {
+    Utils().customPrint("Exception => $e");
+    return null;
+  }
+}
 
 
+Future<Map<String, dynamic>?> getVechileSubCategory(
+    Map<String, dynamic> param) async {
+
+  final String baseUrl = ApiUrl.vechileSubCategory;
+
+  /// ✅ Example param: { "category_id": 5 }
+  Uri uri = Uri.parse(baseUrl).replace(
+    queryParameters: param.map(
+      (key, value) => MapEntry(key, value.toString()),
+    ),
+  );
+
+  Utils().customPrint("vechile SubCategory URL => $uri");
+
+  try {
+    final response = await http.get(uri, headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+    });
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      return json.decode(response.body);
+    }
+
+  } catch (e) {
+    Utils().customPrint("Error => $e");
+    return null;
+  }
+}
+
+Future<Map<String, dynamic>?> postDrivers(
+    Map<String, dynamic> body,
+    String accessToken,
+) async {
+
+  String url = ApiUrl.driver;
+
+  Utils().customPrint('Driver Post => $url');
+  Utils().customPrint('Body => $body');
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      body: json.encode(body),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $accessToken",
+      },
+    );
+
+    Utils().customPrint("Response => ${response.body}");
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
+
+  } catch (e) {
+    Utils().customPrint("Exception => $e");
+    return null;
+  }
+}
 
 
+Future<Map<String, dynamic>?> postVechile(
+    Map<String, dynamic> body,
+    String accessToken,
+) async {
+
+  String url = ApiUrl.vechilRegister;
+
+  Utils().customPrint('Vechile Post => $url');
+  Utils().customPrint('Body => $body');
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      body: json.encode(body),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $accessToken",
+      },
+    );
+
+    Utils().customPrint("Response => ${response.body}");
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
+
+  } catch (e) {
+    Utils().customPrint("Exception => $e");
+    return null;
+  }
+}
 
 
+Future<Map<String, dynamic>?> updateDriverProfile(
+  int driverId,
+  Map<String, dynamic> body,
+  String token,
+) async {
+  try {
+    final url = "${ApiUrl.updateDriver}$driverId";
+
+    print("API => $url");
+    print("BODY => $body");
+
+    final response = await http.put(
+      Uri.parse(url),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode(body),
+    );
+
+    print("STATUS => ${response.statusCode}");
+    print("RESPONSE => ${response.body}");
+
+    if (response.body.isEmpty) {
+      return {
+        "status": response.statusCode,
+        "message": "Empty response"
+      };
+    }
+
+    return jsonDecode(response.body);
+
+  } catch (e) {
+    print("ERROR => $e");
+    return null;
+  }
+}
 
 
+Future<Map<String, dynamic>?> getDriverByUserId(
+    String userId, String token) async {
+  try {
+    final url =
+        "${ApiUrl.getDriverProfile}?display_type=active&order_by=id&descending=false&user_id=$userId";
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.body.isEmpty) return null;
+
+    return jsonDecode(response.body);
+  } catch (e) {
+    print("GET DRIVER LIST ERROR => $e");
+    return null;
+  }
+}
+
+
+// Add these methods to your WebServicesHelper class
+
+Future<Map<String, dynamic>?> getVehicleByUserId(
+    String userId, String token) async {
+  try {
+    final url =
+        "${ApiUrl.getVehicle}?page=1&size=10&display_type=all&order_by=id&user_id=$userId&descending=false";
+
+    print("🚀 VEHICLE API => $url");
+    print("👤 USER ID => $userId");
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.body.isEmpty) return null;
+
+    print("🚗 RESPONSE => ${response.body}");
+
+    final decoded = jsonDecode(response.body);
+
+    // 🔥 SAFETY CHECK
+    if (decoded['data'] == null) {
+      print("❌ NO VEHICLE DATA FOUND");
+      return null;
+    }
+
+    return decoded;
+  } catch (e) {
+    print("GET VEHICLE ERROR => $e");
+    return null;
+  }
+}
+Future<Map<String, dynamic>?> updateVehicle(
+  int vehicleId,
+  Map<String, dynamic> body,
+  String token,
+) async {
+  try {
+    final url = "${ApiUrl.updateVehicle}$vehicleId"; // ✅ FIXED
+
+    print("🚗 Vehicle Update API => $url");
+
+    final response = await http.put(
+      Uri.parse(url),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode(body),
+    );
+
+    print("🚗 STATUS => ${response.statusCode}");
+    print("🚗 RESPONSE => ${response.body}");
+
+    if (response.body.isEmpty) {
+      return {"status": response.statusCode, "message": "Empty response"};
+    }
+
+    return jsonDecode(response.body);
+  } catch (e) {
+    print("UPDATE VEHICLE ERROR => $e");
+    return null;
+  }
+}
+
+
+// Add this to your WebServicesHelper class
+Future<Map<String, dynamic>?> toggleVehicleActivation(
+  Map<String, dynamic> param,
+  bool activate,
+) async {
+  String url =
+      "${ApiUrl.patchVechile}${param['vechile_id']}/status?activate=$activate";
+
+  Utils().customPrint('ACTIVATE/DEACTIVATE API URL => $url');
+
+  try {
+    final response = await http.patch(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Authorization": 'Bearer ${param['accessToken']}',
+      },
+    );
+
+    Utils().customPrint("Response ==== ${response.body}");
+    Utils().customPrint("Status ==== ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      return {
+        "status": response.statusCode,
+        "message": activate
+            ? "Failed to activate vehicle"
+            : "Failed to deactivate vehicle"
+      };
+    }
+  } catch (e) {
+    return {
+      "status": 500,
+      "message": "Network error: $e"
+    };
+  }
+}
+
+Future<Map<String, dynamic>?> getVechile(
+    Map<String, dynamic> param) async {
+
+  final String url = ApiUrl.getVechile;
+
+  /// 🔥 ADD QUERY PARAMS HERE
+  final uri = Uri.parse(url).replace(
+    queryParameters:
+        param.map((key, value) => MapEntry(key, value.toString())),
+  );
+
+  Utils().customPrint("🚗 Vehicle API => $uri");
+
+  try {
+    final response = await http.get(
+      uri,
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("Response => ${response.body}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint("Unauthorized Access");
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
+
+  } catch (e) {
+    Utils().customPrint("Exception => $e");
+    return null;
+  }
+}
 
 
 

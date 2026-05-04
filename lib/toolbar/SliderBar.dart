@@ -10,6 +10,7 @@ import 'package:insta_grocery_customer/screen/side_menu/id_cards/idcards.dart';
 
 import 'package:insta_grocery_customer/screen/side_menu/live_offer/offer_dashboard_screen.dart';
 import 'package:insta_grocery_customer/screen/side_menu/skill_program/skill_program_super_category.dart';
+import 'package:insta_grocery_customer/screen/side_menu/vechile_profile/VehicleHomeScreen%20.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,10 +24,13 @@ import '../screen/login/login_screen.dart';
 import '../screen/side_menu/cms_page/cms_page.dart';
 import '../screen/side_menu/internship_program.dart/internship_program_super_category.dart';
 import '../screen/side_menu/Gig_Workers/gigWorkersHome.dart';
+import '../controller/vechile_controller.dart';
+// import '../screen/side_menu/vechile_profile/vechile_priofile_home.dart';
 
 
 class SideMenuBar extends StatelessWidget {
   UserProfileController controller = Get.put(UserProfileController());
+  
   UserPreferences? userPreferences;
 
   @override
@@ -480,6 +484,33 @@ class SideMenuBar extends StatelessWidget {
                           Get.to(() => SkillProgramSuperCategoryScreen());
                         },
                       ),
+
+                       Divider(),
+
+                      ListTile(
+                        leading: Icon(
+                          Icons.local_post_office_outlined,
+                          color: AppColor().blackColor,
+                        ),
+                        title: Text(
+                          "vechile_managment",
+                          style: TextStyle(
+                            fontSize: AppDimens().front_medium,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: "Inter",
+                            color: AppColor().blackColor,
+                          ),
+                        ),
+
+
+                        
+                        onTap: () {
+
+  // 🔥 Controller ek hi baar create karo
+ Get.to(() => VehicleHomeScreen());
+},
+                      ),
+
 
                       Divider(),
 

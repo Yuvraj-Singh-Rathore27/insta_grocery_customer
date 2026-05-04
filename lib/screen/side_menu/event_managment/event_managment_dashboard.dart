@@ -284,11 +284,7 @@ Widget _eventSubCategoryBottomSheet(CustomerEventController controller) {
                 final sub = controller.subCategories[index];
 
                 /// 🔥 get category image (fallback)
-                final categoryImage = controller.categories
-                    .firstWhereOrNull(
-                        (c) => c.id == controller.selectedCategoryId.value)
-                    ?.image;
-
+               
                 return GestureDetector(
                   onTap: () {
                     controller.selectedSubCategoryId.value = sub.id ?? 0;
@@ -317,27 +313,38 @@ Widget _eventSubCategoryBottomSheet(CustomerEventController controller) {
 
                         /// 🔥 IMAGE OR ICON
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: categoryImage != null
-                              ? Image.network(
-                                  categoryImage,
-                                  height: 50,
-                                  width: 50,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) {
-                                    return const Icon(
-                                      Icons.event,
-                                      size: 40,
-                                      color: Colors.red,
-                                    );
-                                  },
-                                )
-                              : const Icon(
-                                  Icons.event,
-                                  size: 40,
-                                  color: Colors.red,
-                                ),
-                        ),
+  borderRadius: BorderRadius.circular(10),
+  child: (sub.image != null && sub.image!.trim().isNotEmpty)
+      ? Image.network(
+          sub.image!,
+          height: 50,
+          width: 50,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return const SizedBox(
+              height: 50,
+              width: 50,
+              child: Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            print("❌ Sub Image Error => ${sub.image}");
+            return const Icon(
+              Icons.event,
+              size: 40,
+              color: Colors.red,
+            );
+          },
+        )
+      : const Icon(
+          Icons.event,
+          size: 40,
+          color: Colors.red,
+        ),
+),
 
                         const SizedBox(height: 8),
 

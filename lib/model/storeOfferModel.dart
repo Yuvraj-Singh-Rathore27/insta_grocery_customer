@@ -252,6 +252,7 @@ class OfferCategoryModel {
 class OfferSubCategoryModel {
   int? id;
   String? name;
+  
 
   OfferSubCategoryModel({this.id, this.name});
 
