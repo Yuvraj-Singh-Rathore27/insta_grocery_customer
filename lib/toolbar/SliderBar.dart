@@ -1,743 +1,610 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:insta_grocery_customer/controller/user_profile_controller.dart';
-
-import 'package:insta_grocery_customer/screen/address_managment/address_listing.dart';
-import 'package:insta_grocery_customer/screen/daskboard/store_job_module/store_job_detail.dart';import 'package:insta_grocery_customer/screen/market_place/buyer/buyer_super_category.dart';
-import 'package:insta_grocery_customer/screen/side_menu/event_managment/event_managment_dashboard.dart';
-import 'package:insta_grocery_customer/screen/side_menu/id_cards/idcards.dart';
-
-import 'package:insta_grocery_customer/screen/side_menu/live_offer/offer_dashboard_screen.dart';
-import 'package:insta_grocery_customer/screen/side_menu/skill_program/skill_program_super_category.dart';
-import 'package:insta_grocery_customer/screen/side_menu/vechile_profile/VehicleHomeScreen%20.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../controller/vender_controller.dart';
+import 'package:insta_grocery_customer/controller/user_profile_controller.dart';
+import 'package:insta_grocery_customer/controller/vender_controller.dart';
+
 import '../preferences/UserPreferences.dart';
 import '../res/AppColor.dart';
-import '../res/AppDimens.dart';
-import '../res/ImageRes.dart';
-import '../screen/job_module/base_tab_helth_job.dart';
 import '../screen/login/login_screen.dart';
 import '../screen/side_menu/cms_page/cms_page.dart';
-import '../screen/side_menu/internship_program.dart/internship_program_super_category.dart';
-import '../screen/side_menu/Gig_Workers/gigWorkersHome.dart';
-import '../controller/vechile_controller.dart';
-// import '../screen/side_menu/vechile_profile/vechile_priofile_home.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 
 class SideMenuBar extends StatelessWidget {
-  UserProfileController controller = Get.put(UserProfileController());
-  
+  SideMenuBar({super.key});
+
+  final UserProfileController controller = Get.put(UserProfileController());
+
   UserPreferences? userPreferences;
 
   @override
   Widget build(BuildContext context) {
-    userPreferences = new UserPreferences(context);
-    PharmacyController pharmacycontroller = Get.put(PharmacyController());
+    userPreferences = UserPreferences(context);
+
+    Get.put(PharmacyController());
+
     return Drawer(
       child: Container(
-        decoration: BoxDecoration(
-          color: AppColor().colorPrimary.withOpacity(0.2),
-        ),
-        child: Stack(
-          children: [
-            SafeArea(
-              child: Scaffold(
-                backgroundColor: Colors.white,
-                body: SingleChildScrollView(
-                  child: Column(
+        color: Colors.white,
+        child: SafeArea(
+          child: Column(
+            children: [
+              /// ================= HEADER =================
+              TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 600),
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                curve: Curves.easeOut,
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: Opacity(
+                      opacity: value.clamp(0.0, 1.0),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColor().colorPrimary,
+                        AppColor().colorPrimary.withOpacity(0.82),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColor().colorPrimary.withOpacity(0.20),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Row(
                     children: [
+                      /// LEFT ICON
                       Container(
-                        width: MediaQuery.of(context).size.width,
-                        height: 80,
-                        color: AppColor().colorPrimary.withOpacity(0.2),
+                        width: 65,
+                        height: 65,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.dashboard_customize_rounded,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+
+                      const SizedBox(width: 14),
+
+                      /// CONTENT
+                      Expanded(
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Stack(
-                            //   children: [
-                            //     InkWell(
-                            //       onTap: () {
-                            //       },
-                            //       child: CircleAvatar(
-                            //         backgroundColor: AppColor().colorPrimary,
-                            //         radius:
-                            //             MediaQuery.of(context).size.height / 15,
-                            //         child: CircleAvatar(
-                            //           backgroundColor: Colors.white,
-                            //           radius:
-                            //               MediaQuery.of(context).size.height /
-                            //                   15.5,
-                            //         ),
-                            //       ),
-                            //     ),
-                            //     Positioned(
-                            //       bottom: 12.5,
-                            //       right: 0,
-                            //       //right: MediaQuery.of(context).size.width / 2 + 32.5,
-                            //       child: GestureDetector(
-                            //         onTap: () {
-                            //           // Get.to(() => EditProfile());
-                            //         },
-                            //         child: CircleAvatar(
-                            //           backgroundColor: AppColor().colorPrimary,
-                            //           radius: 12.5,
-                            //           child: const Icon(
-                            //             Icons.edit,
-                            //             size: 14,
-                            //             color: Colors.white,
-                            //           ),
-                            //         ),
-                            //       ),
-                            //     ),
-                            //   ],
-                            // ),
-                            Obx(() => Text(
-                                  controller.userData != null
-                                      ? controller.userData.value.data
-                                              ?.userProfile?.firstName ??
-                                          ""
-                                      : "",
-                                  textAlign: TextAlign.start,
-                                  style: TextStyle(
-                                      fontSize: AppDimens().front_regularX,
-                                      fontFamily: "Inter",
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColor().blackColor),
-                                )),
-                            Obx(() => Text(
-                                  controller.userData != null
-                                      ? controller.userData.value.data
-                                              ?.contactNumber ??
-                                          ""
-                                      : "",
-                                  textAlign: TextAlign.start,
-                                  style: TextStyle(
-                                      fontSize: AppDimens().front_regularX,
-                                      fontFamily: "Inter",
-                                      fontWeight: FontWeight.normal,
-                                      color: AppColor().blackColor),
-                                )),
+                            Text(
+                              "Dashboard",
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.75),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Obx(
+                              () => Text(
+                                controller.userData.value.data?.userProfile
+                                        ?.firstName ??
+                                    "Guest User",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: "Inter",
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Obx(
+                              () => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.phone,
+                                      color: Colors.white,
+                                      size: 13,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Flexible(
+                                      child: Text(
+                                        controller.userData.value.data
+                                                ?.contactNumber ??
+                                            "",
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      ListTile(
-                        leading: Icon(
-                          Icons.home,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Home",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_larger,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
-                        ),
-                        onTap: () async {
-                          Navigator.pop(context);
-                        },
-                      ),
-                      Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
 
-                      // ListTile(
-                      //   leading: ImageIcon(
-                      //     AssetImage(ImageRes().sideMenuDisplaySetting),
-                      //   ),
-                      //   title: Text(
-                      //     "Display Settings",
-                      //     textAlign: TextAlign.start,
-                      //     style: TextStyle(
-                      //         fontSize: AppDimens().front_medium,
-                      //         fontWeight: FontWeight.w400,
-                      //         fontFamily: "Inter",
-                      //         color: AppColor().blackColor),
-                      //   ),
-                      //   onTap: () async {
-                      //     Navigator.pop(context);
-                      //   },
-                      // ),
-                      // ListTile(
-                      //   leading: ImageIcon(
-                      //     AssetImage(ImageRes().sideMenuMyFavorites),
-                      //   ),
-                      //   title: Text(
-                      //     "My Favorites",
-                      //     textAlign: TextAlign.start,
-                      //     style: TextStyle(
-                      //         fontSize: AppDimens().front_medium,
-                      //         fontWeight: FontWeight.w400,
-                      //         fontFamily: "Inter",
-                      //         color: AppColor().blackColor),
-                      //   ),
-                      //   onTap: () async {
-                      //     Navigator.pop(context);
-                      //   },
-                      // ),
-                      // ListTile(
-                      //   leading: ImageIcon(
-                      //     AssetImage(ImageRes().sideMenuMyOrder),
-                      //   ),
-                      //   title: Text(
-                      //     "My Orders",
-                      //     textAlign: TextAlign.start,
-                      //     style: TextStyle(
-                      //         fontSize: AppDimens().front_medium,
-                      //         fontWeight: FontWeight.w400,
-                      //         fontFamily: "Inter",
-                      //         color: AppColor().blackColor),
-                      //   ),
-                      //   onTap: () async {
-                      //     Navigator.pop(context);
-                      //
-                      //   },
-                      // ),
-
-                      // ListTile(
-                      //   leading: ImageIcon(
-                      //     AssetImage(ImageRes().sideMenuNotifiction),
-                      //   ),
-                      //   title: Text(
-                      //     "My Notifications",
-                      //     textAlign: TextAlign.start,
-                      //     style: TextStyle(
-                      //         fontSize: AppDimens().front_medium,
-                      //         fontWeight: FontWeight.w400,
-                      //         fontFamily: "Inter",
-                      //         color: AppColor().blackColor),
-                      //   ),
-                      //   onTap: () async {
-                      //     Navigator.pop(context);
-                      //     Get.to(() => const NotificationPage());
-                      //   },
-                      // ),
-                      // ListTile(
-                      //   leading: ImageIcon(
-                      //     AssetImage(ImageRes().sideMenuSupport),
-                      //   ),
-                      //   title: Text(
-                      //     "My Support",
-                      //     textAlign: TextAlign.start,
-                      //     style: TextStyle(
-                      //         fontSize: AppDimens().front_medium,
-                      //         fontWeight: FontWeight.w400,
-                      //         fontFamily: "Inter",
-                      //         color: AppColor().blackColor),
-                      //   ),
-                      //   onTap: () async {
-                      //     Navigator.pop(context);
-                      //     Get.to(() => const MySupportsPage());
-                      //   },
-                      // ),
-
-                      ListTile(
-                        leading: Icon(
-                          Icons.location_city,
-                          color: AppColor().blackColor,
+                      /// RIGHT BUTTON
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        title: Text(
-                          "GIG Workers",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_medium,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
+                        child: const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: Colors.white,
+                          size: 16,
                         ),
-                        onTap: () async {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const GigHubHomeScreen()),
-                          );
-                        },
-                      ),
-                      Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
-
-
-                      
-
-                      ListTile(
-                        leading: Icon(
-                          Icons.location_city,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Address Management",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_medium,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
-                        ),
-                        onTap: () async {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const AddressListing()),
-                          );
-                        },
-                      ),
-                       Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),  
-                      ListTile(     
-                        leading: ImageIcon(
-                          AssetImage(ImageRes().sideMenuDisplaySetting),
-                        ),
-                        title: Text(
-                          "Market Place",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_medium,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Get.to(() => MarketPlaceSuperCategoryScreen());
-                        },
-                      ),
-                     
-                      Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
-
-                      ListTile(
-                        leading: Icon(
-                          Icons.local_post_office,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Jobs",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_medium,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
-                        ),
-                        onTap: () async {
-                          Navigator.pop(context);
-                          Get.to(() => BaseTapHealthJob());
-                        },
-                      ),
-                      Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
-                      ListTile(
-                        leading: Icon(
-                          Icons.event,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Event Managment",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_medium,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
-                        ),
-                        onTap: () async {
-                          Navigator.pop(context);
-                          Get.to(() => EventManagementDashboard());
-                          // Get.to(() => const MorePage());
-                        },
-                      ),
-                      Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
-                      ListTile(
-                        leading: Icon(
-                          Icons.local_offer,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Live  Offer",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_medium,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
-                        ),
-                        onTap: () async {
-                          Navigator.pop(context);
-                          Get.to(() => OfferDashboardScreen());
-                          // Get.to(() => const MorePage());
-                        },
-                      ),
-
-                      Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
-
-                      ListTile(
-                        leading: Icon(
-                          Icons.security,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Privacy & Policy",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_medium,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
-                        ),
-                        onTap: () async {
-                          Navigator.pop(context);
-                          Get.to(() => CmsPage());
-                          // Get.to(() => const MorePage());
-                        },
-                      ),
-
-                      Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
-
-                      ListTile(
-                        leading: Icon(
-                          Icons.local_post_office_outlined,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Store Jobs",
-                          style: TextStyle(
-                            fontSize: AppDimens().front_medium,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: "Inter",
-                            color: AppColor().blackColor,
-                          ),
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-
-                          // 👇 PASS JobListingModel OBJECT
-                          Get.to(() => MyPostedJobDetailScreen());
-                        },
-                      ),
-                      Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
-
-                      ListTile(
-                        leading: Icon(
-                          Icons.local_post_office_outlined,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Internship_program",
-                          style: TextStyle(
-                            fontSize: AppDimens().front_medium,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: "Inter",
-                            color: AppColor().blackColor,
-                          ),
-                        ),
-                        onTap: () {
-                          // 👇 PASS JobListingModel OBJECT
-                          Get.to(() => InternshipSuperCategoryScreen());
-                        },
-                      ),
-
-                      Divider(),
-
-                      ListTile(
-                        leading: Icon(
-                          Icons.local_post_office_outlined,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Skill_Program",
-                          style: TextStyle(
-                            fontSize: AppDimens().front_medium,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: "Inter",
-                            color: AppColor().blackColor,
-                          ),
-                        ),
-                        onTap: () {
-                          // 👇 PASS JobListingModel OBJECT
-                          Get.to(() => SkillProgramSuperCategoryScreen());
-                        },
-                      ),
-
-                       Divider(),
-
-                      ListTile(
-                        leading: Icon(
-                          Icons.local_post_office_outlined,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "vechile_managment",
-                          style: TextStyle(
-                            fontSize: AppDimens().front_medium,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: "Inter",
-                            color: AppColor().blackColor,
-                          ),
-                        ),
-
-
-                        
-                        onTap: () {
-
-  // 🔥 Controller ek hi baar create karo
- Get.to(() => VehicleHomeScreen());
-},
-                      ),
-
-
-                      Divider(),
-
-                      ListTile(
-                        leading: Icon(
-                          Icons.insert_drive_file,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "ID card",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_medium,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
-                        ),
-                        onTap: () async {
-                          Navigator.pop(context);
-                          Get.to(() => IdCards());
-                          // Get.to(() => const MorePage());
-                        },
-                      ),
-                      Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
-                      ListTile(
-                        leading: Icon(
-                          Icons.delete,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Delete Account",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_medium,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
-                        ),
-                        onTap: () {
-                          showDeleteAccount(context);
-                          Navigator.pop(context);
-                        },
-                      ),
-                      Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
-                      ListTile(
-                        leading: Icon(
-                          Icons.person,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Switch ${pharmacycontroller.business_type.value == "b2b" ? "B2C" : "B2B"}",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_medium,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
-                        ),
-                        onTap: () {
-                          pharmacycontroller.business_type.value == "b2b"
-                              ? pharmacycontroller.business_type.value = "b2c"
-                              : pharmacycontroller.business_type.value = "b2b";
-                          pharmacycontroller.getBusinessTypecategory();
-                          Navigator.pop(context);
-                        },
-                      ),
-                      Divider(
-                        color: Colors.grey,
-                        thickness: 1,
-                      ),
-                      ListTile(
-                        leading: Icon(
-                          Icons.logout,
-                          color: AppColor().blackColor,
-                        ),
-                        title: Text(
-                          "Logout",
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                              fontSize: AppDimens().front_medium,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: "Inter",
-                              color: AppColor().blackColor),
-                        ),
-                        onTap: () {
-                          showAlertDialog(context);
-                        },
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-            Positioned(
-                bottom: 10,
-                right: 100,
-                child: Center(
-                  child: Container(
-                    child: Text("Version-1.0.1",
-                        style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+              const SizedBox(height: 18),
+
+              /// ================= MENU =================
+              Expanded(
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  children: [
+                    /// HOME
+                    buildMenuTile(
+                      icon: Icons.home_rounded,
+                      title: "Home",
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                    ),
+
+                    /// PRIVACY
+                    buildMenuTile(
+                      icon: Icons.privacy_tip_rounded,
+                      title: "Privacy & Policy",
+                      onTap: () {
+                        Navigator.pop(context);
+
+                        Get.to(
+                          () => CmsPage(),
+                          transition: Transition.rightToLeft,
+                          duration: const Duration(milliseconds: 350),
+                        );
+                      },
+                    ),
+
+                    /// DELETE ACCOUNT
+                    buildMenuTile(
+                      icon: Icons.delete_forever_rounded,
+                      title: "Delete Account",
+                      iconColor: Colors.red,
+                      onTap: () {
+                        Navigator.pop(context);
+                        showDeleteAccount(context);
+                      },
+                    ),
+                    buildMenuTile1(
+                      icon: Icons.emergency,
+                      title: "SOS",
+                      onTap: () {
+                        Navigator.pop(context);
+
+                        Future.delayed(
+                          const Duration(milliseconds: 200),
+                          () => showSOSDialog(context),
+                        );
+                      },
+                    ),
+
+                    /// LOGOUT
+                    buildMenuTile(
+                      icon: Icons.logout_rounded,
+                      title: "Logout",
+                      iconColor: Colors.red,
+                      onTap: () {
+                        showAlertDialog(context);
+                      },
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    /// VERSION
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColor().colorPrimary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Text(
+                          "Version 1.0.1",
+                          style: TextStyle(
+                            color: AppColor().colorPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
                             fontFamily: "Inter",
-                            color: AppColor().blackColor)),
-                    transformAlignment: Alignment.center,
-                  ),
-                ))
-          ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 25),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void closeDrawer(BuildContext context) {
-    Navigator.pop(context);
-  }
+  /// ================= MENU TILE =================
+  Widget buildMenuTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? iconColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: TweenAnimationBuilder(
+        duration: const Duration(milliseconds: 350),
+        tween: Tween<double>(begin: 0.9, end: 1),
+        builder: (context, double value, child) {
+          return Transform.scale(
+            scale: value,
+            child: child,
+          );
+        },
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          elevation: 3,
+          shadowColor: Colors.black12,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            splashColor: AppColor().colorPrimary.withOpacity(0.15),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
+              child: Row(
+                children: [
+                  /// ICON BOX
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: (iconColor ?? AppColor().colorPrimary)
+                          .withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: iconColor ?? AppColor().colorPrimary,
+                      size: 24,
+                    ),
+                  ),
 
-  showAlertDialog(BuildContext context) {
-    Widget cancelButton = TextButton(
-      child: const Text(
-        "No",
-      ),
-      onPressed: () {
-        Navigator.of(context, rootNavigator: true).pop();
-      },
-    );
+                  const SizedBox(width: 15),
 
-    Widget continueButton = TextButton(
-      child: const Text("Yes"),
-      onPressed: () async {
-        //SharedPreferences prefs = await SharedPreferences.getInstance();
-        /*  String token = prefs.getString("token");
-        prefs.setString("token", "");*/
-        SharedPreferences preferences = await SharedPreferences.getInstance();
-        await preferences.remove('token');
-        await preferences.remove('user_id');
-        await preferences.clear();
-        userPreferences?.removeValues();
-        final store = GetStorage();
-        store.erase();
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) => LoginScreen(),
+                  /// TITLE
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: "Inter",
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+
+                  /// ARROW
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
+                ],
+              ),
+            ),
           ),
-          (route) => false,
-        );
-      },
-    );
-    // set up the AlertDialog
-    AlertDialog alert = AlertDialog(
-      title: const Text(
-        "Logout",
-        style: TextStyle(
-            color: Colors.black, fontWeight: FontWeight.w500, fontSize: 20),
+        ),
       ),
-      content: const Text("Are you sure , you want to logout"),
-      actions: [
-        cancelButton,
-        continueButton,
-      ],
-    );
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
     );
   }
 
-  showDeleteAccount(BuildContext context) {
-    Widget cancelButton = TextButton(
-      child: const Text(
-        "No",
-      ),
-      onPressed: () {
-        Navigator.of(context, rootNavigator: true).pop();
-      },
-    );
+  Widget buildMenuTile1({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color? iconColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: TweenAnimationBuilder(
+        duration: const Duration(milliseconds: 350),
+        tween: Tween<double>(begin: 0.9, end: 1),
+        builder: (context, double value, child) {
+          return Transform.scale(
+            scale: value,
+            child: child,
+          );
+        },
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          elevation: 3,
+          shadowColor: Colors.black12,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            splashColor: AppColor().colorPrimary.withOpacity(0.15),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
+              child: Row(
+                children: [
+                  /// ICON BOX
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: (iconColor ?? AppColor().colorPrimary)
+                          .withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: iconColor ?? AppColor().colorPrimary,
+                      size: 24,
+                    ),
+                  ),
 
-    Widget continueButton = TextButton(
-      child: const Text("Yes"),
-      onPressed: () async {
-        controller.deleteAccount();
-        //SharedPreferences prefs = await SharedPreferences.getInstance();
-        /*  String token = prefs.getString("token");
-        prefs.setString("token", "");*/
-        SharedPreferences preferences = await SharedPreferences.getInstance();
-        await preferences.remove('token');
-        await preferences.remove('user_id');
-        await preferences.clear();
-        userPreferences?.removeValues();
-        final store = GetStorage();
-        store.erase();
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) => LoginScreen(),
+                  const SizedBox(width: 15),
+
+                  /// TITLE
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: "Inter",
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          (route) => false,
-        );
-      },
-    );
-    // set up the AlertDialog
-    AlertDialog alert = AlertDialog(
-      title: const Text(
-        "Delete Account",
-        style: TextStyle(
-            color: Colors.black, fontWeight: FontWeight.w500, fontSize: 20),
+        ),
       ),
-      content: const Text("Are you sure , you want to Delete Account"),
-      actions: [
-        cancelButton,
-        continueButton,
-      ],
-    );
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
     );
   }
+
+  /// ================= LOGOUT DIALOG =================
+  void showAlertDialog(BuildContext context) {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        title: const Text(
+          "Logout",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          "Are you sure you want to logout?",
+        ),
+        actions: [
+          /// CANCEL
+          TextButton(
+            onPressed: () {
+              Get.back();
+            },
+            child: Text(
+              "Cancel",
+              style: TextStyle(
+                color: AppColor().colorPrimary,
+              ),
+            ),
+          ),
+
+          /// LOGOUT
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColor().colorPrimary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () async {
+              SharedPreferences preferences =
+                  await SharedPreferences.getInstance();
+
+              await preferences.remove('token');
+              await preferences.remove('user_id');
+              await preferences.clear();
+
+              userPreferences?.removeValues();
+
+              final store = GetStorage();
+              store.erase();
+
+              Get.offAll(
+                () => LoginScreen(),
+                transition: Transition.fadeIn,
+              );
+            },
+            child: const Text("Logout"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ================= DELETE ACCOUNT =================
+  void showDeleteAccount(BuildContext context) {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        title: const Text(
+          "Delete Account",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          "Are you sure you want to delete account?",
+        ),
+        actions: [
+          /// CANCEL
+          TextButton(
+            onPressed: () {
+              Get.back();
+            },
+            child: Text(
+              "Cancel",
+              style: TextStyle(
+                color: AppColor().colorPrimary,
+              ),
+            ),
+          ),
+
+          /// DELETE
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () async {
+              controller.deleteAccount();
+
+              SharedPreferences preferences =
+                  await SharedPreferences.getInstance();
+
+              await preferences.remove('token');
+              await preferences.remove('user_id');
+              await preferences.clear();
+
+              userPreferences?.removeValues();
+
+              final store = GetStorage();
+              store.erase();
+
+              Get.offAll(
+                () => LoginScreen(),
+                transition: Transition.fadeIn,
+              );
+            },
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void showSOSDialog(BuildContext context) {
+  Get.dialog(
+    AlertDialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      title: const Row(
+        children: [
+          Icon(
+            Icons.emergency,
+            color: Colors.red,
+          ),
+          SizedBox(width: 8),
+          Text("Emergency SOS"),
+        ],
+      ),
+      content: const Text(
+        "Are you sure you want to call Emergency Services (100)?",
+      ),
+      actions: [
+        /// Cancel
+        TextButton(
+          onPressed: () {
+            Get.back();
+          },
+          child: const Text("Cancel"),
+        ),
+
+        /// Call
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+          ),
+          icon: const Icon(Icons.call,color: Colors.white,),
+          label: const Text("Call 100",style: TextStyle(color: Colors.white),),
+          onPressed: () async {
+            Get.back();
+
+            final Uri phoneUri = Uri(
+              scheme: 'tel',
+              path: '100',
+            );
+
+            if (await canLaunchUrl(phoneUri)) {
+              await launchUrl(phoneUri);
+            }
+          },
+        ),
+      ],
+    ),
+  );
 }

@@ -24,61 +24,83 @@ class LocationPerMissionScreeen extends StatefulWidget {
 
 class _LocationPerMissionScreeen extends State<LocationPerMissionScreeen> {
   bool locationEnabled = false;
+  bool isLoading = false;
   bool notificationsEnabled = false;
   bool cameraEnabled = true; // Default enabled as per your design
   PharmacyController controller = Get.put(PharmacyController());
-  Future<void> _requestLocation(BuildContext context) async {
-    bool serviceEnabled;
-    LocationPermission permission;
+  Future<void> _requestLocation() async {
+  try {
+    // STEP 1: Check location service
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
-    // Check if location services are enabled.
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      return Future.error('Location services are disabled.');
-    }
+      await Geolocator.openLocationSettings();
 
-    // Check for permissions.
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.whileInUse ||
-        permission == LocationPermission.always) {
-      setState(() {
-        locationEnabled = true;
-      });
-      Position position = await Geolocator.getCurrentPosition();
-      controller.lat.value = position.latitude;
-      controller.lng.value = position.longitude;
-      controller.getAddressFromLatLng(position.latitude, position.longitude);
-      _navigateToNextScreen();
-    } else if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        setState(() {
-          locationEnabled = false;
-        });
-        // Don't exit app immediately, let user try again
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text('Location permission is required for full functionality'),
-            backgroundColor: AppColor().colorPrimary,
-          ),
+      // Recheck after user returns
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+
+      if (!serviceEnabled) {
+        Get.snackbar(
+          "Location Disabled",
+          "Please enable location services",
         );
-      } else {
-        setState(() {
-          locationEnabled = true;
-        });
+        return;
       }
     }
 
-    if (permission == LocationPermission.deniedForever) {
-      setState(() {
-        locationEnabled = false;
-      });
-      // Show dialog to guide user to settings
-      _showPermissionSettingsDialog('location');
-    }
-  }
+    // STEP 2: Check permission
+    LocationPermission permission =
+        await Geolocator.checkPermission();
 
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    // STEP 3: Handle denied
+    if (permission == LocationPermission.denied) {
+      Get.snackbar(
+        "Permission Denied",
+        "Location permission is required",
+      );
+      return;
+    }
+
+    // STEP 4: Permanently denied
+    if (permission == LocationPermission.deniedForever) {
+      _showPermissionSettingsDialog('location');
+      return;
+    }
+
+    // STEP 5: Permission granted
+    setState(() {
+      locationEnabled = true;
+    });
+
+    // STEP 6: Get current location
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    controller.lat.value = position.latitude;
+    controller.lng.value = position.longitude;
+
+    await controller.getAddressFromLatLng(
+      position.latitude,
+      position.longitude,
+    );
+
+    // STEP 7: Navigate immediately
+    _navigateToNextScreen();
+
+  } catch (e) {
+    print("Location Error: $e");
+
+    Get.snackbar(
+      "Error",
+      "Failed to get location",
+    );
+  }
+}
   Future<void> _requestNotificationPermission() async {
     final status = await Permission.notification.status;
     if (status.isDenied) {
@@ -163,12 +185,19 @@ class _LocationPerMissionScreeen extends State<LocationPerMissionScreeen> {
     }
   }
 
-  void _continueWithSelectedPermissions() {
-    // Allow continue regardless of permission states
-    // Users can choose which permissions they want to enable
-    // _navigateToNextScreen();
-    _requestLocation(context);
-  }
+  Future<void> _continueWithSelectedPermissions() async {
+  if (isLoading) return;
+
+  setState(() {
+    isLoading = true;
+  });
+
+  await _requestLocation();
+
+  setState(() {
+    isLoading = false;
+  });
+}
 
   void _skipForNow() {
     _navigateToNextScreen();
@@ -274,7 +303,7 @@ class _LocationPerMissionScreeen extends State<LocationPerMissionScreeen> {
                 value: locationEnabled,
                 onChanged: (value) {
                   if (value) {
-                    _requestLocation(context);
+                    _requestLocation();
                   } else {
                     setState(() {
                       locationEnabled = false;

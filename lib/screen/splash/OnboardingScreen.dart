@@ -17,33 +17,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingPage> _pages = [
     OnboardingPage(
-      title: "Welcome to Frebbo",
-      subtitle: "Your gateway to seamless business connections",
-      description:
-          "Discover a world of business opportunities and build meaningful connections that drive growth and success.",
-      icon: Icons.business_center_rounded,
-    ),
-    OnboardingPage(
-      title: "Find Businesses",
-      subtitle: "Discover local services and partners",
-      description:
-          "Easily search and discover businesses in your area. Find the perfect partners and services to help your business thrive.",
-      icon: Icons.search_rounded,
-    ),
-    OnboardingPage(
-      title: "Connect Instantly",
-      subtitle: "Build meaningful business relationships",
-      description:
-          "Connect with business owners and professionals instantly. Build lasting relationships that benefit your business growth.",
-      icon: Icons.connect_without_contact_rounded,
-    ),
-    OnboardingPage(
-      title: "Grow Together",
-      subtitle: "Scale your business network effortlessly",
-      description:
-          "Expand your network and watch your business grow. Collaborate, partner, and succeed together with Frebbo.",
-      icon: Icons.trending_up_rounded,
-    ),
+  title: "Book Rides Anytime",
+  subtitle: "Fast and reliable rides near you",
+  description:
+      "Book cabs and autos instantly whenever you need. Travel comfortably with trusted drivers around your city.",
+  icon: Icons.local_taxi_rounded,
+),
+
+OnboardingPage(
+  title: "Find Nearby Drivers",
+  subtitle: "Quick pickup at your location",
+  description:
+      "Easily connect with nearby drivers and get picked up quickly without long waiting times.",
+  icon: Icons.location_searching_rounded,
+),
+
+OnboardingPage(
+  title: "Safe & Comfortable Travel",
+  subtitle: "Enjoy secure rides every day",
+  description:
+      "Travel safely with verified drivers, live tracking, and smooth ride experiences for every trip.",
+  icon: Icons.security_rounded,
+),
+
+OnboardingPage(
+  title: "Ride Smarter with Frebbo",
+  subtitle: "Affordable rides for everyone",
+  description:
+      "Choose from Mini, Sedan, SUV, and Auto rides at affordable prices and enjoy hassle-free travel with Frebbo.",
+  icon: Icons.directions_car_filled_rounded,
+),
   ];
 
   @override

@@ -1,312 +1,485 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'OnboardingScreen.dart';
-import '../../res/AppColor.dart';
 
 class Splash extends StatefulWidget {
+  const Splash({super.key});
+
   @override
-  _SplashScreen createState() => _SplashScreen();
+  State<Splash> createState() => _SplashState();
 }
 
-class _SplashScreen extends State<Splash> with SingleTickerProviderStateMixin {
-  final splashDelay = 6;
-  late AnimationController _controller;
-  final Random _random = Random();
-  List<_IconParticle> _particles = [];
-  late Timer _particleTimer;
+class _SplashState extends State<Splash>
+    with TickerProviderStateMixin {
 
-  _loadWidget() async {
-    var _duration = Duration(seconds: splashDelay);
-    return Timer(_duration, navigationPage);
-  }
+  late AnimationController _animationController;
+  late AnimationController _carAnimationController;
+  late AnimationController _loaderController;
 
-  Future<void> navigationPage() async {
-    Get.offAll(() => OnboardingScreen());
-  }
+  late Animation<double> _logoScale;
+  late Animation<double> _logoOpacity;
+  late Animation<Offset> _textAnimation;
+  late Animation<double> _cardOpacity;
 
   @override
   void initState() {
     super.initState();
 
-    // main animation controller (for looping background icons)
-    _controller = AnimationController(
+    // MAIN CONTROLLER
+    _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: const Duration(milliseconds: 2200),
+    );
+
+    // CAR FLOATING CONTROLLER
+    _carAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
     )..repeat(reverse: true);
 
-    // create initial icons
-    _generateParticles();
+    // LOADER CONTROLLER
+    _loaderController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
 
-    // continuously add icons if fewer than 60
-    _particleTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (mounted && _particles.length < 60) {
-        setState(() {
-          _particles.add(_createRandomParticle());
-        });
-      }
-    });
-
-    _loadWidget();
-  }
-
-  void _generateParticles() {
-    _particles = List.generate(40, (_) => _createRandomParticle());
-  }
-
-  _IconParticle _createRandomParticle() {
-    return _IconParticle(
-      icon: _getRandomIcon(),
-      size: _random.nextDouble() * 28 + 20, // 20–48 px
-      left: _random.nextDouble() * Get.width,
-      top: _random.nextDouble() * Get.height,
-      fadeSpeed: _random.nextDouble() * 0.5 + 0.5,
+    // LOGO SCALE
+    _logoScale = Tween<double>(
+      begin: 0.4,
+      end: 1,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutBack,
+      ),
     );
-  }
 
-  IconData _getRandomIcon() {
-    List<IconData> icons = [
-      Icons.people,
-      Icons.business_center,
-      Icons.handshake,
-      Icons.network_check,
-      Icons.connect_without_contact,
-      Icons.language,
-      Icons.group,
-      Icons.public,
-      Icons.share,
-      Icons.workspaces,
-      Icons.link,
-      Icons.restaurant,
-      Icons.shopping_bag,
-      Icons.car_rental,
-      Icons.map_outlined,
-      Icons.location_on_outlined,
-    ];
-    return icons[_random.nextInt(icons.length)];
+    // LOGO OPACITY
+    _logoOpacity = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeIn,
+      ),
+    );
+
+    // TEXT SLIDE
+    _textAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.35),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    // CARD FADE
+    _cardOpacity = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.4, 1),
+      ),
+    );
+
+    _animationController.forward();
+
+    Timer(
+      const Duration(seconds: 4),
+      () {
+        Get.offAll(() => OnboardingScreen());
+      },
+    );
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _particleTimer.cancel();
+    _animationController.dispose();
+    _carAnimationController.dispose();
+    _loaderController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
-      backgroundColor: AppColor().colorPrimary,
-      body: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Stack(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFB31217),
+              Color(0xFFE52D27),
+            ],
+          ),
+        ),
+
+        child: SafeArea(
+          child: Stack(
             children: [
-              // 🌀 Animated background icons (fade in/out)
-              ..._particles.map((particle) {
-                final double fade =
-                    (sin((_controller.value * 2 * pi * particle.fadeSpeed)) +
-                            1) /
-                        2; // 0–1 smooth oscillation
-                return Positioned(
-                  left: particle.left,
-                  top: particle.top,
-                  child: Opacity(
-                    opacity: fade * 0.25, // subtle transparency
-                    child: Icon(
-                      particle.icon,
-                      size: particle.size,
-                      color: Colors.white.withOpacity(0.8),
-                    ),
+
+              // BACKGROUND CIRCLES
+              Positioned(
+                top: -120,
+                right: -100,
+                child: Container(
+                  height: 260,
+                  width: 260,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.06),
                   ),
-                );
-              }),
+                ),
+              ),
 
-              // 🌟 Static main splash content
+              Positioned(
+                bottom: -140,
+                left: -120,
+                child: Container(
+                  height: 300,
+                  width: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.05),
+                  ),
+                ),
+              ),
+
+              // MAIN CONTENT
               Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // "F" logo
-                    Container(
-                      height: 120,
-                      width: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.25),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          )
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          "F",
-                          style: TextStyle(
-                            fontSize: 64,
-                            color: AppColor().colorPrimary,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
 
-                    const SizedBox(height: 30),
-
-                    // App name + subtitles
-                    Column(
-                      children: [
-                        Text(
-                          "Frebbo",
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          "Find & Connect",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Find & Connect faster",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 50),
-
-                    // progress bar
-                    Container(
-                      height: 6,
-                      width: 250,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: Colors.white.withOpacity(0.3),
-                      ),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: FractionallySizedBox(
-                          widthFactor: _controller.value,
+                      // LOGO
+                      FadeTransition(
+                        opacity: _logoOpacity,
+                        child: ScaleTransition(
+                          scale: _logoScale,
                           child: Container(
+                            height: size.width * 0.24,
+                            width: size.width * 0.24,
+
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              gradient: const LinearGradient(
-                                colors: [Colors.white, Color(0xFFFFCCBC)],
+                              borderRadius: BorderRadius.circular(32),
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.15),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 15),
+                                ),
+                              ],
+                            ),
+
+                            child: const Center(
+                              child: Text(
+                                "F",
+                                style: TextStyle(
+                                  fontSize: 52,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFFE52D27),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
+
+                      const SizedBox(height: 28),
+
+                      // TEXT
+                      SlideTransition(
+                        position: _textAnimation,
+                        child: FadeTransition(
+                          opacity: _logoOpacity,
+                          child: Column(
+                            children: [
+
+                              const Text(
+                                "Frebbo Connect",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              Text(
+                                "Book Cabs • Autos • Nearby Rides",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.white.withOpacity(0.85),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 55),
+
+                      // GLASS CARD
+                      FadeTransition(
+                        opacity: _cardOpacity,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(34),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(
+                              sigmaX: 14,
+                              sigmaY: 14,
+                            ),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(24),
+
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(34),
+                                color: Colors.white.withOpacity(0.12),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                ),
+                              ),
+
+                              child: Column(
+                                children: [
+
+                                  // ANIMATED CAR
+                                  AnimatedBuilder(
+                                    animation: _carAnimationController,
+                                    builder: (context, child) {
+
+                                      double move = sin(
+                                        _carAnimationController.value * pi,
+                                      ) * 12;
+
+                                      return Transform.translate(
+                                        offset: Offset(move, 0),
+                                        child: child,
+                                      );
+                                    },
+                                    child: Container(
+                                      height: 115,
+                                      width: 115,
+
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(30),
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.white.withOpacity(0.18),
+                                            Colors.white.withOpacity(0.08),
+                                          ],
+                                        ),
+                                      ),
+
+                                      child: const Icon(
+                                        Icons.local_taxi_rounded,
+                                        size: 56,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 30),
+
+                                  const Text(
+                                    "Book Cabs &\nAuto Near You",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 31,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      height: 1.2,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  Text(
+                                    "Fast, reliable and affordable rides whenever you need them.",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      height: 1.6,
+                                      color: Colors.white.withOpacity(0.8),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 28),
+
+                                  // RIDE CARD
+                                  Container(
+                                    padding: const EdgeInsets.all(18),
+
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+
+                                    child: Row(
+                                      children: [
+
+                                        Container(
+                                          height: 56,
+                                          width: 56,
+
+                                          decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(18),
+                                            color: const Color(0xFFFFEBEE),
+                                          ),
+
+                                          child: const Icon(
+                                            Icons.directions_car_filled_rounded,
+                                            color: Color(0xFFE52D27),
+                                          ),
+                                        ),
+
+                                        const SizedBox(width: 16),
+
+                                        const Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+
+                                              Text(
+                                                "Book Rides",
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: Colors.black87,
+                                                ),
+                                              ),
+
+                                              SizedBox(height: 5),
+
+                                              Text(
+                                                "Mini • Sedan • SUV",
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Colors.black54,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+
+                                        Container(
+                                          padding: const EdgeInsets.all(10),
+
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFFEBEE),
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                          ),
+
+                                          child: const Icon(
+                                            Icons.arrow_forward_ios_rounded,
+                                            size: 16,
+                                            color: Color(0xFFE52D27),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // PROFESSIONAL LOADER
+              Positioned(
+                bottom: 45,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: [
+
+                    AnimatedBuilder(
+                      animation: _loaderController,
+                      builder: (context, child) {
+
+                        return SizedBox(
+                          width: 65,
+                          child: Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                            children: List.generate(3, (index) {
+
+                              double delay = index * 0.2;
+
+                              double value = sin(
+                                (_loaderController.value - delay) * 2 * pi,
+                              );
+
+                              return Transform.translate(
+                                offset: Offset(0, -value * 8),
+                                child: Container(
+                                  height: 10,
+                                  width: 10,
+
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withOpacity(
+                                      0.5 + (value.abs() * 0.5),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                        );
+                      },
                     ),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 18),
 
-                    // loading text
-                    _LoadingText(controller: _controller),
-
-                    const SizedBox(height: 30),
-
-                    // footer
                     Text(
-                      "Powered by Frebbo Connect © 2025",
+                      "Finding nearby rides...",
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
-                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.85),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ],
                 ),
               ),
             ],
-          );
-        },
+          ),
+        ),
       ),
     );
   }
-}
-
-class _LoadingText extends StatefulWidget {
-  final AnimationController controller;
-  const _LoadingText({required this.controller});
-
-  @override
-  __LoadingTextState createState() => __LoadingTextState();
-}
-
-class __LoadingTextState extends State<_LoadingText> {
-  final List<String> _loadingMessages = [
-    "Loading your connections...",
-    "Connecting to businesses",
-    "Building your network",
-    "Almost ready...",
-  ];
-  int _currentIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_updateText);
-  }
-
-  void _updateText() {
-    final progress = widget.controller.value;
-    final newIndex = (progress * _loadingMessages.length).floor();
-    if (newIndex != _currentIndex && newIndex < _loadingMessages.length) {
-      setState(() {
-        _currentIndex = newIndex;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_updateText);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      _loadingMessages[_currentIndex],
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        color: Colors.white.withOpacity(0.9),
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
-}
-
-// 🎨 Helper class for particles
-class _IconParticle {
-  final IconData icon;
-  final double size;
-  final double left;
-  final double top;
-  final double fadeSpeed;
-
-  _IconParticle({
-    required this.icon,
-    required this.size,
-    required this.left,
-    required this.top,
-    required this.fadeSpeed,
-  });
 }

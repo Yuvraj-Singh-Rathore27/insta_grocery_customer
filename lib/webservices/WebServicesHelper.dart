@@ -5028,6 +5028,46 @@ Future<Map<String, dynamic>?> toggleVehicleActivation(
   }
 }
 
+Future<Map<String, dynamic>?> toggleDriverActivation(
+  Map<String, dynamic> param,
+  bool activate,
+) async {
+  String url =
+      "${ApiUrl.patchDrivers}${param['driver_id']}/status?activate=$activate";
+
+  Utils().customPrint('ACTIVATE/DEACTIVATE API URL => $url');
+
+  try {
+    final response = await http.patch(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Authorization": 'Bearer ${param['accessToken']}',
+      },
+    );
+
+    Utils().customPrint("Response ==== ${response.body}");
+    Utils().customPrint("Status ==== ${response.statusCode}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      return {
+        "status": response.statusCode,
+        "message": activate
+            ? "Failed to activate driver"
+            : "Failed to deactivate Driver"
+      };
+    }
+  } catch (e) {
+    return {
+      "status": 500,
+      "message": "Network error: $e"
+    };
+  }
+}
+
+
 Future<Map<String, dynamic>?> getVechile(
     Map<String, dynamic> param) async {
 

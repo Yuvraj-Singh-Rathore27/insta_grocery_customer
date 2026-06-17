@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:insta_grocery_customer/res/AppColor.dart';
+import 'package:insta_grocery_customer/res/ImageRes.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../controller/vechile_controller.dart';
 import './RideDetailScreen.dart';
+
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'dart:async';
+
 class VehicleMapScreen extends StatefulWidget {
   const VehicleMapScreen({super.key});
 
@@ -13,92 +21,233 @@ class VehicleMapScreen extends StatefulWidget {
 }
 
 class _VehicleMapScreenState extends State<VehicleMapScreen> {
-  final controller = Get.find<VehicleController>();
+  late VehicleController controller; // Changed to late for better initialization
   GoogleMapController? mapController;
   Rx<Map<String, dynamic>?> selectedVehicle = Rx<Map<String, dynamic>?>(null);
-  BitmapDescriptor? carIcon;
+  BitmapDescriptor? movingCarIcon;
+  BitmapDescriptor? staticCarIcon;
   BitmapDescriptor? selectedCarIcon;
+  BitmapDescriptor? onlineCarIcon;
+BitmapDescriptor? offlineCarIcon;
+
+  
+  bool isInitialCameraSet = false;
+  
+  // ✅ Performance: Add caching
+  Set<Marker> _cachedMarkers = {};
+  Timer? _debounceTimer;
+  String _lastCacheKey = '';
 
   @override
   void initState() {
     super.initState();
+    
+    // ✅ Safe controller initialization
+    if (Get.isRegistered<VehicleController>()) {
+      controller = Get.find<VehicleController>();
+    } else {
+      controller = Get.put(VehicleController(), permanent: true);
+    }
+    
     _loadCustomIcons();
     
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.fetchNearbyVehicles();
+    // ✅ Performance: Debounced rebuild listener
+    ever(controller.nearbyVehicles, (_) {
+      _debounceMarkersUpdate();
     });
+  }
+  
+  // ✅ Performance: Debounce to prevent multiple rapid rebuilds
+  void _debounceMarkersUpdate() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _updateMarkersAndFit();
+      }
+    });
+  }
+  
+  void _updateMarkersAndFit() {
+    _cachedMarkers = _buildMarkers();
+    if (mounted) {
+      setState(() {});
+    }
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _fitAllMarkers();
+    });
+  }
+  
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+  
+  void _refreshMapMarkers() {
+    if (mapController != null && mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _loadCustomIcons() async {
-    try {
-      // Try to load custom icons, fallback to default if not found
-      carIcon = await BitmapDescriptor.defaultMarkerWithHue(
-        BitmapDescriptor.hueBlue,
-      );
-      selectedCarIcon = await BitmapDescriptor.defaultMarkerWithHue(
-        BitmapDescriptor.hueRed,
-      );
-    } catch (e) {
-      // Fallback to default markers
-      carIcon = BitmapDescriptor.defaultMarker;
-      selectedCarIcon = BitmapDescriptor.defaultMarker;
-    }
-    setState(() {});
+  try {
+
+    // ✅ ONLINE VEHICLE = ORANGE
+    onlineCarIcon = await _createCustomMarker(
+      icon: FontAwesomeIcons.carSide,
+      color: Colors.orange,
+      size: 90,
+    );
+
+    // ✅ OFFLINE VEHICLE = GREEN
+    offlineCarIcon = await _createCustomMarker(
+      icon: FontAwesomeIcons.carSide,
+      color: Colors.green,
+      size: 90,
+    );
+
+    // ✅ SELECTED VEHICLE = RED
+    selectedCarIcon = await _createCustomMarker(
+      icon: FontAwesomeIcons.carSide,
+      color: Colors.red,
+      size: 100,
+    );
+
+  } catch (e) {
+
+    debugPrint("❌ Marker Error => $e");
+
+    onlineCarIcon = BitmapDescriptor.defaultMarker;
+    offlineCarIcon = BitmapDescriptor.defaultMarker;
+    selectedCarIcon = BitmapDescriptor.defaultMarker;
   }
 
-  Set<Marker> _buildMarkers() {
-  final vehicles = controller.nearbyVehicles;
-
-  return vehicles.map((vehicle) {
-    final vehicleId = vehicle['id']?.toString() ?? "";
-
-    // 🔥 safe selection check
-    final isSelected =
-        selectedVehicle.value?['id']?.toString() == vehicleId;
-
-    // 🔥 safe coordinates
-    final lat = (vehicle['latitude'] ?? 0.0).toDouble();
-    final lng = (vehicle['longitude'] ?? 0.0).toDouble();
-
-    // ❌ skip invalid coordinates (VERY IMPORTANT)
-    if (lat == 0.0 || lng == 0.0) return null;
-
-    return Marker(
-      markerId: MarkerId(vehicleId),
-
-      // 🔥 important for smooth updates
-      position: LatLng(lat, lng),
-
-      // 🔥 stable icon (avoid flicker)
-      icon: isSelected
-          ? (selectedCarIcon ??
-              BitmapDescriptor.defaultMarkerWithHue(
-                  BitmapDescriptor.hueRed))
-          : (carIcon ??
-              BitmapDescriptor.defaultMarkerWithHue(
-                  BitmapDescriptor.hueBlue)),
-
-      infoWindow: InfoWindow(
-        title: vehicle['make_model'] ?? 'Vehicle',
-        snippet:
-            "₹${vehicle['base_charges'] ?? 0} | ₹${vehicle['rate_per_km'] ?? 0}/km",
-      ),
-
-      onTap: () {
-        selectedVehicle.value = vehicle;
-        _animateToVehicle(lat, lng);
-      },
-    );
-  }).whereType<Marker>().toSet(); // 🔥 REMOVE NULL MARKERS
+  if (mounted) {
+    setState(() {});
+  }
 }
 
+  // ✅ Performance: Cached marker building with cache key
+  Set<Marker> _buildMarkers() {
+
+  final vehicles = controller.nearbyVehicles;
+
+  if (vehicles.isEmpty) return {};
+
+  // ✅ Cache check
+  final cacheKey = _getCacheKey(vehicles);
+
+  if (cacheKey == _lastCacheKey &&
+      _cachedMarkers.isNotEmpty) {
+    return _cachedMarkers;
+  }
+
+  _lastCacheKey = cacheKey;
+
+  final markers = <Marker>[];
+
+  for (var vehicle in vehicles) {
+
+    final vehicleId =
+        vehicle['id']?.toString() ?? "";
+
+    if (vehicleId.isEmpty) continue;
+
+    final lat =
+        (vehicle['latitude'] ?? 0.0).toDouble();
+
+    final lng =
+        (vehicle['longitude'] ?? 0.0).toDouble();
+
+    if (lat == 0.0 || lng == 0.0) continue;
+
+    // =========================
+    // ✅ MOVING CHECK
+    // =========================
+
+    final bool isMoving =
+        controller.movingVehicles[
+                int.tryParse(vehicleId) ?? 0] ??
+            false;
+
+    final isSelected =
+        selectedVehicle.value?['id']
+                ?.toString() ==
+            vehicleId;
+
+    BitmapDescriptor icon;
+
+    // =========================
+    // ✅ ICON LOGIC
+    // =========================
+
+    if (isSelected) {
+
+      // 🔴 SELECTED
+      icon =
+          selectedCarIcon ??
+              BitmapDescriptor.defaultMarker;
+
+    } else if (isMoving) {
+
+      // 🟠 MOVING = ORANGE
+      icon =
+          onlineCarIcon ??
+              BitmapDescriptor.defaultMarker;
+
+    } else {
+
+      // 🟢 STANDING = GREEN
+      icon =
+          offlineCarIcon ??
+              BitmapDescriptor.defaultMarker;
+    }
+
+    markers.add(
+      Marker(
+        markerId: MarkerId(vehicleId),
+
+        position:
+            controller.vehiclePositions[
+                    int.tryParse(vehicleId) ??
+                        0] ??
+                LatLng(lat, lng),
+
+        icon: icon,
+
+        anchor: const Offset(0.5, 0.5),
+
+        flat: true,
+
+        alpha: 1.0,
+
+        onTap: () {
+
+          selectedVehicle.value = vehicle;
+
+          _animateToVehicle(lat, lng);
+        },
+      ),
+    );
+  }
+
+  return markers.toSet();
+}
+  // ✅ Performance: Quick cache key generation
+  String _getCacheKey(List<dynamic> vehicles) {
+    final buffer = StringBuffer();
+    buffer.write(selectedVehicle.value?['id'] ?? 'none');
+    buffer.write('|');
+    buffer.write(controller.selectedCategory.value?.id ?? 'all');
+    for (var vehicle in vehicles.take(20)) {
+      buffer.write('${vehicle['id']}:${vehicle['latitude']}:${vehicle['longitude']}|');
+    }
+    return buffer.toString();
+  }
 
   void _animateToVehicle(double lat, double lng) {
     mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(
-        LatLng(lat, lng),
-        16,
-      ),
+      CameraUpdate.newLatLngZoom(LatLng(lat, lng), 16),
     );
   }
 
@@ -115,7 +264,7 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
       );
       return;
     }
-    
+
     final Uri phoneUri = Uri(scheme: 'tel', path: cleanNumber);
     if (await canLaunchUrl(phoneUri)) {
       await launchUrl(phoneUri);
@@ -139,61 +288,170 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Obx(() {
-        if (controller.isLoadingCategories.value) {
-          return _buildLoadingState();
-        }
-
-        if (controller.nearbyVehicles.isEmpty) {
-          return _buildEmptyState();
-        }
-
-        final markers = _buildMarkers();
-        
-        // Get initial position from first vehicle or use default
-        LatLng initialPosition;
-        if (controller.nearbyVehicles.isNotEmpty) {
-          final firstVehicle = controller.nearbyVehicles.first;
-          initialPosition = LatLng(
-            (firstVehicle['latitude'] ?? 0.0).toDouble(),
-            (firstVehicle['longitude'] ?? 0.0).toDouble(),
-          );
-        } else if (controller.latitude.value != 0.0) {
-          initialPosition = LatLng(controller.latitude.value, controller.longitude.value);
-        } else {
-          initialPosition = const LatLng(28.6139, 77.2090); // Default: Delhi
-        }
-
-        return Stack(
-          children: [
-            // Map
-            GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: initialPosition,
-                zoom: 14,
-              ),
-markers: Set<Marker>.from(markers),        
-      myLocationEnabled: true,
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: false,
-              compassEnabled: true,
-              onMapCreated: (c) => mapController = c,
-onTap: (LatLng position) => selectedVehicle.value = null,            ),
-
-            // Top Bar
-            _buildTopBar(),
-
-            // Bottom Sheet (Selected Vehicle)
-            if (selectedVehicle.value != null)
-              _buildBottomSheet(selectedVehicle.value!),
-
-            // Close Button
-            if (selectedVehicle.value != null)
-              _buildCloseButton(),
-          ],
-        );
-      }),
+      body: Obx(() => Stack(
+        children: [
+          if (controller.hasInitialFetchDone.value && controller.isLocationReady.value)
+            _buildMap(),
+          if (!controller.hasInitialFetchDone.value || !controller.isLocationReady.value)
+            _buildLoadingState(),
+          if (controller.hasInitialFetchDone.value && 
+              controller.isLocationReady.value && 
+              controller.nearbyVehicles.isEmpty)
+            _buildEmptyState(),
+          _buildTopBar(),
+          _buildCategoryFilter(),
+          if (selectedVehicle.value != null)
+            _buildBottomSheet(selectedVehicle.value!),
+          if (selectedVehicle.value != null)
+            _buildCloseButton(),
+        ],
+      )),
     );
+  }
+
+  Widget _buildMap() {
+    LatLng initialPosition;
+    
+    if (controller.latitude.value != 0.0 && controller.longitude.value != 0.0) {
+      initialPosition = LatLng(controller.latitude.value, controller.longitude.value);
+    } else {
+      initialPosition = const LatLng(28.6139, 77.2090);
+    }
+
+    return GoogleMap(
+      key: ValueKey(controller.selectedCategory.value?.id ?? 'all'),
+      initialCameraPosition: CameraPosition(
+        target: initialPosition,
+        zoom: 14,
+      ),
+      markers: _cachedMarkers, // ✅ Using cached markers for better performance
+      myLocationEnabled: false,
+      myLocationButtonEnabled: false,
+      zoomControlsEnabled: false,
+      compassEnabled: true,
+      onMapCreated: (c) {
+        mapController = c;
+        if (!isInitialCameraSet) {
+          isInitialCameraSet = true;
+          Future.delayed(const Duration(milliseconds: 300), () {
+            _fitAllMarkers();
+          });
+        }
+      },
+      onTap: (LatLng position) {
+        selectedVehicle.value = null;
+      },
+    );
+  }
+
+  Widget _buildCategoryFilter() {
+  return Positioned(
+    bottom: 100,
+    left: 0,
+    right: 0,
+    child: Obx(() {
+      if (controller.isLoadingVehiclesByCategory.value) {
+        return const Center(
+          child: CircularProgressIndicator(
+            color: Colors.red,
+          ),
+        );
+      }
+
+      return SizedBox(
+        height: 90,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          scrollDirection: Axis.horizontal,
+          itemCount: controller.categoryList.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) {
+            final category = controller.categoryList[index];
+
+            final isSelected =
+                controller.selectedCategory.value?.id ==
+                    category.id;
+
+            return GestureDetector(
+              onTap: () async {
+                await controller.onCategorySelected(category);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 12,
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 90,
+                  maxWidth: 130,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      isSelected ? Colors.red : Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment:
+                      MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _getCategoryIcon(
+                        category.name ?? "",
+                      ),
+                      size: 24,
+                      color: isSelected
+                          ? Colors.white
+                          : Colors.black87,
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Flexible(
+                      child: Text(
+                        category.name ?? "",
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }),
+  );
+}
+  IconData _getCategoryIcon(String categoryName) {
+    switch (categoryName.toLowerCase()) {
+      case 'cabs':
+        return Icons.local_taxi;
+      case 'auto':
+        return Icons.electric_rickshaw;
+      case 'vans':
+        return Icons.local_shipping;
+      default:
+        return Icons.directions_car;
+    }
   }
 
   Widget _buildLoadingState() {
@@ -205,34 +463,16 @@ onTap: (LatLng position) => selectedVehicle.value = null,            ),
           colors: [Colors.white, Colors.grey.shade50],
         ),
       ),
-      child: Center(
+      child: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.red.withOpacity(0.2),
-                    blurRadius: 30,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const SizedBox(
-                width: 50,
-                height: 50,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                  strokeWidth: 3,
-                ),
-              ),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+              strokeWidth: 3,
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24),
+            Text(
               "Finding nearby vehicles...",
               style: TextStyle(
                 fontSize: 18,
@@ -240,17 +480,49 @@ onTap: (LatLng position) => selectedVehicle.value = null,            ),
                 color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               "Searching for available cabs near you",
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: Colors.grey,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _fitAllMarkers() async {
+    if (mapController == null) return;
+    if (controller.nearbyVehicles.isEmpty) return;
+
+    double minLat = controller.latitude.value;
+    double maxLat = controller.latitude.value;
+    double minLng = controller.longitude.value;
+    double maxLng = controller.longitude.value;
+
+    for (var vehicle in controller.nearbyVehicles) {
+      final lat = (vehicle['latitude'] ?? 0.0).toDouble();
+      final lng = (vehicle['longitude'] ?? 0.0).toDouble();
+
+      if (lat == 0.0 || lng == 0.0) continue;
+
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
+    }
+
+    LatLngBounds bounds = LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+
+    await mapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 100),
     );
   }
 
@@ -290,25 +562,19 @@ onTap: (LatLng position) => selectedVehicle.value = null,            ),
             ),
             const SizedBox(height: 8),
             Text(
-              "No cabs found in your area right now",
-              style: TextStyle(
+              controller.selectedCategory.value != null
+                  ? "No ${controller.selectedCategory.value?.name} available in your area"
+                  : "No cabs found in your area right now",
+              style: const TextStyle(
                 fontSize: 15,
-                color: Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Try changing your location or try again later",
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade500,
+                color: Colors.grey,
               ),
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: () => controller.fetchNearbyVehicles(),
-              icon: const Icon(Icons.refresh),
-              label: const Text("Try Again"),
+              onPressed: () => controller.forceRefresh(),
+              icon: const Icon(Icons.refresh,color: Colors.white,),
+              label: const Text("Try Again",style: TextStyle(color: Colors.white),),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
@@ -329,15 +595,13 @@ onTap: (LatLng position) => selectedVehicle.value = null,            ),
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            // Back Button
             _buildMapButton(
               onTap: () => Get.back(),
               icon: Icons.arrow_back,
               color: Colors.black87,
             ),
             const SizedBox(width: 12),
-            
-            // Location Info
+
             Expanded(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -361,25 +625,25 @@ onTap: (LatLng position) => selectedVehicle.value = null,            ),
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
+                          const Text(
                             "Your Location",
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey.shade600,
+                              color: Colors.grey,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           Obx(() => Text(
-                            controller.selectedSubCategory.value?.name ?? 
-                            controller.selectedCategory.value?.name ??
-                            "Nearby Vehicles",
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          )),
+                                controller.selectedSubCategory.value?.name ??
+                                    controller.selectedCategory.value?.name ??
+                                    "Nearby Vehicles",
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              )),
                         ],
                       ),
                     ),
@@ -388,8 +652,7 @@ onTap: (LatLng position) => selectedVehicle.value = null,            ),
               ),
             ),
             const SizedBox(width: 12),
-            
-            // My Location Button
+
             _buildMapButton(
               onTap: () async {
                 await controller.getCurrentLocation();
@@ -419,356 +682,415 @@ onTap: (LatLng position) => selectedVehicle.value = null,            ),
     final driverContact = driver['contact_number'] ?? '';
     final vehicleNumber = vehicle['vehicle_number'] ?? 'Not available';
     final hasContact = driverContact.isNotEmpty && driverContact.length >= 10;
-    
+    final vehicleImageUrl = vehicle['image']?['path'] as String?;
+    final driverImageUrl = driver['photo']?['path'] as String?;
+
     return Positioned(
       bottom: 0,
       left: 0,
       right: 0,
       child: TweenAnimationBuilder<double>(
-        duration: const Duration(milliseconds: 400),
+        duration: const Duration(milliseconds: 350),
         tween: Tween(begin: 0, end: 1),
         curve: Curves.easeOutCubic,
         builder: (context, value, child) {
           return Transform.translate(
-            offset: Offset(0, 50 * (1 - value)),
+            offset: Offset(0, 60 * (1 - value)),
             child: Opacity(opacity: value, child: child),
           );
         },
         child: GestureDetector(
-          onTap: () {
-  Get.to(() => RideDetailsScreen(vehicle: selectedVehicle.value));
-},
+          onTap: () =>
+              Get.to(() => RideDetailsScreen(vehicle: selectedVehicle.value)),
           child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(28),
-              topRight: Radius.circular(28),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 25,
-                offset: const Offset(0, -5),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
-            ],
-          ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Drag Handle
-                  Center(
-                    child: Container(
-                      width: 50,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ── Handle bar ──
+                    Container(
+                      width: 40,
                       height: 4,
                       decoration: BoxDecoration(
                         color: Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 14),
 
-                  // Vehicle Info Row
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    vehicle['make_model'] ?? 'Vehicle',
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.green.shade200,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    vehicle['subcategory']?['name'] ?? 'Economy',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.green.shade700,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                    // ── Vehicle name + ACTIVE badge ──
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            (vehicle['make_model'] ?? 'Vehicle')
+                                .toString()
+                                .split(' ')
+                                .map((w) => w.isEmpty
+                                    ? w
+                                    : w[0].toUpperCase() +
+                                        w.substring(1).toLowerCase())
+                                .join(' '),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.green,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "Available now",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  width: 3,
-                                  height: 3,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade400,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.access_time,
-                                    size: 12, color: Colors.grey),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "2 min away",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      // Pricing
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              "₹${vehicle['base_charges'] ?? 0}",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red.shade700,
-                              ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.green.shade300),
+                          ),
+                          child: Text(
+                            "ACTIVE",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade700,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          RichText(
-                            text: TextSpan(
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+
+                    // ── Available now status ──
+                    Row(
+                      children: [
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: const BoxDecoration(
+                              color: Colors.green, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          "Available now",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text("·",
+                            style: TextStyle(
+                                color: Colors.grey.shade400, fontSize: 14)),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.access_time,
+                            size: 12, color: Colors.grey),
+                        const SizedBox(width: 3),
+                        Text(
+                          "2 min away",
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ── Vehicle image ──
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: vehicleImageUrl != null &&
+                              vehicleImageUrl.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: vehicleImageUrl,
+                              height: 130,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) =>
+                                  _vehicleImagePlaceholder(),
+                              errorWidget: (_, __, ___) =>
+                                  _vehicleImagePlaceholder(),
+                            )
+                          : _vehicleImagePlaceholder(),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ── BASE / PER KM pricing row ──
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                TextSpan(
-                                  text: "₹${vehicle['rate_per_km'] ?? 0}",
+                                Text(
+                                  "BASE",
                                   style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade500,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
-                                TextSpan(
-                                  text: "/km",
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(Icons.local_offer_outlined,
+                                        size: 14,
+                                        color: Colors.red.shade400),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "₹${vehicle['base_charges'] ?? 0}",
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  "Fixed fare",
                                   style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
+                                      fontSize: 11,
+                                      color: Colors.grey.shade500),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                              width: 1,
+                              height: 48,
+                              color: Colors.grey.shade300),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "PER KM",
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey.shade500,
+                                    letterSpacing: 0.5,
                                   ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(Icons.route_outlined,
+                                        size: 14,
+                                        color: Colors.orange.shade400),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "₹${vehicle['rate_per_km'] ?? 0}",
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  "Per kilometer",
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade500),
                                 ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 14),
 
-                  const SizedBox(height: 20),
-                  Divider(color: Colors.grey.shade100, height: 1),
-                  const SizedBox(height: 16),
-
-                  // Driver Info
-                  Row(
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Colors.red, Colors.redAccent],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(0.3),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                    // ── Driver row ──
+                    Row(
+                      children: [
+                        ClipOval(
+                          child: driverImageUrl != null &&
+                                  driverImageUrl.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: driverImageUrl,
+                                  width: 46,
+                                  height: 46,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) =>
+                                      _driverAvatar(),
+                                )
+                              : _driverAvatar(),
                         ),
-                        child: const Center(
-                          child: Icon(Icons.person,
-                              color: Colors.white, size: 28),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              driverName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black87,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                driverName,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(Icons.star,
-                                    size: 14, color: Colors.amber),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "4.8",
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "•",
-                                  style: TextStyle(color: Colors.grey.shade400),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    vehicleNumber,
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  const Icon(Icons.star,
+                                      size: 13, color: Colors.amber),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    "4.8",
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade700,
                                     ),
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Call Button
-                      GestureDetector(
-                        onTap: hasContact
-                            ? () => _makePhoneCall(driverContact)
-                            : null,
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: hasContact
-                                ? Colors.red.shade50
-                                : Colors.grey.shade200,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.phone,
-                            size: 22,
-                            color: hasContact
-                                ? Colors.red
-                                : Colors.grey.shade400,
+                                  const SizedBox(width: 6),
+                                  Text("·",
+                                      style: TextStyle(
+                                          color: Colors.grey.shade400,
+                                          fontSize: 14)),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      vehicleNumber,
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey.shade600),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _openNavigation(
-                            (vehicle['latitude'] ?? 0.0).toDouble(),
-                            (vehicle['longitude'] ?? 0.0).toDouble(),
-                          ),
-                          icon: const Icon(Icons.navigation, size: 18),
-                          label: const Text("Navigate"),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton.icon(
-                          onPressed: hasContact
+                        GestureDetector(
+                          onTap: hasContact
                               ? () => _makePhoneCall(driverContact)
                               : null,
-                          icon: const Icon(Icons.call, size: 18,color: Colors.white,),
-                          label: Text(
-                            hasContact ? "Call Driver" : "Contact Unavailable",style: TextStyle(color: AppColor().whiteColor
+                          child: Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: hasContact
+                                  ? Colors.red.shade50
+                                  : Colors.grey.shade100,
+                              shape: BoxShape.circle,
                             ),
+                            child: Icon(Icons.phone,
+                                size: 20,
+                                color: hasContact
+                                    ? Colors.red
+                                    : Colors.grey.shade400),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ── Action buttons ──
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _openNavigation(
+                              (vehicle['latitude'] ?? 0.0).toDouble(),
+                              (vehicle['longitude'] ?? 0.0).toDouble(),
+                            ),
+                            icon: const Icon(Icons.navigation_outlined,
+                                size: 17),
+                            label: const Text("Navigate"),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: const BorderSide(color: Colors.red),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton.icon(
+                            onPressed: hasContact
+                                ? () => _makePhoneCall(driverContact)
+                                : null,
+                            icon: const Icon(Icons.call,
+                                size: 17, color: Colors.white),
+                            label: Text(
+                              hasContact ? "Call Driver" : "Unavailable",
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              disabledBackgroundColor: Colors.grey.shade300,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
-        )
       ),
+    );
+  }
+
+  Widget _vehicleImagePlaceholder() {
+    return Container(
+      height: 130,
+      width: double.infinity,
+      color: Colors.grey.shade100,
+      child: Icon(Icons.directions_car, size: 60, color: Colors.grey.shade300),
+    );
+  }
+
+  Widget _driverAvatar() {
+    return Container(
+      width: 46,
+      height: 46,
+      color: Colors.red,
+      child: const Icon(Icons.person, color: Colors.white, size: 26),
     );
   }
 
@@ -796,7 +1118,6 @@ onTap: (LatLng position) => selectedVehicle.value = null,            ),
         height: 48,
         decoration: BoxDecoration(
           color: Colors.white,
-
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -813,33 +1134,53 @@ onTap: (LatLng position) => selectedVehicle.value = null,            ),
     );
   }
 
-  Future<void> animateMarkerMovement(
-    String vehicleId,
-    LatLng start,
-    LatLng end,
-  ) async {
-  const int duration = 1000; // 1 second
-  const int steps = 30;
+  Future<BitmapDescriptor> _createCustomMarker({
+    required IconData icon,
+    required Color color,
+    double size = 80,
+  }) async {
+    final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
+    final ui.Canvas canvas = Canvas(pictureRecorder);
 
-  final double latStep = (end.latitude - start.latitude) / steps;
-  final double lngStep = (end.longitude - start.longitude) / steps;
+    final Paint circlePaint = Paint()..color = Colors.black;
 
-  for (int i = 0; i < steps; i++) {
-    await Future.delayed(Duration(milliseconds: duration ~/ steps));
-
-    final newLat = start.latitude + (latStep * i);
-    final newLng = start.longitude + (lngStep * i);
-
-    int index = controller.nearbyVehicles.indexWhere(
-      (v) => v['id'].toString() == vehicleId,
+    canvas.drawCircle(
+      Offset(size / 2, size / 2),
+      size / 2,
+      circlePaint,
     );
 
-    if (index != -1) {
-      controller.nearbyVehicles[index]['latitude'] = newLat;
-      controller.nearbyVehicles[index]['longitude'] = newLng;
+    TextPainter textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+    );
 
-      controller.nearbyVehicles.refresh();
-    }
+    textPainter.text = TextSpan(
+      text: String.fromCharCode(icon.codePoint),
+      style: TextStyle(
+        fontSize: size * 0.5,
+        fontFamily: icon.fontFamily,
+        package: icon.fontPackage,
+        color: color,
+      ),
+    );
+
+    textPainter.layout();
+
+    textPainter.paint(
+      canvas,
+      Offset(
+        (size - textPainter.width) / 2,
+        (size - textPainter.height) / 2,
+      ),
+    );
+
+    final img = await pictureRecorder.endRecording().toImage(
+          size.toInt(),
+          size.toInt(),
+        );
+
+    final data = await img.toByteData(format: ui.ImageByteFormat.png);
+
+    return BitmapDescriptor.fromBytes(data!.buffer.asUint8List());
   }
-}
 }

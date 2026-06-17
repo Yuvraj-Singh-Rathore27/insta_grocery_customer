@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:insta_grocery_customer/screen/daskboard/home/store_type_screen.dart';
 import 'package:insta_grocery_customer/screen/side_menu/event_managment/event_detail_screen_all.dart';
+import 'package:insta_grocery_customer/screen/side_menu/vechile_profile/VehicleMapScreenn.dart';
 import '../../../controller/address_controller.dart';
 import '../../../controller/homepage_controller.dart';
 import '../../../controller/vender_controller.dart';
@@ -33,33 +34,30 @@ class _HomeState extends State<Home> {
   UserProfileController userProfileController =
       Get.put(UserProfileController());
   PharmacyController controller = Get.put(PharmacyController());
-  CustomerEventController eventController=Get.put(CustomerEventController());
+  CustomerEventController eventController = Get.put(CustomerEventController());
   late double height, width;
 
-  int _currentIndex = 0; 
-  int selectedIndex = 0;// Track current tab index
-  
+  int _currentIndex = 0;
+  int selectedIndex = 0; // Track current tab index
 
   @override
   void initState() {
     super.initState();
-   WidgetsBinding.instance.addPostFrameCallback((_) async {
-  await userProfileController.getUserDetails();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await userProfileController.getUserDetails();
 
 // STEP 1: Get location first
-await _determinePosition();
+      await _determinePosition();
 
 // STEP 2: Load APIs that depend on location
-await controller.getStoreOfferApi();
-await controller.getStoreVideoApi();
-await controller.getHomePharmacyList();
+      await controller.getStoreOfferApi();
+      await controller.getStoreVideoApi();
+      await controller.getHomePharmacyList();
 
 // STEP 3: Other APIs
-homePageController.getBannerList();
-addressController.getAddreessListing();
-
-});
-
+      homePageController.getBannerList();
+      addressController.getAddreessListing();
+    });
   }
 
   @override
@@ -68,54 +66,54 @@ addressController.getAddreessListing();
     width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      
       backgroundColor: AppColor().whiteColor,
       body: SafeArea(
-  child: RefreshIndicator(
-    onRefresh: () async {
-      await _refreshHomeScreen();
-
-
-    },
-    child: SingleChildScrollView(
-      physics: AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSearchBar(),
-          const SizedBox(height: 15),
-          _buildBanner(),
-          const SizedBox(height: 20),
-          _buildBusinessCategory(),
-          const SizedBox(height: 15),
-          _nearbyHealthcareSection(),
-          const SizedBox(height: 15),
-        
-homeOfferWidget(),
-          const SizedBox(height: 15),
-
-          homeVideoWidget(),
-          const SizedBox(height: 15,),
-          homeEventWidget(),
-                    const SizedBox(height: 15,),
-
-
-          _recentActivitySectionWithBottomActions(),
-          const SizedBox(height: 15),
-          _recentEnquiriesSection(),
-          const SizedBox(height: 20),
-          _sectionBanner(),
-          const SizedBox(height: 20),
-          _membershipCardsSection(),
-          const SizedBox(height: 20),
-          _customerReviewsSection(),
-        ],
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await _refreshHomeScreen();
+          },
+          child: SingleChildScrollView(
+            physics: AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // _buildSearchBar(),
+                // const SizedBox(height: 15),
+                _buildBanner(),
+                const SizedBox(height: 20),
+                const SizedBox(height: 10),
+                _quickActionWidget(),
+                const SizedBox(height: 10),
+                // _buildBusinessCategory(),
+                // const SizedBox(height: 15),
+                // _nearbyHealthcareSection(),
+                // const SizedBox(height: 15),
+                // homeOfferWidget(),
+                // const SizedBox(height: 15),
+                // homeVideoWidget(),
+                // const SizedBox(
+                //   height: 15,
+                // ),
+                // homeEventWidget(),
+                // const SizedBox(
+                //   height: 15,
+                // ),
+                // _recentActivitySectionWithBottomActions(),
+                // const SizedBox(height: 15),
+                // _recentEnquiriesSection(),
+                // const SizedBox(height: 20),
+                // _sectionBanner(),
+                // const SizedBox(height: 20),
+                // _membershipCardsSection(),
+                // const SizedBox(height: 20),
+                // _customerReviewsSection(),
+              ],
+            ),
+          ),
+        ),
       ),
-    ),
-  ),
-),
-bottomNavigationBar: AppBottomBar(
+      bottomNavigationBar: AppBottomBar(
         currentIndex: selectedIndex,
         onTap: (index) {
           setState(() {
@@ -123,10 +121,8 @@ bottomNavigationBar: AppBottomBar(
           });
         },
       ),
-  
 
       // 🦶 Bottom Navigation Bar
-      
     );
   }
 
@@ -602,601 +598,574 @@ bottomNavigationBar: AppBottomBar(
     );
   }
 
+  Widget homeOfferWidget() {
+    final PharmacyController controller = Get.find<PharmacyController>();
 
-Widget homeOfferWidget() {
-  final PharmacyController controller = Get.find<PharmacyController>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Latest Offers',
+                  style: TextStyle(
+                    fontSize: AppDimens().front_larger,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: "Helvetica",
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Get.to(() => const StoreOfferTypeScreen());
+                  },
+                  child: Text(
+                    "View More",
+                    style: TextStyle(
+                        color: AppColor().colorPrimary,
+                        fontWeight: FontWeight.bold),
+                  ),
+                )
+              ],
+            )),
+        SizedBox(
+          height: 150,
+          child: Obx(() {
+            if (controller.isLoadingOffer.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-          'Latest Offers',
-          style: TextStyle(
-            fontSize: AppDimens().front_larger,
-            fontWeight: FontWeight.bold,
-            fontFamily: "Helvetica",
-          ),
-        ),
-        GestureDetector(
-          onTap: (){
-            Get.to(()=>const StoreOfferTypeScreen());
+            if (controller.nearbyOfferList.isEmpty) {
+              return const Center(child: Text("No nearby offers"));
+            }
 
-          },
-          child: Text("View More",style: TextStyle(color: AppColor().colorPrimary,fontWeight: FontWeight.bold),),
-        )
-          ],
-        )
-      ),
+            return ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: controller.nearbyOfferList.length > 5
+                  ? 5
+                  : controller.nearbyOfferList.length,
+              itemBuilder: (context, index) {
+                final offer = controller.nearbyOfferList[index];
 
-      SizedBox(
-        height: 150,
-        child: Obx(() {
-          if (controller.isLoadingOffer.value) {
-            return const Center(child: CircularProgressIndicator());
-          }
+                final imageUrl = (offer.image != null &&
+                        offer.image!.isNotEmpty &&
+                        offer.image!.first.path != null)
+                    ? offer.image!.first.path
+                    : null;
 
-       if (controller.nearbyOfferList.isEmpty) {
-  return const Center(child: Text("No nearby offers"));
-}
-
-
-          return ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: controller.nearbyOfferList.length > 5
-                ? 5
-                : controller.nearbyOfferList.length,
-            itemBuilder: (context, index) {
-              final offer = controller.nearbyOfferList[index];
-
-              final imageUrl =
-                  (offer.image != null &&
-                          offer.image!.isNotEmpty &&
-                          offer.image!.first.path != null)
-                      ? offer.image!.first.path
-                      : null;
-
-              return GestureDetector(
-                onTap: () {
-                  // 🔥 OPEN OFFER DETAIL SCREEN WITH INDEX
-                  Get.to(
-                    () => StoreOfferTypeScreen(
-                      initialIndex: index,
+                return GestureDetector(
+                  onTap: () {
+                    // 🔥 OPEN OFFER DETAIL SCREEN WITH INDEX
+                    Get.to(
+                      () => StoreOfferTypeScreen(
+                        initialIndex: index,
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 340,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                  );
-                },
-                child: Container(
-                  width: 340,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // 🖼 LEFT IMAGE
-                      ClipRRect(
-  borderRadius: const BorderRadius.only(
-    topLeft: Radius.circular(16),
-    bottomLeft: Radius.circular(16),
-  ),
-  child: SizedBox(
-    width: 150,
-    height: double.infinity,
-    child: imageUrl != null && imageUrl.isNotEmpty
-        ? Image.network(
-            imageUrl,
-            fit: BoxFit.cover,
-
-            // 🔄 Loading state
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Center(
-                child: SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.grey,
-                  ),
-                ),
-              );
-            },
-
-            // ❌ Error state (image too large / 404 / timeout)
-            errorBuilder: (context, error, stackTrace) {
-              return _offerImagePlaceholder();
-            },
-          )
-        : _offerImagePlaceholder(),
-  ),
-),
-
-
-                      // 📝 RIGHT CONTENT
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                offer.name ?? "Special Offer",
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-
-                              Row(
-                                children: [
-                                  const Icon(Icons.store,
-                                      size: 14, color: Colors.grey),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      offer.store?.name ?? "",
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const Spacer(),
-
-                              Row(
-                                children: [
-                                  const Icon(Icons.schedule,
-                                      size: 14, color: Colors.red),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      offer.timeLeft != null
-                                          ? "Valid till ${offer.timeLeft}"
-                                          : "Limited period",
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.red,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        }),
-      ),
-    ],
-  );
-}
-
-
-Widget _offerImagePlaceholder() {
-  return Container(
-    color: Colors.grey.shade200,
-    child: const Center(
-      child: Icon(Icons.local_offer, size: 40, color: Colors.grey),
-    ),
-  );
-}
-
-
-// home screeb event managment 
-Widget homeEventWidget() {
-  final CustomerEventController controller =
-      Get.find<CustomerEventController>();
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            
-           
-            Text(
-                "Latest Events",
-                style: TextStyle(
-                  color: AppColor().blackColor,
-                  fontWeight: FontWeight.bold,
-                ),
-             
-            ),
-            Text(
-                "View more",
-                style: TextStyle(
-                  color: AppColor().colorPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-             
-            )
-          ],
-        ),
-      ),
-
-      SizedBox(
-        height: 150,
-        child: Obx(() {
-          if (controller.isLoading.value) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (controller.allEvents.isEmpty) {
-            return const Center(child: Text("No events found"));
-          }
-
-          return ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: controller.allEvents.length > 5
-                ? 5
-                : controller.allEvents.length,
-            itemBuilder: (context, index) {
-              final event = controller.allEvents[index];
-
-              final imageUrl =
-                  event.image != null && event.image!.isNotEmpty
-                      ? event.image!.first.path
-                      : null;
-
-              return GestureDetector(
-                onTap: () {
-                  Get.to(() => EventDetailScreenAll(event:event));
-                },
-                child: Container(
-                  width: 340,
-                  margin: const EdgeInsets.only(right: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // IMAGE
-                      ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(16),
-                          bottomLeft: Radius.circular(16),
-                        ),
-                        child: SizedBox(
-                          width: 150,
-                          height: double.infinity,
-                          child: imageUrl != null
-                              ? Image.network(
-                                  imageUrl,
-                                  fit: BoxFit.cover,
-                                  errorBuilder:
-                                      (context, error, stackTrace) {
-                                    return _eventPlaceholder();
-                                  },
-                                )
-                              : _eventPlaceholder(),
-                        ),
-                      ),
-
-                      // DETAILS
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                event.title ?? "Event",
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-
-                              const SizedBox(height: 6),
-
-                              Row(
-                                children: [
-                                  const Icon(Icons.person,
-                                      size: 14, color: Colors.grey),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      event.organizerName ?? "",
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const Spacer(),
-
-                              Row(
-                                children: [
-                                  const Icon(Icons.schedule,
-                                      size: 14, color: Colors.red),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    event.eventDate ?? "",
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        }),
-      ),
-    ],
-  );
-}
-
-
-Widget _eventPlaceholder() {
-  return Container(
-    color: Colors.grey.shade200,
-    child: const Center(
-      child: Icon(Icons.event, size: 40, color: Colors.grey),
-    ),
-  );
-}
-
-
-
-
-
-Widget homeVideoWidget() {
-  final PharmacyController controller = Get.find<PharmacyController>();
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Text(
-          'Trending Videos',
-          style: TextStyle(
-            fontSize: AppDimens().front_larger,
-            fontWeight: FontWeight.bold,
-            fontFamily: "Helvetica",
-            color: Colors.black87,
-          ),
-        ),
-      ),
-
-      SizedBox(
-        height: 220,
-        child: Obx(() {
-          if (controller.isLoadingVideos.value) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (controller.myVideos.isEmpty) {
-            return const Center(child: Text("No videos available"));
-          }
-
-          return ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount:
-                controller.myVideos.length > 5 ? 5 : controller.myVideos.length,
-            itemBuilder: (context, index) {
-              final video = controller.myVideos[index];
-              final videoData =
-                  video.video.isNotEmpty ? video.video.first : null;
-
-              final String? thumbnail = videoData?['thumbnail'];
-final int duration =
-    (videoData?['duration'] as num?)?.toInt() ?? 0;
-
-              return GestureDetector(
-                onTap: () {
-                  final String? videoUrl = videoData?['path'];
-                  if (videoUrl == null || videoUrl.isEmpty) return;
-
-                  Get.to(
-                    () => Scaffold(
-                      backgroundColor: Colors.black,
-                      appBar: AppBar(backgroundColor: Colors.black),
-                      body: VideoPlayerScreen(
-                        videoUrl: videoUrl,
-                        autoPlay: true,
-                      ),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: 170,
-                  margin: const EdgeInsets.only(right: 14),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: Stack(
+                    child: Row(
                       children: [
-                        // 🎥 THUMBNAIL
-                        Positioned.fill(
-                          child: thumbnail != null
-                              ? Image.network(
-                                  thumbnail,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      _videoPlaceholder(),
-                                )
-                              : _videoPlaceholder(),
-                        ),
+                        // 🖼 LEFT IMAGE
+                        ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            bottomLeft: Radius.circular(16),
+                          ),
+                          child: SizedBox(
+                            width: 150,
+                            height: double.infinity,
+                            child: imageUrl != null && imageUrl.isNotEmpty
+                                ? Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
 
-                        // 🌑 GRADIENT OVERLAY
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                                colors: [
-                                  Colors.black.withOpacity(0.7),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
+                                    // 🔄 Loading state
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: SizedBox(
+                                          width: 28,
+                                          height: 28,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      );
+                                    },
+
+                                    // ❌ Error state (image too large / 404 / timeout)
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return _offerImagePlaceholder();
+                                    },
+                                  )
+                                : _offerImagePlaceholder(),
                           ),
                         ),
 
-                        // ▶ PLAY ICON
-                        const Positioned.fill(
-                          child: Center(
-                            child: CircleAvatar(
-                              radius: 26,
-                              backgroundColor: Colors.black54,
-                              child: Icon(
-                                Icons.play_arrow,
-                                color: Colors.white,
-                                size: 34,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // ⏱ DURATION
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.7),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              _formatDuration(duration),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // 📝 TITLE + STORE
-                        Positioned(
-                          left: 10,
-                          right: 10,
-                          bottom: 12,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                video.name.isNotEmpty
-                                    ? video.name
-                                    : "Store Video",
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                        // 📝 RIGHT CONTENT
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  offer.name ?? "Special Offer",
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                video.storeName ?? "Store",
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.store,
+                                        size: 14, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        offer.store?.name ?? "",
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                const Spacer(),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.schedule,
+                                        size: 14, color: Colors.red),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        offer.timeLeft != null
+                                            ? "Valid till ${offer.timeLeft}"
+                                            : "Limited period",
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.red,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
+                );
+              },
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _offerImagePlaceholder() {
+    return Container(
+      color: Colors.grey.shade200,
+      child: const Center(
+        child: Icon(Icons.local_offer, size: 40, color: Colors.grey),
+      ),
+    );
+  }
+
+// home screeb event managment
+  Widget homeEventWidget() {
+    final CustomerEventController controller =
+        Get.find<CustomerEventController>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Latest Events",
+                style: TextStyle(
+                  color: AppColor().blackColor,
+                  fontWeight: FontWeight.bold,
                 ),
-              );
-            },
-          );
-        }),
+              ),
+              Text(
+                "View more",
+                style: TextStyle(
+                  color: AppColor().colorPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 150,
+          child: Obx(() {
+            if (controller.isLoading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (controller.allEvents.isEmpty) {
+              return const Center(child: Text("No events found"));
+            }
+
+            return ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: controller.allEvents.length > 5
+                  ? 5
+                  : controller.allEvents.length,
+              itemBuilder: (context, index) {
+                final event = controller.allEvents[index];
+
+                final imageUrl = event.image != null && event.image!.isNotEmpty
+                    ? event.image!.first.path
+                    : null;
+
+                return GestureDetector(
+                  onTap: () {
+                    Get.to(() => EventDetailScreenAll(event: event));
+                  },
+                  child: Container(
+                    width: 340,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        // IMAGE
+                        ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            bottomLeft: Radius.circular(16),
+                          ),
+                          child: SizedBox(
+                            width: 150,
+                            height: double.infinity,
+                            child: imageUrl != null
+                                ? Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return _eventPlaceholder();
+                                    },
+                                  )
+                                : _eventPlaceholder(),
+                          ),
+                        ),
+
+                        // DETAILS
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  event.title ?? "Event",
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.person,
+                                        size: 14, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        event.organizerName ?? "",
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Spacer(),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.schedule,
+                                        size: 14, color: Colors.red),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      event.eventDate ?? "",
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _eventPlaceholder() {
+    return Container(
+      color: Colors.grey.shade200,
+      child: const Center(
+        child: Icon(Icons.event, size: 40, color: Colors.grey),
       ),
-    ],
-  );
-}
-String _formatDuration(int seconds) {
-  final mins = seconds ~/ 60;
-  final secs = seconds % 60;
-  return "${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}";
-}
+    );
+  }
 
+  Widget homeVideoWidget() {
+    final PharmacyController controller = Get.find<PharmacyController>();
 
-Widget _videoPlaceholder() {
-  return Container(
-    color: Colors.grey.shade300,
-    child: const Center(
-      child: Icon(
-        Icons.videocam,
-        size: 40,
-        color: Colors.white,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Text(
+            'Trending Videos',
+            style: TextStyle(
+              fontSize: AppDimens().front_larger,
+              fontWeight: FontWeight.bold,
+              fontFamily: "Helvetica",
+              color: Colors.black87,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 220,
+          child: Obx(() {
+            if (controller.isLoadingVideos.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (controller.myVideos.isEmpty) {
+              return const Center(child: Text("No videos available"));
+            }
+
+            return ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: controller.myVideos.length > 5
+                  ? 5
+                  : controller.myVideos.length,
+              itemBuilder: (context, index) {
+                final video = controller.myVideos[index];
+                final videoData =
+                    video.video.isNotEmpty ? video.video.first : null;
+
+                final String? thumbnail = videoData?['thumbnail'];
+                final int duration =
+                    (videoData?['duration'] as num?)?.toInt() ?? 0;
+
+                return GestureDetector(
+                  onTap: () {
+                    final String? videoUrl = videoData?['path'];
+                    if (videoUrl == null || videoUrl.isEmpty) return;
+
+                    Get.to(
+                      () => Scaffold(
+                        backgroundColor: Colors.black,
+                        appBar: AppBar(backgroundColor: Colors.black),
+                        body: VideoPlayerScreen(
+                          videoUrl: videoUrl,
+                          autoPlay: true,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 170,
+                    margin: const EdgeInsets.only(right: 14),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: Stack(
+                        children: [
+                          // 🎥 THUMBNAIL
+                          Positioned.fill(
+                            child: thumbnail != null
+                                ? Image.network(
+                                    thumbnail,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        _videoPlaceholder(),
+                                  )
+                                : _videoPlaceholder(),
+                          ),
+
+                          // 🌑 GRADIENT OVERLAY
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                  colors: [
+                                    Colors.black.withOpacity(0.7),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // ▶ PLAY ICON
+                          const Positioned.fill(
+                            child: Center(
+                              child: CircleAvatar(
+                                radius: 26,
+                                backgroundColor: Colors.black54,
+                                child: Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.white,
+                                  size: 34,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // ⏱ DURATION
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                _formatDuration(duration),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // 📝 TITLE + STORE
+                          Positioned(
+                            left: 10,
+                            right: 10,
+                            bottom: 12,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  video.name.isNotEmpty
+                                      ? video.name
+                                      : "Store Video",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  video.storeName ?? "Store",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  String _formatDuration(int seconds) {
+    final mins = seconds ~/ 60;
+    final secs = seconds % 60;
+    return "${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}";
+  }
+
+  Widget _videoPlaceholder() {
+    return Container(
+      color: Colors.grey.shade300,
+      child: const Center(
+        child: Icon(
+          Icons.videocam,
+          size: 40,
+          color: Colors.white,
+        ),
       ),
-    ),
-  );
-}
-
-
-
-
+    );
+  }
 
   Widget _recentEnquiriesSection() {
     final List<Map<String, String>> enquiries = [
@@ -1584,7 +1553,7 @@ Widget _videoPlaceholder() {
   }
 
   // 🦶 Bottom Navigation Bar Widget
- 
+
   Widget _buildSearchBar() {
     return GestureDetector(
       onTap: () => Get.to(() => StoreTypeSearch()),
@@ -1642,90 +1611,91 @@ Widget _videoPlaceholder() {
   }
 
   // 🏪 Business Category
-Widget _buildBusinessCategory() {
-  return Obx(
-    () => Container(
-      decoration: BoxDecoration(
-        color: AppColor().whiteColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColor().colorPrimary.withOpacity(0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionTitle("All Categories", () {
-            Get.to(() => StoreTypeScreen());
-          }),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            height: 2,
-            color: Colors.black26,
-          ),
-          const SizedBox(height: 14),
-
-          /// 👉 Changed ListView to GridView
-          SizedBox(
-  height: 300, // adjust as needed
-  child: GridView.builder(
-    physics: const BouncingScrollPhysics(),
-    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 3, // 3 columns
-      crossAxisSpacing: 0, // 👉 no horizontal gap
-      mainAxisSpacing: 0,  // 👉 no vertical gap
-      childAspectRatio: 1,
-    ),
-    itemCount: controller.BusinessCategory.length,
-    itemBuilder: (context, index) {
-      final item = controller.BusinessCategory[index];
-      return GestureDetector(
-        onTap: () {
-          controller.selectedBusinessCategory.value = item;
-          Get.to(() => StoreTypeScreen());
-        },
-        child: Column(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(5.0),
-              child: CachedNetworkImage(
-                imageUrl: item.photos![0].path.toString(),
-                height: 60,
-                width: 60,
-                fit: BoxFit.cover,
-                errorWidget: (context, url, error) =>
-                    const Icon(Icons.image, size: 50),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              item.name ?? '',
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              style: TextStyle(
-                fontSize: AppDimens().front_12,
-                fontWeight: FontWeight.w600,
-                fontFamily: "Helvetica",
-                color: Colors.black,
-              ),
+  Widget _buildBusinessCategory() {
+    return Obx(
+      () => Container(
+        decoration: BoxDecoration(
+          color: AppColor().whiteColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: AppColor().colorPrimary.withOpacity(0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-      );
-    },
-  ),
-)
-        ],
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle("All Categories", () {
+              Get.to(() => StoreTypeScreen());
+            }),
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              height: 2,
+              color: Colors.black26,
+            ),
+            const SizedBox(height: 14),
+
+            /// 👉 Changed ListView to GridView
+            SizedBox(
+              height: 300, // adjust as needed
+              child: GridView.builder(
+                physics: const BouncingScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3, // 3 columns
+                  crossAxisSpacing: 0, // 👉 no horizontal gap
+                  mainAxisSpacing: 0, // 👉 no vertical gap
+                  childAspectRatio: 1,
+                ),
+                itemCount: controller.BusinessCategory.length,
+                itemBuilder: (context, index) {
+                  final item = controller.BusinessCategory[index];
+                  return GestureDetector(
+                    onTap: () {
+                      controller.selectedBusinessCategory.value = item;
+                      Get.to(() => StoreTypeScreen());
+                    },
+                    child: Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(5.0),
+                          child: CachedNetworkImage(
+                            imageUrl: item.photos![0].path.toString(),
+                            height: 60,
+                            width: 60,
+                            fit: BoxFit.cover,
+                            errorWidget: (context, url, error) =>
+                                const Icon(Icons.image, size: 50),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          item.name ?? '',
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          style: TextStyle(
+                            fontSize: AppDimens().front_12,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: "Helvetica",
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            )
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   // 🖼 Banner Carousel
   Widget _buildBanner() {
     return Container(
@@ -1818,6 +1788,126 @@ Widget _buildBusinessCategory() {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _quickActionWidget() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// TITLE
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Quick Actions",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                "View all",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          /// BUTTONS
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              /// BOOK CAB
+              GestureDetector(
+                onTap: () {
+                  /// OPEN SCREEN
+                  Get.to(() => VehicleMapScreen());
+                },
+                child: Column(
+                  children: [
+                    Container(
+                      height: 75,
+                      width: 75,
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: const Icon(
+                        Icons.local_taxi,
+                        color: Colors.blue,
+                        size: 34,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Book Cab",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              /// UNDER PROGRESS
+              GestureDetector(
+                onTap: () {
+                  Get.snackbar(
+                    "Coming Soon",
+                    "This feature is under development",
+                    backgroundColor: Colors.orange.shade100,
+                  );
+                },
+                child: Column(
+                  children: [
+                    Container(
+                      height: 75,
+                      width: 75,
+                      decoration: BoxDecoration(
+                        color: AppColor().colorPrimary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child:  Icon(
+                        Icons.local_hospital,
+                        color: AppColor().colorPrimary,
+                        size: 34,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "Book Ambulance",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1946,24 +2036,21 @@ Widget _buildBusinessCategory() {
     );
   }
 
+  // these function logic foor fast screen
 
-  // these function logic foor fast screen 
-  
   Future<void> _refreshHomeScreen() async {
-  print("🔄 Refreshing Home Screen...");
+    print("🔄 Refreshing Home Screen...");
 
-  await userProfileController.getUserDetails();
-  await _determinePosition(); // important
+    await userProfileController.getUserDetails();
+    await _determinePosition(); // important
 
-  await controller.getStoreOfferApi();   // ADD THIS
-  await controller.getStoreVideoApi();   // ADD THIS
-  await controller.getHomePharmacyList();
+    await controller.getStoreOfferApi(); // ADD THIS
+    await controller.getStoreVideoApi(); // ADD THIS
+    await controller.getHomePharmacyList();
 
-  await homePageController.getBannerList();
-  await addressController.getAddreessListing();
+    await homePageController.getBannerList();
+    await addressController.getAddreessListing();
 
-  print("✅ Home Screen Refreshed!");
-}
-
-
+    print("✅ Home Screen Refreshed!");
+  }
 }

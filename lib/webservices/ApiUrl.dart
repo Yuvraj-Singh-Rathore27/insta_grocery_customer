@@ -313,6 +313,7 @@ static const getRegisterCustomerEvent =
       static const getVehicle="${apiUrl}vehicles/";
       static const updateVehicle="${apiUrl}vehicles/";
       static const patchVechile="${apiUrl}vehicles/";
+      static const patchDrivers="${apiUrl}drivers/";
       static const getVechile = "${apiUrl}vehicles/nearby";
 
 
