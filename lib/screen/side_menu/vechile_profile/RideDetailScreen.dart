@@ -14,7 +14,8 @@ class RideDetailsScreen extends StatefulWidget {
 
 class _RideDetailsScreenState extends State<RideDetailsScreen> {
   final controller = Get.find<VehicleController>();
-  
+  final TextEditingController _sosMessageController = TextEditingController();
+
   late Map<String, dynamic> vehicleData;
   
   @override
@@ -28,6 +29,12 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     } else {
       vehicleData = {};
     }
+  }
+
+  @override
+  void dispose() {
+    _sosMessageController.dispose();
+    super.dispose();
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
@@ -62,6 +69,92 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
+  void _showSosConfirmationDialog() {
+    _sosMessageController.clear();
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text("Emergency SOS"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Are you sure you want to send an emergency SOS? This will call 100 and immediately notify our support team with your live location.",
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _sosMessageController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: "What's the emergency? (optional)",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                contentPadding: const EdgeInsets.all(10),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Get.back();
+              _triggerSos();
+            },
+            child: const Text("Yes, SOS", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  Future<void> _triggerSos() async {
+    final driver = vehicleData['driver'] ?? {};
+    final int vehicleIdValue = vehicleData['id'] ?? 0;
+    final int driverIdValue = driver['id'] ?? 0;
+    final double lat = (vehicleData['latitude'] ?? controller.latitude.value).toDouble();
+    final double lng = (vehicleData['longitude'] ?? controller.longitude.value).toDouble();
+
+    final String enteredMessage = _sosMessageController.text.trim();
+    final String finalMessage =
+        enteredMessage.isEmpty ? VehicleController.defaultSosMessage : enteredMessage;
+
+    // 1. Dial emergency number
+    await _makePhoneCall("100");
+
+    // 2. Notify backend so admin can see what happened
+    final success = await controller.sendSosAlert(
+      vehicleId: vehicleIdValue,
+      driverId: driverIdValue,
+      latitude: lat,
+      longitude: lng,
+      message: finalMessage,
+    );
+
+    Get.snackbar(
+      success ? "SOS Sent" : "SOS Alert Failed",
+      success
+          ? "Emergency alert sent. Help is on the way."
+          : "Could not reach our server, but your call to 100 was placed.",
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: success ? Colors.red : Colors.orange,
+      colorText: Colors.white,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,6 +174,36 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
           onPressed: () => Get.back(),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: _showSosConfirmationDialog,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.sos, color: Colors.white, size: 18),
+                    SizedBox(width: 4),
+                    Text(
+                      "SOS",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(

@@ -140,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                   child: Image(
                                     width: 300,
                                     fit: BoxFit.contain,
-                                    image: AssetImage(ImageRes().logoGrocery),
+                                    image: AssetImage(ImageRes().loginLogo),
                                   ),
                                 ),
                               ),
@@ -292,21 +292,21 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
           const SizedBox(height: 20),
 
-          MyElevatedButton(
-            onPressed: () {
-              login_controller.mobileNumber.value = '8107357227';
-              login_controller.onSubmit(context);
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Text(
-              'Login As Guest',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: AppColor().colorPrimary,
-              ),
-            ),
-          )
+          // MyElevatedButton(
+          //   onPressed: () {
+          //     login_controller.mobileNumber.value = '8107357227';
+          //     login_controller.onSubmit(context);
+          //   },
+          //   borderRadius: BorderRadius.circular(20),
+          //   child: Text(
+          //     'Login As Guest',
+          //     style: TextStyle(
+          //       fontWeight: FontWeight.bold,
+          //       fontSize: 18,
+          //       color: AppColor().colorPrimary,
+          //     ),
+          //   ),
+          // )
 
           // Login type toggle (commented in original, keeping structure)
           // _buildLoginTypeToggle(),
@@ -319,6 +319,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return Column(
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             // Country Code Picker
             InkWell(
@@ -326,12 +327,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 showCountyPiker(login_controller);
               },
               child: Container(
-                height: 50,
-                margin: const EdgeInsets.fromLTRB(0, 15.0, 0, 0),
+                height: 48,
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(width: 1, color: Colors.white),
+                    bottom: BorderSide(width: 1, color: AppColor().whiteColor.withOpacity(0.5)),
                   ),
                 ),
                 alignment: Alignment.center,
@@ -479,50 +479,55 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildRegisterSection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Don\'t have an account?  ',
-          textAlign: TextAlign.start,
-          style: TextStyle(
-            fontSize: 14,
-            fontFamily: "Inter",
-            fontWeight: FontWeight.normal,
-            color: AppColor().whiteColor.withOpacity(0.9),
-          ),
+ Widget _buildRegisterSection() {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Text(
+        "Don't have an account? ",
+        style: TextStyle(
+          fontSize: 16,
+          fontFamily: "Inter",
+          color: AppColor().whiteColor.withOpacity(0.85),
         ),
-        InkWell(
-          onTap: () {
-            Get.to(() => RegisterScreen());
-          },
-          child: Container(
-            padding: EdgeInsets.symmetric(vertical: 4),
-            child: Column(
-              children: [
-                Text(
-                  'Register here',
-                  textAlign: TextAlign.start,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: "Inter",
-                    fontWeight: FontWeight.bold,
-                    color: AppColor().whiteColor,
-                  ),
-                ),
-                Container(
-                  height: 1,
-                  width: 80,
-                  color: AppColor().green_color_light ?? Colors.green,
-                )
-              ],
+      ),
+      InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          Get.to(() => RegisterScreen());
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal:16 ,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: AppColor().whiteColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColor().green_color_light.withOpacity(0.35),
+                blurRadius: 8,
+                spreadRadius: 1,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child:  Text(
+            "Register Here",
+            style: TextStyle(
+              fontSize: 15,
+              fontFamily: "Inter",
+              fontWeight: FontWeight.w700,
+              color: AppColor().colorPrimary,
+              letterSpacing: 0.3,
             ),
           ),
-        )
-      ],
-    );
-  }
+        ),
+      ),
+    ],
+  );
+}
 
   void showCountyPiker(LoginController controller) {
     showCountryPicker(

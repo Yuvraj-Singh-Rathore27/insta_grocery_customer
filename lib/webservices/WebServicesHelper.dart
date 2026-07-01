@@ -5108,6 +5108,113 @@ Future<Map<String, dynamic>?> getVechile(
 }
 
 
+Future<Map<String, dynamic>?> createVehicleSosAlert(
+    Map<String, dynamic> body,
+    String accessToken,
+) async {
+
+  String url = ApiUrl.vehicleSosApi;
+
+  Utils().customPrint('Vehicle SOS Post => $url');
+  Utils().customPrint('Body => $body');
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      body: json.encode(body),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $accessToken",
+      },
+    );
+
+    Utils().customPrint("Response => ${response.body}");
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
+
+  } catch (e) {
+    Utils().customPrint("Exception => $e");
+    return null;
+  }
+}
+
+// these module si basically implent for a feedabce section
+
+Future<Map<String, dynamic>?> getFeedbackTypes() async {
+
+  final String url = ApiUrl.feedback_types;
+
+  Utils().customPrint("Feedback Types API => $url");
+
+  try {
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("Response => ${response.body}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint("Unauthorized Access");
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
+
+  } catch (e) {
+    Utils().customPrint("Exception => $e");
+    return null;
+  }
+}
+
+Future<Map<String, dynamic>?> postFeedback(
+    Map<String, dynamic> body,
+    String accessToken,
+) async {
+
+  String url = ApiUrl.postfeedback;
+
+  Utils().customPrint('Feedback Post => $url');
+  Utils().customPrint('Body => $body');
+
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      body: json.encode(body),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $accessToken",
+      },
+    );
+
+    Utils().customPrint("Response => ${response.body}");
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
+
+  } catch (e) {
+    Utils().customPrint("Exception => $e");
+    return null;
+  }
+}
 
 
 

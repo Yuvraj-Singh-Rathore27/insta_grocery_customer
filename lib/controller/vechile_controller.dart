@@ -7,6 +7,7 @@ import '../webservices/WebServicesHelper.dart';
 import '../utills/Utils.dart';
 import '../preferences/UserPreferences.dart';
 import '../model/vechile_model.dart';
+import '../model/vehicle_sos_model.dart';
 import '../model/file_model.dart';
 import '../model/responsemodel/FileUploadResponseModel.dart';
 import '../webservices/ApiUrl.dart';
@@ -63,6 +64,9 @@ class VehicleController extends GetxController {
   RxBool isSubmitting = false.obs;
   RxInt vehicleId = 0.obs;
   RxList<dynamic> nearbyVehicles = [].obs;
+
+  // ==================== SOS / EMERGENCY ====================
+  RxBool isSendingSos = false.obs;
   
   // Add loading indicator for category change
   RxBool isLoadingVehiclesByCategory = false.obs;
@@ -563,5 +567,48 @@ Future<void> clearCategoryFilter() async {
   
   LatLng? getVehiclePosition(int vehicleId) {
     return vehiclePositions[vehicleId];
+  }
+
+  // ============================
+  // ✅ SOS / EMERGENCY ALERT
+  // ============================
+  static const String defaultSosMessage =
+      "Emergency assistance required. Vehicle breakdown on highway.";
+
+  Future<bool> sendSosAlert({
+    required int vehicleId,
+    required int driverId,
+    required double latitude,
+    required double longitude,
+    String message = defaultSosMessage,
+  }) async {
+    try {
+      isSendingSos.value = true;
+
+      final sosModel = VehicleSosModel(
+        vehicleId: vehicleId,
+        driverId: driverId,
+        userId: int.tryParse(userId) ?? 0,
+        latitude: latitude,
+        longitude: longitude,
+        message: message,
+      );
+
+      final response = await WebServicesHelper()
+          .createVehicleSosAlert(sosModel.toJson(), accessToken);
+
+      if (response != null) {
+        debugPrint("✅ [SOS] Alert sent: $response");
+        return true;
+      } else {
+        debugPrint("❌ [SOS] Failed to send alert");
+        return false;
+      }
+    } catch (e) {
+      debugPrint("❌ [SOS] Error: $e");
+      return false;
+    } finally {
+      isSendingSos.value = false;
+    }
   }
 }

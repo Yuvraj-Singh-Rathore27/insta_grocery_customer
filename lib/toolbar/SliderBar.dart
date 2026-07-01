@@ -10,6 +10,7 @@ import '../preferences/UserPreferences.dart';
 import '../res/AppColor.dart';
 import '../screen/login/login_screen.dart';
 import '../screen/side_menu/cms_page/cms_page.dart';
+import '../screen/side_menu/feedback/feedback_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SideMenuBar extends StatelessWidget {
@@ -208,6 +209,21 @@ class SideMenuBar extends StatelessWidget {
                       },
                     ),
 
+                    /// FEEDBACK
+                    buildMenuTile(
+                      icon: Icons.feedback_rounded,
+                      title: "Feedback",
+                      onTap: () {
+                        Navigator.pop(context);
+
+                        Get.to(
+                          () => const FeedbackScreen(),
+                          transition: Transition.rightToLeft,
+                          duration: const Duration(milliseconds: 350),
+                        );
+                      },
+                    ),
+
                     /// DELETE ACCOUNT
                     buildMenuTile(
                       icon: Icons.delete_forever_rounded,
@@ -235,6 +251,7 @@ class SideMenuBar extends StatelessWidget {
                     buildMenuTile(
                       icon: Icons.logout_rounded,
                       title: "Logout",
+                      
                       iconColor: Colors.red,
                       onTap: () {
                         showAlertDialog(context);
@@ -336,7 +353,7 @@ class SideMenuBar extends StatelessWidget {
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         fontFamily: "Inter",
-                        color: Colors.black87,
+                        color: Colors.black,
                       ),
                     ),
                   ),
@@ -483,7 +500,7 @@ class SideMenuBar extends StatelessWidget {
                 transition: Transition.fadeIn,
               );
             },
-            child: const Text("Logout"),
+            child:  Text("Logout",style: TextStyle(color: AppColor().whiteColor),),
           ),
         ],
       ),

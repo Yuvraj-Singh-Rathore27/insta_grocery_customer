@@ -4,9 +4,11 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:insta_grocery_customer/res/AppColor.dart';
 import 'package:insta_grocery_customer/res/ImageRes.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../controller/vechile_controller.dart';
 import './RideDetailScreen.dart';
+import './VehicleLocationSearchScreen.dart';
 
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
@@ -24,6 +26,10 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
   late VehicleController controller; // Changed to late for better initialization
   GoogleMapController? mapController;
   Rx<Map<String, dynamic>?> selectedVehicle = Rx<Map<String, dynamic>?>(null);
+  // Null = using device's current location. Set once the customer picks a
+  // location from VehicleLocationSearchScreen; shown in the top bar and used
+  // to tailor the "no vehicles" message to that place.
+  Rx<String?> selectedLocationLabel = Rx<String?>(null);
   BitmapDescriptor? movingCarIcon;
   BitmapDescriptor? staticCarIcon;
   BitmapDescriptor? selectedCarIcon;
@@ -251,6 +257,29 @@ BitmapDescriptor? offlineCarIcon;
     );
   }
 
+  Future<void> _onSelectLocationTap() async {
+    final dynamic result =
+        await Get.to(() => const VehicleLocationSearchScreen());
+
+    if (result == null || result is! Map) return;
+
+    final double? newLat = (result['latitude'] as num?)?.toDouble();
+    final double? newLng = (result['longitude'] as num?)?.toDouble();
+    if (newLat == null || newLng == null) return;
+
+    selectedVehicle.value = null;
+    selectedLocationLabel.value = result['address'] as String?;
+    controller.updateLocation(newLat, newLng);
+
+    mapController?.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: LatLng(newLat, newLng), zoom: 15),
+      ),
+    );
+
+    await controller.forceRefresh();
+  }
+
   Future<void> _makePhoneCall(String phoneNumber) async {
     final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
     if (cleanNumber.isEmpty) {
@@ -285,6 +314,32 @@ BitmapDescriptor? offlineCarIcon;
     launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
+  void _shareVehicleDetails(Map<String, dynamic> vehicle) {
+    final driver = vehicle['driver'] ?? {};
+    final driverName = driver['name'] ?? 'Driver';
+    final driverContact = (driver['contact_number'] ?? '').toString();
+    final vehicleNumber = vehicle['vehicle_number'] ?? 'Not available';
+    final makeModel = (vehicle['make_model'] ?? 'Vehicle').toString();
+    final lat = (vehicle['latitude'] ?? 0.0).toDouble();
+    final lng = (vehicle['longitude'] ?? 0.0).toDouble();
+
+    final shareText = '''
+🚖 Vehicle Details
+
+🚗 Vehicle: $makeModel
+🔖 Number: $vehicleNumber
+👤 Driver: $driverName${driverContact.isNotEmpty ? '\n📞 Contact: $driverContact' : ''}
+
+💰 Base Fare: ₹${vehicle['base_charges'] ?? 0}
+📏 Per KM: ₹${vehicle['rate_per_km'] ?? 0}
+${lat != 0.0 && lng != 0.0 ? '\n📍 Live Location: https://www.google.com/maps/dir/?api=1&destination=$lat,$lng\n' : ''}
+Shared via Frebbo Connect
+https://play.google.com/store/apps/details?id=com.insta.grocery.customer
+''';
+
+    Share.share(shareText);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -302,6 +357,8 @@ BitmapDescriptor? offlineCarIcon;
           _buildCategoryFilter(),
           if (selectedVehicle.value != null)
             _buildBottomSheet(selectedVehicle.value!),
+          if (selectedVehicle.value != null)
+            _buildShareButton(selectedVehicle.value!),
           if (selectedVehicle.value != null)
             _buildCloseButton(),
         ],
@@ -526,6 +583,21 @@ BitmapDescriptor? offlineCarIcon;
     );
   }
 
+  String _emptyStateMessage() {
+    final categoryName = controller.selectedCategory.value?.name;
+    final locationLabel = selectedLocationLabel.value;
+
+    if (locationLabel != null) {
+      return categoryName != null
+          ? "No $categoryName available near \"$locationLabel\""
+          : "No vehicles available near \"$locationLabel\"";
+    }
+
+    return categoryName != null
+        ? "No $categoryName available in your area"
+        : "No cabs found in your area right now";
+  }
+
   Widget _buildEmptyState() {
     return Container(
       decoration: BoxDecoration(
@@ -562,9 +634,8 @@ BitmapDescriptor? offlineCarIcon;
             ),
             const SizedBox(height: 8),
             Text(
-              controller.selectedCategory.value != null
-                  ? "No ${controller.selectedCategory.value?.name} available in your area"
-                  : "No cabs found in your area right now",
+              _emptyStateMessage(),
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 15,
                 color: Colors.grey,
@@ -603,51 +674,59 @@ BitmapDescriptor? offlineCarIcon;
             const SizedBox(width: 12),
 
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.location_on, color: Colors.red, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            "Your Location",
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Obx(() => Text(
-                                controller.selectedSubCategory.value?.name ??
-                                    controller.selectedCategory.value?.name ??
-                                    "Nearby Vehicles",
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              )),
-                        ],
+              child: GestureDetector(
+                onTap: _onSelectLocationTap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_on, color: Colors.red, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Obx(() => Text(
+                                  selectedLocationLabel.value == null
+                                      ? "Your Location"
+                                      : "Pickup Location",
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                )),
+                            Obx(() => Text(
+                                  selectedLocationLabel.value ??
+                                      controller.selectedSubCategory.value?.name ??
+                                      controller.selectedCategory.value?.name ??
+                                      "Nearby Vehicles",
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                )),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.keyboard_arrow_down,
+                          color: Colors.grey.shade500, size: 20),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -657,6 +736,7 @@ BitmapDescriptor? offlineCarIcon;
               onTap: () async {
                 await controller.getCurrentLocation();
                 if (controller.latitude.value != 0.0) {
+                  selectedLocationLabel.value = null;
                   mapController?.animateCamera(
                     CameraUpdate.newCameraPosition(
                       CameraPosition(
@@ -665,6 +745,7 @@ BitmapDescriptor? offlineCarIcon;
                       ),
                     ),
                   );
+                  await controller.forceRefresh();
                 }
               },
               icon: Icons.my_location,
@@ -1102,6 +1183,18 @@ BitmapDescriptor? offlineCarIcon;
         onTap: () => selectedVehicle.value = null,
         icon: Icons.close,
         color: Colors.black87,
+      ),
+    );
+  }
+
+  Widget _buildShareButton(Map<String, dynamic> vehicle) {
+    return Positioned(
+      bottom: 320,
+      right: 76,
+      child: _buildMapButton(
+        onTap: () => _shareVehicleDetails(vehicle),
+        icon: Icons.share,
+        color: Colors.red,
       ),
     );
   }

@@ -316,6 +316,13 @@ static const getRegisterCustomerEvent =
       static const patchDrivers="${apiUrl}drivers/";
       static const getVechile = "${apiUrl}vehicles/nearby";
 
+      // vehicle SOS / emergency alert
+      static const vehicleSosApi = "${apiUrl}vehicle-sos/";
+
+// these module si basically implent for a feedabce section
+      static const feedback_types="${apiUrl}feedback-types/";
+      static const postfeedback="${apiUrl}user/feedback/";
+
 
 
 
