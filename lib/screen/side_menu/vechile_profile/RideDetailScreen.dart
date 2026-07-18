@@ -29,6 +29,12 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     } else {
       vehicleData = {};
     }
+
+    // Facility names may have failed to load at app start (network) —
+    // retry so the Facilities chips can show names instead of ids.
+    if (controller.facilityNames.isEmpty) {
+      controller.loadFacilities();
+    }
   }
 
   @override
@@ -403,6 +409,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   Widget _buildVehicleDetailsCard() {
     final category = vehicleData['category'] ?? {};
     final subCategory = vehicleData['subcategory'] ?? {};
+    // Ambulances carry facility_ids instead of a subcategory
+    final List<int> facilityIds = (vehicleData['facility_ids'] is List)
+        ? (vehicleData['facility_ids'] as List).whereType<int>().toList()
+        : <int>[];
     
     return Container(
       padding: const EdgeInsets.all(20),
@@ -462,11 +472,16 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
             value: category['name'] ?? 'Not available',
           ),
           const SizedBox(height: 16),
-          _infoRow(
-            icon: Icons.subdirectory_arrow_right,
-            title: "Subcategory",
-            value: subCategory['name'] ?? 'Not available',
-          ),
+          // Show facilities when the vehicle has them (ambulances);
+          // otherwise fall back to the subcategory row (cabs).
+          if (facilityIds.isNotEmpty)
+            _facilitiesRow(facilityIds)
+          else
+            _infoRow(
+              icon: Icons.subdirectory_arrow_right,
+              title: "Subcategory",
+              value: subCategory['name'] ?? 'Not available',
+            ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -757,6 +772,61 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Facility chips (Patient Transport, ICU, Oxygen Support...) resolved
+  // from facility_ids via the names loaded in the controller.
+  Widget _facilitiesRow(List<int> facilityIds) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.medical_services_outlined,
+            size: 20, color: Colors.red.shade400),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Facilities",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Obx(() {
+                return Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: facilityIds.map((id) {
+                    final name =
+                        controller.facilityNames[id] ?? "Facility #$id";
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.red.shade100),
+                      ),
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red.shade700,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              }),
+            ],
           ),
         ),
       ],

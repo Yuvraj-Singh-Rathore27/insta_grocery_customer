@@ -137,11 +137,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 margin: EdgeInsets.fromLTRB(0, 100, 10, 10),
                                 child: ScaleTransition(
                                   scale: _scaleAnimation,
-                                  child: Image(
-                                    width: 300,
-                                    fit: BoxFit.contain,
-                                    image: AssetImage(ImageRes().loginLogo),
-                                  ),
+                                  child: _buildVehicleLogo(),
                                 ),
                               ),
                             ),
@@ -231,6 +227,56 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildVehicleLogo() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 90,
+          height: 90,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 16,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.directions_car  ,
+            size: 52,
+            color: AppColor().colorPrimary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'FREBBO',
+          style: TextStyle(
+            fontSize: 32,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Discover nearby',
+          style: TextStyle(
+            fontSize: 15,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w400,
+            color: Colors.white.withOpacity(0.85),
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
     );
   }
 

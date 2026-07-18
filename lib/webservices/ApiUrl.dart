@@ -304,7 +304,7 @@ static const getRegisterCustomerEvent =
 
       // vechile Mangement api 
 
-      static const vechileCategory="${apiUrl}vehicle-category";
+      static const vechileCategory="${apiUrl}vehicle-category/";
       static const vechileSubCategory="${apiUrl}vehicles-subcategories";
       static const driver="${apiUrl}drivers/";
       static const updateDriver="${apiUrl}drivers/";
@@ -315,6 +315,11 @@ static const getRegisterCustomerEvent =
       static const patchVechile="${apiUrl}vehicles/";
       static const patchDrivers="${apiUrl}drivers/";
       static const getVechile = "${apiUrl}vehicles/nearby";
+      // List vehicle types (1 = Cab, 2 = Ambulance, ...)
+      static const vechileTypeList = "${apiUrl}admin/vehicle-type/";
+      // Vehicle facilities (Patient Transport, ICU, Oxygen Support, ...)
+      // — shown on the detail screen for vehicles carrying facility_ids
+      static const vechileFacilityList = "${apiUrl}admin/vehicle-facility/";
 
       // vehicle SOS / emergency alert
       static const vehicleSosApi = "${apiUrl}vehicle-sos/";

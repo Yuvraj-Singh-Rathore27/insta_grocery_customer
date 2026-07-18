@@ -4712,11 +4712,19 @@ Future<Map<String, dynamic>?> vechileCategory(
 
   final String url = ApiUrl.vechileCategory;
 
-  Utils().customPrint("Vechile Category API => $url");
+  /// ✅ Example param: { "vechile_type_id": 1 } → 1 = Cab, 2 = Ambulance
+  /// (backend spells it "vechile_type_id")
+  final Uri uri = Uri.parse(url).replace(
+    queryParameters: param.isEmpty
+        ? null
+        : param.map((key, value) => MapEntry(key, value.toString())),
+  );
+
+  Utils().customPrint("Vechile Category API => $uri");
 
   try {
     final response = await http.get(
-      Uri.parse(url),
+      uri,
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -4747,6 +4755,71 @@ Future<Map<String, dynamic>?> vechileCategory(
   }
 }
 
+
+/// GET /admin/vehicle-type/ → list of vehicle types (1 = Cab, 2 = Ambulance)
+Future<Map<String, dynamic>?> getVechileTypes() async {
+
+  final String url = ApiUrl.vechileTypeList;
+
+  Utils().customPrint("Vechile Type API => $url");
+
+  try {
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("Response => ${response.body}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint("Unauthorized Access");
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
+  } catch (e) {
+    Utils().customPrint("Exception => $e");
+    return null;
+  }
+}
+
+/// GET /admin/vehicle-facility/ → list of facilities
+/// (Patient Transport, ICU Ambulance, Oxygen Support, ...)
+Future<Map<String, dynamic>?> getVechileFacilities() async {
+
+  final String url = ApiUrl.vechileFacilityList;
+
+  Utils().customPrint("Vechile Facility API => $url");
+
+  try {
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("Response => ${response.body}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint("Unauthorized Access");
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
+  } catch (e) {
+    Utils().customPrint("Exception => $e");
+    return null;
+  }
+}
 
 Future<Map<String, dynamic>?> getVechileSubCategory(
     Map<String, dynamic> param) async {

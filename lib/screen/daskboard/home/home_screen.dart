@@ -1839,11 +1839,11 @@ class _HomeState extends State<Home> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              /// BOOK CAB
+              /// BOOK CAB (vehicle type 1)
               GestureDetector(
                 onTap: () {
                   /// OPEN SCREEN
-                  Get.to(() => VehicleMapScreen());
+                  Get.to(() => const VehicleMapScreen(vehicleTypeId: 1));
                 },
                 child: Column(
                   children: [
@@ -1871,14 +1871,10 @@ class _HomeState extends State<Home> {
                 ),
               ),
 
-              /// UNDER PROGRESS
+              /// BOOK AMBULANCE (vehicle type 2)
               GestureDetector(
                 onTap: () {
-                  Get.snackbar(
-                    "Coming Soon",
-                    "This feature is under development",
-                    backgroundColor: Colors.orange.shade100,
-                  );
+                  Get.to(() => const VehicleMapScreen(vehicleTypeId: 2));
                 },
                 child: Column(
                   children: [

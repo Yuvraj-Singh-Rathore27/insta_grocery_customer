@@ -16,6 +16,13 @@ import 'dart:async';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class VehicleController extends GetxController {
+  // 1 = Cab, 2 = Ambulance (ids from GET /admin/vehicle-type/). Drives which
+  // categories and nearby vehicles are fetched.
+  final RxInt vehicleTypeId;
+
+  VehicleController({int vehicleTypeId = 1})
+      : vehicleTypeId = vehicleTypeId.obs;
+
   late GetStorage store;
   String userId = "";
   String accessToken = "";
@@ -41,6 +48,18 @@ class VehicleController extends GetxController {
   // ==================== LOCATION ====================
   RxDouble latitude = 0.0.obs;
   RxDouble longitude = 0.0.obs;
+
+  // ==================== VEHICLE TYPES (from GET /admin/vehicle-type/) ====
+  // Full list from the API and the type matched against [vehicleTypeId]
+  // (1 = Cab, 2 = Ambulance). Categories are loaded for the matched type.
+  var vehicleTypeList = <Map<String, dynamic>>[].obs;
+  var selectedVehicleType = Rxn<Map<String, dynamic>>();
+  var isLoadingVehicleTypes = false.obs;
+
+  // ==================== FACILITIES (GET /admin/vehicle-facility/) =========
+  // Facility id → name (Patient Transport, ICU Ambulance, Oxygen Support...)
+  // used to display a vehicle's facility_ids on the detail screen.
+  RxMap<int, String> facilityNames = <int, String>{}.obs;
 
   // ==================== CATEGORY & SUBCATEGORY ====================
   var categoryList = <Category>[].obs;
@@ -102,7 +121,11 @@ class VehicleController extends GetxController {
   void onInit() async {
     super.onInit();
     loadUserData();
+    // Facility names for the detail screen (no need to block on it)
+    loadFacilities();
     await getCurrentLocation();
+    // Step 1: vehicle type API → Step 2: categories of that type
+    await resolveVehicleType();
     await getCategories();
     
     // ONLY ONE INITIAL FETCH
@@ -155,10 +178,101 @@ class VehicleController extends GetxController {
     }
   }
 
+  // ============================
+  // ✅ FACILITY NAMES (GET /admin/vehicle-facility/)
+  // ============================
+  Future<void> loadFacilities() async {
+    try {
+      final response = await WebServicesHelper().getVechileFacilities();
+
+      final List<dynamic> rawList =
+          (response != null && response['data'] is List)
+              ? response['data']
+              : [];
+
+      final Map<int, String> names = {};
+      for (final item in rawList) {
+        if (item is Map && item['id'] is int && item['name'] != null) {
+          names[item['id']] = item['name'].toString();
+        }
+      }
+
+      if (names.isNotEmpty) {
+        facilityNames.value = names;
+      }
+      debugPrint("✅ [FACILITY] Loaded ${names.length} facilities");
+    } catch (e) {
+      debugPrint("❌ [FACILITY] Error: $e");
+    }
+  }
+
+  // ============================
+  // ✅ STEP 1: VEHICLE TYPE API (GET /admin/vehicle-type/)
+  // ============================
+  // Called before loading categories. Fetches all vehicle types and finds
+  // the one matching [vehicleTypeId] (Book Cab → 1, Book Ambulance → 2).
+  Future<void> resolveVehicleType() async {
+    try {
+      isLoadingVehicleTypes.value = true;
+
+      final response = await WebServicesHelper().getVechileTypes();
+
+      List<dynamic> rawList = [];
+      if (response != null) {
+        if (response['data'] is List) {
+          rawList = response['data'];
+        } else if (response['items'] is List) {
+          rawList = response['items'];
+        }
+      }
+
+      vehicleTypeList.value =
+          rawList.whereType<Map<String, dynamic>>().toList();
+
+      debugPrint("✅ [TYPE] Vehicle types from API: "
+          "${vehicleTypeList.map((t) => '${t['id']}:${t['name']}').join(', ')}");
+
+      // Find the type whose id matches the opened module
+      Map<String, dynamic>? match;
+      for (final type in vehicleTypeList) {
+        if (type['id']?.toString() == vehicleTypeId.value.toString()) {
+          match = type;
+          break;
+        }
+      }
+
+      if (match != null) {
+        selectedVehicleType.value = match;
+        debugPrint(
+            "✅ [TYPE] Matched type id=${match['id']} name=${match['name']}"
+            " → loading its categories");
+      } else {
+        selectedVehicleType.value = null;
+        debugPrint("⚠️ [TYPE] No type with id=${vehicleTypeId.value} in API "
+            "response, categories will still be filtered by this id");
+      }
+    } catch (e) {
+      debugPrint("❌ [TYPE] Vehicle type error: $e");
+    } finally {
+      isLoadingVehicleTypes.value = false;
+    }
+  }
+
   Future<void> getCategories() async {
     try {
       isLoadingCategories.value = true;
-      final response = await WebServicesHelper().vechileCategory({});
+      // NOTE: backend expects "vechile_type_id" (backend's spelling), not
+      // "vehicle_type_id" — with the wrong name it ignores the filter and
+      // returns ALL categories.
+      final response = await WebServicesHelper().vechileCategory({
+        "page": 1,
+        "size": 50,
+        "vechile_type_id":
+            selectedVehicleType.value?['id'] ?? vehicleTypeId.value,
+        "display_type": "active",
+        "order_by": "id",
+        "descending": false,
+      });
       if (response != null && response['data'] != null) {
         categoryList.value = (response['data'] as List)
             .map((e) => Category.fromJson(e))
@@ -191,40 +305,40 @@ class VehicleController extends GetxController {
   // ============================
   Future<void> onCategorySelected(Category? category) async {
     if (category == null) return;
-    
+
     // 🔥 PREVENT duplicate category selection
     if (selectedCategory.value?.id == category.id) {
       debugPrint("⏳ [CATEGORY] Same category selected, ignoring");
       return;
     }
-    
+
     debugPrint("🔄 [CATEGORY] Switching to category: ${category.name} (ID: ${category.id})");
-    
+
     // Show loading indicator
     isLoadingVehiclesByCategory.value = true;
-    
+
     // Update selected category
     selectedCategory.value = category;
     selectedSubCategory.value = null;
-    
+
     // Load subcategories
     await getSubCategories(category.id);
-    
+
     // 🔥 CRITICAL: Clear old vehicle data immediately for better UX
     // But save current positions for this category first
     if (selectedCategory.value != null) {
       categoryVehiclePositions[lastSelectedCategoryId] = Map.from(vehiclePositions);
       categoryVehicleData[lastSelectedCategoryId] = List.from(nearbyVehicles);
     }
-    
+
     // Clear current vehicles while loading
     nearbyVehicles.clear();
     vehiclePositions.clear();
     movingVehicles.clear();
-    
+
     // Force refresh with new category
     await forceRefresh();
-    
+
     isLoadingVehiclesByCategory.value = false;
     lastSelectedCategoryId = category.id;
   }
@@ -269,6 +383,11 @@ class VehicleController extends GetxController {
         "longitude": longitude.value,
         "radius_km": 50,
         "is_active": true,
+        // Cab (1) vs Ambulance (2) — only vehicles of the opened module show.
+        // Both spellings sent because the category API uses the backend's
+        // "vechile_type_id" spelling; remove whichever this endpoint ignores.
+        "vehicle_type_id": vehicleTypeId.value,
+        "vechile_type_id": vehicleTypeId.value,
       };
 
       // 🔥 CRITICAL: Add category filter ONLY if a category is selected
@@ -390,7 +509,8 @@ class VehicleController extends GetxController {
   String _generateResponseHash(List<dynamic> vehicles) {
     try {
       StringBuffer buffer = StringBuffer();
-      // Include category in hash to differentiate between different category responses
+      // Include type + category in hash to differentiate responses
+      buffer.write("type_${vehicleTypeId.value}:");
       buffer.write("cat_${selectedCategory.value?.id ?? 'all'}:");
       buffer.write("subcat_${selectedSubCategory.value?.id ?? 'none'}:");
       
@@ -526,6 +646,41 @@ class VehicleController extends GetxController {
     apiDebounceTimer = Timer(const Duration(milliseconds: 1000), () async {
       await fetchNearbyVehicles();
     });
+  }
+
+  // ============================
+  // ✅ SWITCH VEHICLE TYPE (Cab <-> Ambulance)
+  // ============================
+  // Called when the map screen is opened for a different module. Reloads the
+  // type's categories and vehicles from scratch.
+  Future<void> setVehicleType(int typeId) async {
+    if (vehicleTypeId.value == typeId) return;
+
+    debugPrint("🔄 [TYPE] Switching vehicle type to: $typeId");
+    vehicleTypeId.value = typeId;
+
+    // Reset all type-specific state
+    selectedCategory.value = null;
+    selectedSubCategory.value = null;
+    subCategoryList.clear();
+    lastSelectedCategoryId = null;
+    nearbyVehicles.clear();
+    vehiclePositions.clear();
+    movingVehicles.clear();
+    vehicleDataMap.clear();
+    categoryVehiclePositions.clear();
+    categoryVehicleData.clear();
+
+    // Show the loading state on the map while the new type loads
+    hasInitialFetchDone.value = false;
+
+    // Step 1: vehicle type API → Step 2: categories of that type
+    await resolveVehicleType();
+    await getCategories();
+    await forceRefresh();
+
+    // Ensure the map leaves the loading state even if the fetch was skipped
+    hasInitialFetchDone.value = true;
   }
 
 // Add this method to VehicleController
