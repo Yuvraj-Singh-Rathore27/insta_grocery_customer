@@ -4990,6 +4990,32 @@ Future<Map<String, dynamic>?> getDriverByUserId(
   }
 }
 
+// Fetch a single driver's full detail (including image) by driver id.
+// Endpoint: {apiUrl}drivers/{driverId}  e.g. .../drivers/24
+Future<Map<String, dynamic>?> getDriverById(String driverId) async {
+  final String url = "${ApiUrl.driver}$driverId";
+
+  Utils().customPrint("🧑 Driver detail API => $url");
+
+  try {
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("Driver detail response => ${response.body}");
+
+    if (response.body.isEmpty) return null;
+    return json.decode(response.body);
+  } catch (e) {
+    Utils().customPrint("GET DRIVER BY ID ERROR => $e");
+    return null;
+  }
+}
+
 
 // Add these methods to your WebServicesHelper class
 

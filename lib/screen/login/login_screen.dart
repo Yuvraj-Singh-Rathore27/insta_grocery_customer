@@ -73,7 +73,13 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    final Size size = MediaQuery.of(context).size;
+    height = size.height;
+    width = size.width;
     return Scaffold(
+      // Let the scroll view handle the keyboard instead of the whole screen
+      // being resized (which caused the fixed-height layout to overflow).
+      resizeToAvoidBottomInset: false,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -118,30 +124,43 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             _buildFloatingCircle(MediaQuery.of(context).size.width - 80, 200, 40),
             _buildFloatingCircle(50, MediaQuery.of(context).size.height - 150, 70),
 
-            SingleChildScrollView(
-              child: Container(
-                height: MediaQuery.of(context).size.height,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return Column(
-                        children: [
-                          // Logo with animation
-                          Transform.translate(
-                            offset: Offset(0, _slideAnimation.value),
-                            child: FadeTransition(
-                              opacity: _fadeAnimation,
-                              child: Container(
-                                margin: EdgeInsets.fromLTRB(0, 100, 10, 10),
-                                child: ScaleTransition(
-                                  scale: _scaleAnimation,
-                                  child: _buildVehicleLogo(),
-                                ),
-                              ),
-                            ),
-                          ),
+            SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Reserve a sensible, screen-proportional gap above the logo
+                  // (clamped) instead of a fixed 100px that broke small phones.
+                  final double topGap =
+                      (size.height * 0.08).clamp(24.0, 100.0);
+                  return SingleChildScrollView(
+                    // Grow with the keyboard so fields stay reachable.
+                    padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom),
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: AnimatedBuilder(
+                            animation: _animationController,
+                            builder: (context, child) {
+                              return Column(
+                                children: [
+                                  // Logo with animation
+                                  Transform.translate(
+                                    offset: Offset(0, _slideAnimation.value),
+                                    child: FadeTransition(
+                                      opacity: _fadeAnimation,
+                                      child: Container(
+                                        margin: EdgeInsets.only(
+                                            top: topGap, bottom: 10),
+                                        child: ScaleTransition(
+                                          scale: _scaleAnimation,
+                                          child: _buildVehicleLogo(),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
 
                           // Login Title with animation
                           Transform.translate(
@@ -221,7 +240,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       );
                     },
                   ),
-                ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

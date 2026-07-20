@@ -11,12 +11,15 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../controller/vechile_controller.dart';
 import '../../../model/vechile_model.dart';
+import '../../../webservices/WebServicesHelper.dart';
 import './RideDetailScreen.dart';
 import './VehicleLocationSearchScreen.dart';
 
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'dart:async';
 
 class VehicleMapScreen extends StatefulWidget {
@@ -35,6 +38,11 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
       controller; // Changed to late for better initialization
   GoogleMapController? mapController;
   Rx<Map<String, dynamic>?> selectedVehicle = Rx<Map<String, dynamic>?>(null);
+  // Full driver details (with image) fetched from /drivers/{id}, keyed by
+  // driver id. The vehicle-nearby API only embeds id/name/contact, so we
+  // fetch the complete record once per driver to show the profile photo.
+  final RxMap<String, Map<String, dynamic>> _driverDetails =
+      <String, Map<String, dynamic>>{}.obs;
   // Null = using device's current location. Set once the customer picks a
   // location from VehicleLocationSearchScreen; shown in the top bar and used
   // to tailor the "no vehicles" message to that place.
@@ -49,6 +57,30 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
   BitmapDescriptor? selectedCarIcon;
   BitmapDescriptor? onlineCarIcon;
   BitmapDescriptor? offlineCarIcon;
+
+  // Marker drawn at the customer's own pickup/current location. Its picture is
+  // the image of the currently selected ride category (Passenger Auto, 4/5
+  // Seater cab, ...). When no category is picked it falls back to a default
+  // vehicle badge. Rebuilt every time the selected category changes.
+  BitmapDescriptor? pickupCategoryIcon;
+  // The image URL the pickup icon was last built from, so we don't re-download
+  // and re-render the same picture on every rebuild.
+  String? _pickupIconUrl;
+  // True when the current pickup badge is the real category image (not the
+  // fallback vehicle icon) — lets a failed download be retried later.
+  bool _pickupIconIsImage = false;
+
+  // Nearby-vehicle markers drawn from the SELECTED category's image, tinted by
+  // state through a coloured ring (orange = moving, green = standing, red =
+  // selected). When the category has a usable image, every vehicle on the map
+  // shows that picture instead of the generic car icon. Null when the category
+  // has no image / the download failed → markers fall back to the car icons.
+  BitmapDescriptor? categoryMovingIcon; // 🟠 moving
+  BitmapDescriptor? categoryStandingIcon; // 🟢 standing
+  BitmapDescriptor? categorySelectedVehicleIcon; // 🔴 selected
+  // The image URL the category vehicle icons were last built from, so we don't
+  // re-download and re-render the same picture on every category change.
+  String? _categoryVehicleIconUrl;
 
   // Auto-fit the camera to all vehicles only once per map instance, so live
   // vehicle updates never yank the camera away from the user's own zoom/pan.
@@ -77,6 +109,18 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
     }
 
     _loadCustomIcons();
+
+    // Build the pickup marker icon AND the nearby-vehicle marker icons for the
+    // current category (default badge / car icon if none is selected yet) and
+    // rebuild them whenever the category changes so every marker on the map
+    // matches the chosen category (e.g. auto image when "Passenger Auto" is
+    // selected).
+    _loadPickupCategoryIcon();
+    _loadCategoryVehicleIcons();
+    ever(controller.selectedCategory, (_) {
+      _loadPickupCategoryIcon();
+      _loadCategoryVehicleIcons();
+    });
 
     // ✅ Performance: Debounced rebuild listener
     ever(controller.nearbyVehicles, (_) {
@@ -187,11 +231,219 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
     }
   }
 
+  // Builds the pickup-location marker icon from the selected category's image.
+  // Called on init and every time the customer taps a different category chip,
+  // so the badge at the centre of the map always matches the chosen category.
+  Future<void> _loadPickupCategoryIcon() async {
+    final Category? category = controller.selectedCategory.value;
+
+    // First usable image URL sent by the category API.
+    String? imageUrl;
+    for (final img in category?.image ?? const <CategoryImage>[]) {
+      final path = img.path;
+      if (path != null && path.isNotEmpty) {
+        imageUrl = path;
+        break;
+      }
+    }
+
+    // Same category image already rendered as a real image → nothing to do.
+    // (If last time we only had the fallback badge, fall through and retry so
+    // a transient download failure can recover on the next selection.)
+    if (imageUrl == _pickupIconUrl &&
+        pickupCategoryIcon != null &&
+        _pickupIconIsImage) {
+      return;
+    }
+
+    BitmapDescriptor? icon;
+    if (imageUrl != null) {
+      icon = await _createImageMarker(imageUrl, size: 130);
+    }
+    final bool gotImage = icon != null;
+
+    // No category image, or the download/render failed → default vehicle badge.
+    icon ??= await _createCustomMarker(
+      icon: widget.vehicleTypeId == 2
+          ? FontAwesomeIcons.truckMedical
+          : FontAwesomeIcons.carSide,
+      color: Colors.tealAccent.shade400,
+      size: 110,
+    );
+
+    if (!mounted) return;
+    // Remember what we rendered so a fallback can be retried later, but a real
+    // image is treated as final for this URL.
+    _pickupIconUrl = imageUrl;
+    _pickupIconIsImage = gotImage;
+    pickupCategoryIcon = icon;
+    // Bypass the marker cache so the new pickup badge is drawn right away.
+    _lastCacheKey = '';
+    _cachedMarkers = _buildMarkers();
+    setState(() {});
+  }
+
+  // Builds the nearby-vehicle marker icons from the SELECTED category's image,
+  // one tinted variant per state (orange = moving, green = standing, red =
+  // selected). Called on init and every time the customer taps a different
+  // category chip, so all vehicles on the map show the chosen category's
+  // picture (e.g. the auto image for "Passenger Auto"). The image is
+  // downloaded once and rendered three times. When the category has no usable
+  // image, or the download fails, the icons are cleared so _buildMarkers falls
+  // back to the coloured car icons.
+  Future<void> _loadCategoryVehicleIcons() async {
+    final Category? category = controller.selectedCategory.value;
+
+    // First usable image URL sent by the category API.
+    String? imageUrl;
+    for (final img in category?.image ?? const <CategoryImage>[]) {
+      final path = img.path;
+      if (path != null && path.isNotEmpty) {
+        imageUrl = path;
+        break;
+      }
+    }
+
+    // Same category image already rendered → nothing to do.
+    if (imageUrl == _categoryVehicleIconUrl && categoryStandingIcon != null) {
+      return;
+    }
+
+    // No category image → clear so markers fall back to the car icons.
+    if (imageUrl == null) {
+      if (!mounted) return;
+      categoryMovingIcon = null;
+      categoryStandingIcon = null;
+      categorySelectedVehicleIcon = null;
+      _categoryVehicleIconUrl = null;
+      _lastCacheKey = '';
+      _cachedMarkers = _buildMarkers();
+      setState(() {});
+      return;
+    }
+
+    // Download once, render a variant per state.
+    final Uint8List? bytes = await _downloadImageBytes(imageUrl);
+    final moving = bytes == null
+        ? null
+        : await _renderImageMarker(bytes, size: 100, ringColor: Colors.orange);
+    final standing = bytes == null
+        ? null
+        : await _renderImageMarker(bytes, size: 100, ringColor: Colors.green);
+    final selected = bytes == null
+        ? null
+        : await _renderImageMarker(bytes, size: 110, ringColor: Colors.red);
+
+    if (!mounted) return;
+    categoryMovingIcon = moving;
+    categoryStandingIcon = standing;
+    categorySelectedVehicleIcon = selected;
+    // On success remember the URL; on failure clear it so the next selection
+    // retries the download.
+    _categoryVehicleIconUrl = standing != null ? imageUrl : null;
+    // Bypass the marker cache so the new vehicle icons are drawn right away.
+    _lastCacheKey = '';
+    _cachedMarkers = _buildMarkers();
+    setState(() {});
+  }
+
+  // Downloads a category image and renders it as a circular map marker with a
+  // white fill and coloured ring, matching the look of the vehicle markers.
+  // Returns null on any failure so the caller can fall back to a default badge.
+  Future<BitmapDescriptor?> _createImageMarker(String url,
+      {double size = 130, Color ringColor = Colors.red}) async {
+    final Uint8List? bytes = await _downloadImageBytes(url);
+    if (bytes == null) return null;
+    return _renderImageMarker(bytes, size: size, ringColor: ringColor);
+  }
+
+  // Fetches image bytes with browser-like headers (some hosts reject bare
+  // requests with 403) and a timeout so we can fall back instead of hanging.
+  Future<Uint8List?> _downloadImageBytes(String url) async {
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: const {
+          "User-Agent": "Mozilla/5.0 (Android) FrebboApp",
+          "Accept": "image/*,*/*",
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      debugPrint(
+          "🖼️ Marker image => $url | status ${response.statusCode} | ${response.bodyBytes.length} bytes");
+
+      if (response.statusCode != 200 || response.bodyBytes.isEmpty) return null;
+      return response.bodyBytes;
+    } catch (e) {
+      debugPrint("❌ Marker image download error => $e");
+      return null;
+    }
+  }
+
+  // Renders already-downloaded image bytes into a circular map marker with a
+  // white fill and a coloured ring. Returns null on any decode/render failure.
+  Future<BitmapDescriptor?> _renderImageMarker(Uint8List bytes,
+      {double size = 130, Color ringColor = Colors.red}) async {
+    try {
+      final double imgSize = size * 0.70;
+      // Decode at native resolution (no forced square target — that could
+      // distort or fail on some images); we crop to a square while drawing.
+      final ui.Codec codec = await ui.instantiateImageCodec(bytes);
+      final ui.FrameInfo frame = await codec.getNextFrame();
+      final ui.Image image = frame.image;
+
+      final ui.PictureRecorder recorder = ui.PictureRecorder();
+      final Canvas canvas = Canvas(recorder);
+      final Offset center = Offset(size / 2, size / 2);
+
+      // White circular badge with a coloured ring.
+      canvas.drawCircle(center, size / 2, Paint()..color = Colors.white);
+      canvas.drawCircle(
+        center,
+        size / 2 - size * 0.03,
+        Paint()
+          ..color = ringColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = size * 0.06,
+      );
+
+      // Category image clipped to a circle in the centre of the badge.
+      final Rect imgRect =
+          Rect.fromCenter(center: center, width: imgSize, height: imgSize);
+      canvas.save();
+      canvas.clipPath(Path()..addOval(imgRect));
+      // Center-crop the source to a square (BoxFit.cover) so non-square images
+      // aren't stretched.
+      final double srcSide =
+          image.width < image.height ? image.width.toDouble() : image.height.toDouble();
+      final Rect srcRect = Rect.fromCenter(
+        center: Offset(image.width / 2, image.height / 2),
+        width: srcSide,
+        height: srcSide,
+      );
+      canvas.drawImageRect(
+        image,
+        srcRect,
+        imgRect,
+        Paint()..filterQuality = FilterQuality.high,
+      );
+      canvas.restore();
+
+      final ui.Image finalImage =
+          await recorder.endRecording().toImage(size.toInt(), size.toInt());
+      final data = await finalImage.toByteData(format: ui.ImageByteFormat.png);
+      if (data == null) return null;
+
+      return BitmapDescriptor.fromBytes(data.buffer.asUint8List());
+    } catch (e) {
+      debugPrint("❌ Image marker render error => $e");
+      return null;
+    }
+  }
+
   // ✅ Performance: Cached marker building with cache key
   Set<Marker> _buildMarkers() {
     final vehicles = controller.nearbyVehicles;
-
-    if (vehicles.isEmpty) return {};
 
     // ✅ Cache check
     final cacheKey = _getCacheKey(vehicles);
@@ -203,6 +455,28 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
     _lastCacheKey = cacheKey;
 
     final markers = <Marker>[];
+
+    // 📍 Pickup / current-location marker showing the selected category image.
+    // Sits at the customer's location on top of everything (high zIndex) so the
+    // category picture is what the user sees at the centre of the map.
+    final double pickupLat = controller.latitude.value;
+    final double pickupLng = controller.longitude.value;
+    if (pickupLat != 0.0 && pickupLng != 0.0 && pickupCategoryIcon != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('pickup_location'),
+          position: LatLng(pickupLat, pickupLng),
+          icon: pickupCategoryIcon!,
+          anchor: const Offset(0.5, 0.5),
+          flat: true,
+          // Sit BELOW the vehicle markers: when a vehicle is at/near the
+          // customer's location it must stay visible and, crucially, tappable.
+          // A higher-zIndex pickup badge would hide the vehicle and swallow its
+          // taps (Google Maps delivers a tap to the top-most marker only).
+          zIndex: 1,
+        ),
+      );
+    }
 
     for (var vehicle in vehicles) {
       final vehicleId = vehicle['id']?.toString() ?? "";
@@ -230,15 +504,23 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
       // ✅ ICON LOGIC
       // =========================
 
+      // Prefer the SELECTED category's image (so every vehicle shows e.g. the
+      // auto picture for "Passenger Auto"); fall back to the coloured car icon
+      // when the category has no image or its download failed.
       if (isSelected) {
         // 🔴 SELECTED
-        icon = selectedCarIcon ?? BitmapDescriptor.defaultMarker;
+        icon = categorySelectedVehicleIcon ??
+            selectedCarIcon ??
+            BitmapDescriptor.defaultMarker;
       } else if (isMoving) {
         // 🟠 MOVING = ORANGE
-        icon = onlineCarIcon ?? BitmapDescriptor.defaultMarker;
+        icon =
+            categoryMovingIcon ?? onlineCarIcon ?? BitmapDescriptor.defaultMarker;
       } else {
         // 🟢 STANDING = GREEN
-        icon = offlineCarIcon ?? BitmapDescriptor.defaultMarker;
+        icon = categoryStandingIcon ??
+            offlineCarIcon ??
+            BitmapDescriptor.defaultMarker;
       }
 
       markers.add(
@@ -250,10 +532,14 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
           anchor: const Offset(0.5, 0.5),
           flat: true,
           alpha: 1.0,
+          // Keep vehicles above the pickup badge (zIndex 1) so overlapping
+          // vehicles stay visible and clickable; the selected one sits highest.
+          zIndex: isSelected ? 3 : 2,
           onTap: () {
             _imageIndex.value = 0;
 
             selectedVehicle.value = vehicle;
+            _fetchDriverDetail(vehicle);
 
             _animateToVehicle(lat, lng);
           },
@@ -914,8 +1200,46 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
     return "${km.toStringAsFixed(1)} km away";
   }
 
+  // Fetch the selected driver's full profile (with image) by id and cache it
+  // so the bottom sheet — which lives inside an Obx — rebuilds with the photo.
+  Future<void> _fetchDriverDetail(Map<String, dynamic> vehicle) async {
+    final driver = vehicle['driver'];
+    if (driver is! Map) return;
+
+    final dynamic id = driver['id'];
+    if (id == null || id == 0) return;
+
+    final String key = id.toString();
+    if (_driverDetails.containsKey(key)) return; // already fetched
+
+    final res = await WebServicesHelper().getDriverById(key);
+    if (res == null || !mounted) return;
+
+    // The endpoint may return the driver object directly, or wrapped as
+    // {data: {...}} or {data: [{...}]} — pull the map out of any shape.
+    Map<String, dynamic>? detail;
+    final dynamic data = res['data'] ?? res;
+    if (data is Map) {
+      detail = Map<String, dynamic>.from(data);
+    } else if (data is List && data.isNotEmpty && data.first is Map) {
+      detail = Map<String, dynamic>.from(data.first);
+    }
+
+    if (detail != null) {
+      _driverDetails[key] = detail;
+    }
+  }
+
   Widget _buildBottomSheet(Map<String, dynamic> vehicle) {
-    final driver = vehicle['driver'] is Map ? vehicle['driver'] : {};
+    final embeddedDriver =
+        vehicle['driver'] is Map ? vehicle['driver'] as Map : {};
+    // Overlay the fetched full detail (image, license, etc.) over the embedded
+    // driver from the vehicle payload.
+    final String driverKey = (embeddedDriver['id'] ?? '').toString();
+    final driver = <String, dynamic>{
+      ...embeddedDriver.cast<String, dynamic>(),
+      ...?_driverDetails[driverKey],
+    };
     final driverName = driver['name'] ?? 'Driver';
     final String driverContact = (driver['contact_number'] ?? '').toString();
     final vehicleNumber = vehicle['vehicle_number'] ?? 'Not available';

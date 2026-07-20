@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../controller/vechile_controller.dart';
+import '../../../webservices/WebServicesHelper.dart';
 
 class RideDetailsScreen extends StatefulWidget {
   final Map<String, dynamic>? vehicle;
@@ -15,9 +17,16 @@ class RideDetailsScreen extends StatefulWidget {
 class _RideDetailsScreenState extends State<RideDetailsScreen> {
   final controller = Get.find<VehicleController>();
   final TextEditingController _sosMessageController = TextEditingController();
+  final PageController _imagePageController = PageController();
+  final RxInt _imageIndex = 0.obs;
 
   late Map<String, dynamic> vehicleData;
-  
+
+  // Full driver detail (including image) fetched from /drivers/{id}.
+  // The vehicle-nearby API only embeds id/name/contact for the driver, so
+  // we fetch the complete record separately to show the profile photo.
+  Map<String, dynamic>? _driverDetail;
+
   @override
   void initState() {
     super.initState();
@@ -35,11 +44,41 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     if (controller.facilityNames.isEmpty) {
       controller.loadFacilities();
     }
+
+    _fetchDriverDetail();
+  }
+
+  // Fetch the driver's full profile by id so the photo (and other details
+  // missing from the vehicle payload) can be shown.
+  Future<void> _fetchDriverDetail() async {
+    final driver = vehicleData['driver'];
+    if (driver is! Map) return;
+
+    final dynamic id = driver['id'];
+    if (id == null || id == 0) return;
+
+    final res = await WebServicesHelper().getDriverById(id.toString());
+    if (res == null || !mounted) return;
+
+    // The endpoint may return the driver object directly, or wrapped as
+    // {data: {...}} or {data: [{...}]} — pull the map out of any shape.
+    Map<String, dynamic>? detail;
+    final dynamic data = res['data'] ?? res;
+    if (data is Map) {
+      detail = Map<String, dynamic>.from(data);
+    } else if (data is List && data.isNotEmpty && data.first is Map) {
+      detail = Map<String, dynamic>.from(data.first);
+    }
+
+    if (detail != null) {
+      setState(() => _driverDetail = detail);
+    }
   }
 
   @override
   void dispose() {
     _sosMessageController.dispose();
+    _imagePageController.dispose();
     super.dispose();
   }
 
@@ -257,12 +296,19 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Widget _buildDriverProfileCard() {
-    final driver = vehicleData['driver'] ?? {};
+    // Start from the driver embedded in the vehicle payload, then overlay
+    // the full detail fetched from /drivers/{id} (which carries the image).
+    final driver = <String, dynamic>{
+      ...?(vehicleData['driver'] as Map?)?.cast<String, dynamic>(),
+      ...?_driverDetail,
+    };
     final driverName = driver['name'] ?? 'Not available';
     final driverContact = driver['contact_number'] ?? '';
     final driverLicense = driver['license_number'] ?? 'Not available';
     final licenseExpiry = driver['license_expiry_date'] ?? 'Not available';
     final hasContact = driverContact.isNotEmpty && driverContact.length >= 10;
+    // Driver photo uploaded by the driver (API sends it as "photo" or "image").
+    final driverImageUrl = _filePathOf(driver['photo'] ?? driver['image']);
     
     return Container(
       decoration: BoxDecoration(
@@ -308,12 +354,29 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.person,
-                      size: 35,
-                      color: Colors.red,
-                    ),
+                  child: ClipOval(
+                    child: driverImageUrl != null && driverImageUrl.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: driverImageUrl,
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => const Center(
+                              child: Icon(Icons.person,
+                                  size: 35, color: Colors.red),
+                            ),
+                            errorWidget: (_, __, ___) => const Center(
+                              child: Icon(Icons.person,
+                                  size: 35, color: Colors.red),
+                            ),
+                          )
+                        : const Center(
+                            child: Icon(
+                              Icons.person,
+                              size: 35,
+                              color: Colors.red,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -413,6 +476,9 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     final List<int> facilityIds = (vehicleData['facility_ids'] is List)
         ? (vehicleData['facility_ids'] as List).whereType<int>().toList()
         : <int>[];
+    // Vehicle photos uploaded by the driver (API sends "image" as a list of
+    // files; tolerates a single map or plain URL too).
+    final List<String> vehicleImages = _filePathsOf(vehicleData['image']);
     
     return Container(
       padding: const EdgeInsets.all(20),
@@ -453,7 +519,11 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          
+
+          // Vehicle photos uploaded by the driver
+          _buildVehicleImage(vehicleImages),
+          const SizedBox(height: 20),
+
           _infoRow(
             icon: Icons.confirmation_number,
             title: "Vehicle Number",
@@ -775,6 +845,122 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // Single file path (driver photo) from any shape the API sends:
+  // a map ({"path": ...}), a list of files, or a plain URL string.
+  String? _filePathOf(dynamic file) {
+    if (file is Map) return file['path']?.toString();
+    if (file is List && file.isNotEmpty && file.first is Map) {
+      return (file.first as Map)['path']?.toString();
+    }
+    if (file is String && file.isNotEmpty) return file;
+    return null;
+  }
+
+  // The API returns image sometimes as a single map ({"path": ...}),
+  // sometimes as a list of files, sometimes a plain URL — read all the
+  // paths safely from any shape.
+  List<String> _filePathsOf(dynamic file) {
+    if (file is List) {
+      return file
+          .whereType<Map>()
+          .map((m) => m['path']?.toString())
+          .whereType<String>()
+          .where((p) => p.isNotEmpty)
+          .toList();
+    }
+    if (file is Map && file['path'] != null) {
+      final p = file['path'].toString();
+      return p.isNotEmpty ? [p] : [];
+    }
+    if (file is String && file.isNotEmpty) return [file];
+    return [];
+  }
+
+  // Vehicle photos uploaded by the driver: placeholder when none, single
+  // image for one, swipeable carousel with dots for many.
+  Widget _buildVehicleImage(List<String> images) {
+    const double imageHeight = 180;
+
+    Widget networkImage(String url) => CachedNetworkImage(
+          imageUrl: url,
+          height: imageHeight,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => _vehicleImagePlaceholder(),
+          errorWidget: (_, __, ___) => _vehicleImagePlaceholder(),
+        );
+
+    if (images.isEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: _vehicleImagePlaceholder(),
+      );
+    }
+
+    if (images.length == 1) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: networkImage(images.first),
+      );
+    }
+
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: SizedBox(
+            height: imageHeight,
+            child: PageView.builder(
+              controller: _imagePageController,
+              itemCount: images.length,
+              onPageChanged: (index) => _imageIndex.value = index,
+              itemBuilder: (_, i) => networkImage(images[i]),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Obx(() {
+          final current = _imageIndex.value;
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(images.length, (i) {
+              final isActive = i == current;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: isActive ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: isActive ? Colors.red : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _vehicleImagePlaceholder() {
+    return Container(
+      height: 180,
+      width: double.infinity,
+      color: Colors.grey.shade100,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.directions_car, size: 40, color: Colors.grey.shade400),
+          const SizedBox(height: 8),
+          Text(
+            "No vehicle image",
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          ),
+        ],
+      ),
     );
   }
 
