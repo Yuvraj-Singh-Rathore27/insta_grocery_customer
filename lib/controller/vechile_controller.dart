@@ -343,9 +343,14 @@ class VehicleController extends GetxController {
     lastSelectedCategoryId = category.id;
   }
 
+  // Picks a subcategory chip. Passing null (the "All" chip), or tapping the
+  // already-selected subcategory again, clears the filter so every vehicle in
+  // the selected category shows. fetchNearbyVehicles only sends subcategory_id
+  // when one is selected, so clearing it is enough to widen the results.
   void onSubCategorySelected(SubCategory? subCategory) {
-    if (subCategory == null) return;
-    selectedSubCategory.value = subCategory;
+    final bool clearing =
+        subCategory == null || selectedSubCategory.value?.id == subCategory.id;
+    selectedSubCategory.value = clearing ? null : subCategory;
     forceRefresh();
   }
 
@@ -387,7 +392,7 @@ class VehicleController extends GetxController {
         // Both spellings sent because the category API uses the backend's
         // "vechile_type_id" spelling; remove whichever this endpoint ignores.
         "vehicle_type_id": vehicleTypeId.value,
-        "vechile_type_id": vehicleTypeId.value,
+       
       };
 
       // 🔥 CRITICAL: Add category filter ONLY if a category is selected

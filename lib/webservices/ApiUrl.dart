@@ -117,11 +117,11 @@ class ApiUrl {
   static const bookingListApi = "${apiUrl}ambulance/booking/?page=1&size=50";
 
   static const placeDetailsApi =
-    "https://maps.googleapis.com/maps/api/place/details/json";
+      "https://maps.googleapis.com/maps/api/place/details/json";
   static const mapApiKey = "AIzaSyAhch18P_emZhw7RkyewrmLNk8Snhs0w4U";
 
   static const feedbackUrl = "${apiUrl}feedback/";
-    static const String autoCompleteApi =
+  static const String autoCompleteApi =
       "https://maps.googleapis.com/maps/api/place/autocomplete/json";
 
   //send message
@@ -142,12 +142,12 @@ class ApiUrl {
       "${apiUrl}admin/jobs/job-provider/list-jobs/?page=1&size=50";
   static const getResumeDetails =
       "${apiUrl}admin/jobs/job-seeker/list-candidate/?/?user_type=user&candidate_id=";
-  static const getResumeListCandedate="${apiUrl}admin/jobs/job-seeker/list-candidate";
+  static const getResumeListCandedate =
+      "${apiUrl}admin/jobs/job-seeker/list-candidate";
   static const applyJobUrl = "${apiUrl}admin/jobs/job-seeker/apply_job/";
   static const postJobByProviderUrl =
       "${apiUrl}admin/jobs/job-provider/post-job/";
-  static const getJobCategoryUrl =
-      "${apiUrl}admin/jobs/category-list/";
+  static const getJobCategoryUrl = "${apiUrl}admin/jobs/category-list/";
   static const getJobSubCategoryUrl =
       "${apiUrl}admin/jobs/sub-category-list/?category_id=";
 
@@ -156,8 +156,6 @@ class ApiUrl {
 
   static const getListJobTags =
       "${apiUrl}admin/jobs/job-tag-list/?display_type=all&order_by=created_at&descending=true&page=1&size=50";
-
-    
 
   //user add management
   static const addUserAddressUrl = "${apiUrl}user/manage-address/add-address";
@@ -199,7 +197,8 @@ class ApiUrl {
   static const GET_API_INTRESTED_SERVCIES = "${apiUrl}interested-service/";
 
   //market Place
-  static const API_MP_SUPERCATEGORY_LIST="${apiUrl}admin/market-place-super-category/?display_type=active";
+  static const API_MP_SUPERCATEGORY_LIST =
+      "${apiUrl}admin/market-place-super-category/?display_type=active";
 
   static const API_MP_CATEGORY_LIST =
       "${apiUrl}admin/market-place/list-categories/";
@@ -217,123 +216,118 @@ class ApiUrl {
   static const PETCH_PRODUCT_BY_ID =
       "${apiUrl}market-place/activate-deactivate-product";
 
-
   // market place interset
   static const POST_MARKET_PLACE_INTERESTED =
       "${apiUrl}market-place/add-interest/";
   static const GET_MARKET_PLACE_INTERESTED =
       "${apiUrl}market-place/user-interests/";
-  static const POST_MARKET_PLACE_PRODUCT_MESSAGE="${apiUrl}market-place/chat/send-message/";
+  static const POST_MARKET_PLACE_PRODUCT_MESSAGE =
+      "${apiUrl}market-place/chat/send-message/";
   static const API_DOCTORS_LIST = "${apiUrl}stores/doctor/list-members/";
 
-  // store job module 
-    static const getJobByStoreApi="${apiUrl}stores/jobs/";
-    static const applyJobStoreUrl = "${apiUrl}stores/jobs/job-seeker/apply_job";
+  // store job module
+  static const getJobByStoreApi = "${apiUrl}stores/jobs/";
+  static const applyJobStoreUrl = "${apiUrl}stores/jobs/job-seeker/apply_job";
 
+  // store Video
+  static const getStoreVideo = "${apiUrl}stores/videos/";
+  static const getVideoCategoury =
+      "${apiUrl}stores/videos/video-category/?display_type=all&order_by=created_at&descending=true&page=1&size=50";
+  static const postStoreVideoReaction =
+      "${apiUrl}stores/videos/reactions/react";
+  static const getStoreVideoTotalReaction = "${apiUrl}stores/videos/reactions/";
 
-    // store Video 
-    static const getStoreVideo="${apiUrl}stores/videos/";
-    static const getVideoCategoury="${apiUrl}stores/videos/video-category/?display_type=all&order_by=created_at&descending=true&page=1&size=50";
-    static const postStoreVideoReaction="${apiUrl}stores/videos/reactions/react";
-    static const getStoreVideoTotalReaction="${apiUrl}stores/videos/reactions/";
+  // store offer video
+  static const getStoreOffer = "${apiUrl}store/offer/store_offer/";
+  static const getStoreOfferCategory =
+      "${apiUrl}store/offer/admin-offer-category";
+  static const getStoreOfferSubCategory =
+      "${apiUrl}store/offer/admin-offer-subcategory/";
 
+  // customer event managment
 
+  static const getCustomerEventCategory =
+      "${apiUrl}admin/event_categories/?display_type=all";
+  static const getCustomerEventSubCategory =
+      "${apiUrl}admin/event_subCategories/?display_type=all";
 
-    
-    // store offer video
-    static const getStoreOffer="${apiUrl}store/offer/store_offer/";
-    static const getStoreOfferCategory="${apiUrl}store/offer/admin-offer-category";
-    static const getStoreOfferSubCategory="${apiUrl}store/offer/admin-offer-subcategory/";
+  static const getCustomerEvent = "${apiUrl}customer/event/get-event/";
+  static const postCustomerEvent = "${apiUrl}customer/event/add-event";
+  static const registerCustomerEvent =
+      "${apiUrl}customer/event_register/register";
+  static const getRegisterCustomerEvent =
+      "${apiUrl}customer/event_register/event-user";
 
-    // customer event managment
+  // internship program
+  static const getInternshipprogramsupercategory =
+      "${apiUrl}Internship-Program-Super-Category/?display_type=active";
 
-    static const getCustomerEventCategory="${apiUrl}admin/event_categories/?display_type=all";
-        static const getCustomerEventSubCategory="${apiUrl}admin/event_subCategories/?display_type=all";
+  static const getstoreinternshipProgramCategory =
+      "${apiUrl}internship-program-categories/?display_type=active&order_by=id";
+  static const getstoreinternshipProgramsubcategory =
+      "${apiUrl}internship-program-subcategories/";
+  static const getstoreinternshiProgram = "${apiUrl}internships-program/";
+  static const getinternshipsupercategory =
+      "${apiUrl}Internship-Program-Super-Category/?display_type=active&order_by=id";
 
-    static const getCustomerEvent =
-    "${apiUrl}customer/event/get-event/";
-    static const postCustomerEvent="${apiUrl}customer/event/add-event";
-    static const registerCustomerEvent="${apiUrl}customer/event_register/register";
-static const getRegisterCustomerEvent =
-    "${apiUrl}customer/event_register/event-user";
+  static const getapplyinternship = "${apiUrl}internship-applications/apply/";
 
+  // make these line simple getinternshipsupercategory
 
+  // skill program api
+  static const getskillsupercategory =
+      "${apiUrl}admin/Skill-Program-Super-Category/?display_type=active&order_by=id";
 
-    // internship program 
-             static const getInternshipprogramsupercategory="${apiUrl}Internship-Program-Super-Category/?display_type=active";
+  static const getskillprogramtype =
+      "${apiUrl}admin/skill-program-types/?display_type=active";
+  static const getskillprogramcategory =
+      "${apiUrl}admin/skill-program-category/?display_type=active";
+  static const getskillprogramsubcategory =
+      "${apiUrl}admin/skill-program-sub-category/";
+  static const getskillprogram = "${apiUrl}admin/skill-program/";
+  static const appliedskillprogram = "${apiUrl}skill-applications/apply/";
 
+  // gigs works
 
-    static const getstoreinternshipProgramCategory="${apiUrl}internship-program-categories/?display_type=active&order_by=id";
-    static const getstoreinternshipProgramsubcategory="${apiUrl}internship-program-subcategories/";
-    static const getstoreinternshiProgram="${apiUrl}internships-program/";
-    static const getinternshipsupercategory="${apiUrl}Internship-Program-Super-Category/?display_type=active&order_by=id";
+  static const getGigsSuperCategory =
+      "${apiUrl}admin/gigs-works-super-category/?display_type=all";
+  static const getGigsCategory =
+      "${apiUrl}admin/Gigs-Works-category/?display_type=all";
+  static const getGigsSubCategory =
+      "${apiUrl}admin/Gigs-Works-SubCategory/?display_type=all";
+  static const addGigsProfile = "${apiUrl}gigs-works-profile/";
+  static const updateGigsProfile = "${apiUrl}gigs-works-profile/";
+  static const getGigsProfile = "${apiUrl}gigs-works-profile";
 
-
-    static const getapplyinternship="${apiUrl}internship-applications/apply/";
-
-    // make these line simple getinternshipsupercategory
-    
-
-
-     // skill program api 
-         static const getskillsupercategory="${apiUrl}admin/Skill-Program-Super-Category/?display_type=active&order_by=id";
-
-    static const getskillprogramtype="${apiUrl}admin/skill-program-types/?display_type=active";
-    static const getskillprogramcategory="${apiUrl}admin/skill-program-category/?display_type=active";
-    static const getskillprogramsubcategory="${apiUrl}admin/skill-program-sub-category/";
-    static const getskillprogram="${apiUrl}admin/skill-program/";
-    static const appliedskillprogram="${apiUrl}skill-applications/apply/";
-
-
-    // gigs works 
-
-    static const getGigsSuperCategory="${apiUrl}admin/gigs-works-super-category/?display_type=all";
-     static const getGigsCategory="${apiUrl}admin/Gigs-Works-category/?display_type=all";
-      static const getGigsSubCategory="${apiUrl}admin/Gigs-Works-SubCategory/?display_type=all";
-      static const addGigsProfile="${apiUrl}gigs-works-profile/";
-      static const updateGigsProfile="${apiUrl}gigs-works-profile/";
-      static const getGigsProfile="${apiUrl}gigs-works-profile";
-
-      static const hireGigs="${apiUrl}gigs-works-hire/";
-      static const getHiredGigs="${apiUrl}gigs-works-hire/?display_type=active";
-      static const updateHiredGigs="${apiUrl}gigs-works-hire/";
+  static const hireGigs = "${apiUrl}gigs-works-hire/";
+  static const getHiredGigs = "${apiUrl}gigs-works-hire/?display_type=active";
+  static const updateHiredGigs = "${apiUrl}gigs-works-hire/";
 // activate deactivate
-      static const actdeactGigs="${apiUrl}gigs-works-profile/";
+  static const actdeactGigs = "${apiUrl}gigs-works-profile/";
 
+  // vechile Mangement api
 
+  static const vechileCategory = "${apiUrl}vehicle-category/";
+  static const vechileSubCategory = "${apiUrl}vehicles-subcategories";
+  static const driver = "${apiUrl}drivers/";
+  static const updateDriver = "${apiUrl}drivers/";
+  static const vechilRegister = "${apiUrl}vehicles/";
+  static const getDriverProfile = "${apiUrl}drivers/";
+  static const getVehicle = "${apiUrl}vehicles/";
+  static const updateVehicle = "${apiUrl}vehicles/";
+  static const patchVechile = "${apiUrl}vehicles/";
+  static const patchDrivers = "${apiUrl}drivers/";
+  static const getVechile = "${apiUrl}vehicles/nearby";
+  // List vehicle types (1 = Cab, 2 = Ambulance, ...)
+  static const vechileTypeList = "${apiUrl}admin/vehicle-type/";
+  // Vehicle facilities (Patient Transport, ICU, Oxygen Support, ...)
+  // — shown on the detail screen for vehicles carrying facility_ids
+  static const vechileFacilityList = "${apiUrl}admin/vehicle-facility/";
 
-      // vechile Mangement api 
-
-      static const vechileCategory="${apiUrl}vehicle-category/";
-      static const vechileSubCategory="${apiUrl}vehicles-subcategories";
-      static const driver="${apiUrl}drivers/";
-      static const updateDriver="${apiUrl}drivers/";
-      static const vechilRegister="${apiUrl}vehicles/";
-      static const getDriverProfile="${apiUrl}drivers/";
-      static const getVehicle="${apiUrl}vehicles/";
-      static const updateVehicle="${apiUrl}vehicles/";
-      static const patchVechile="${apiUrl}vehicles/";
-      static const patchDrivers="${apiUrl}drivers/";
-      static const getVechile = "${apiUrl}vehicles/nearby";
-      // List vehicle types (1 = Cab, 2 = Ambulance, ...)
-      static const vechileTypeList = "${apiUrl}admin/vehicle-type/";
-      // Vehicle facilities (Patient Transport, ICU, Oxygen Support, ...)
-      // — shown on the detail screen for vehicles carrying facility_ids
-      static const vechileFacilityList = "${apiUrl}admin/vehicle-facility/";
-
-      // vehicle SOS / emergency alert
-      static const vehicleSosApi = "${apiUrl}vehicle-sos/";
+  // vehicle SOS / emergency alert
+  static const vehicleSosApi = "${apiUrl}vehicle-sos/";
 
 // these module si basically implent for a feedabce section
-      static const feedback_types="${apiUrl}feedback-types/";
-      static const postfeedback="${apiUrl}user/feedback/";
-
-
-
-
-
-
-
-
-
+  static const feedback_types = "${apiUrl}feedback-types/";
+  static const postfeedback = "${apiUrl}user/feedback/";
 }

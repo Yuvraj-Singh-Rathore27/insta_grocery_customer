@@ -238,7 +238,7 @@ class WebServicesHelper {
       return null;
     } else if (response.statusCode == 400) {
       final res = json.decode(response.body.toString());
-      
+
       Utils().customPrint('Login test 51');
       // Fluttertoast.showToast(msg: "${res["message"]}");
       return null;
@@ -580,71 +580,73 @@ class WebServicesHelper {
     }
   }
 
-  Future<Map<String, dynamic>?> getPharmacyList(Map<String, dynamic> param) async {
-  try {
-    var cityId = param['city_id'];
-    var lat = param['lat'];
-    var lng = param['lng'];
-    var storeTagId = (param['store_tag_id'] == null || param['store_tag_id'] == 'null')
-        ? ''
-        : param['store_tag_id'];
-    var storeTypeId = param['store_type_id'];
+  Future<Map<String, dynamic>?> getPharmacyList(
+      Map<String, dynamic> param) async {
+    try {
+      var cityId = param['city_id'];
+      var lat = param['lat'];
+      var lng = param['lng'];
+      var storeTagId =
+          (param['store_tag_id'] == null || param['store_tag_id'] == 'null')
+              ? ''
+              : param['store_tag_id'];
+      var storeTypeId = param['store_type_id'];
 
-    // Use StringBuffer for cleaner URL building
-    var urlBuffer = StringBuffer(
-        "${ApiUrl.getPharmacyList}?vendor_type_id=1&display_type=all&page=1&size=50");
+      // Use StringBuffer for cleaner URL building
+      var urlBuffer = StringBuffer(
+          "${ApiUrl.getPharmacyList}?vendor_type_id=1&display_type=all&page=1&size=50");
 
-    // Add store type if present
-    if (storeTypeId != null && storeTypeId != 0) {
-      urlBuffer.write("&store_type_id=$storeTypeId");
-    }
+      // Add store type if present
+      if (storeTypeId != null && storeTypeId != 0) {
+        urlBuffer.write("&store_type_id=$storeTypeId");
+      }
 
-    // Latitude/Longitude (optional)
-    if (lat != null && lng != null && lat != 0 && lng != 0) {
-      urlBuffer.write("&latitude=$lat&longitude=$lng");
-    }
+      // Latitude/Longitude (optional)
+      if (lat != null && lng != null && lat != 0 && lng != 0) {
+        urlBuffer.write("&latitude=$lat&longitude=$lng");
+      }
 
-    // City filter
-    if (cityId != null && cityId != 0) {
-      urlBuffer.write("&city_id=$cityId");
-    }
+      // City filter
+      if (cityId != null && cityId != 0) {
+        urlBuffer.write("&city_id=$cityId");
+      }
 
-    // Store tag filter
-    if (storeTagId.isNotEmpty) {
-      urlBuffer.write("&store_tag_id=$storeTagId");
-    }
+      // Store tag filter
+      if (storeTagId.isNotEmpty) {
+        urlBuffer.write("&store_tag_id=$storeTagId");
+      }
 
-    // Range (default 50, but allow override)
-    var range = param['range'] ?? 50;
-    urlBuffer.write("&range=$range");
+      // Range (default 50, but allow override)
+      var range = param['range'] ?? 50;
+      urlBuffer.write("&range=$range");
 
-    var url = urlBuffer.toString();
-    Utils().customPrint("✅ Final Pharmacy API URL => $url");
-    Utils().customPrint("Parameters => $param");
+      var url = urlBuffer.toString();
+      Utils().customPrint("✅ Final Pharmacy API URL => $url");
+      Utils().customPrint("Parameters => $param");
 
-    final response = await http.get(Uri.parse(url), headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": 'Bearer ${param['access_token']}',
-    });
+      final response = await http.get(Uri.parse(url), headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": 'Bearer ${param['access_token']}',
+      });
 
-    Utils().customPrint("Response => ${response.body}");
+      Utils().customPrint("Response => ${response.body}");
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint('Unauthorized / Forbidden');
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        Utils().customPrint('Unauthorized / Forbidden');
+        return null;
+      } else {
+        final res = json.decode(response.body);
+        Utils().customPrint('Error Response => $res');
+        return res;
+      }
+    } catch (e) {
+      Utils().customPrint("Exception in getPharmacyList => $e");
       return null;
-    } else {
-      final res = json.decode(response.body);
-      Utils().customPrint('Error Response => $res');
-      return res;
     }
-  } catch (e) {
-    Utils().customPrint("Exception in getPharmacyList => $e");
-    return null;
   }
-}
 
 // ==============================
 
@@ -1752,20 +1754,21 @@ class WebServicesHelper {
   }
 
   Future<dynamic> getPlaceAutocomplete(String input) async {
-  final url =
-      "${ApiUrl.autoCompleteApi}?input=$input&key=${ApiUrl.mapApiKey}";
+    final url =
+        "${ApiUrl.autoCompleteApi}?input=$input&key=${ApiUrl.mapApiKey}";
 
-  return await http.get(Uri.parse(url));
-}
+    return await http.get(Uri.parse(url));
+  }
 
-Future<dynamic> getPlaceDetails(String placeId) async {
-  final url =
-      "${ApiUrl.placeDetailsApi}?place_id=$placeId&key=${ApiUrl.mapApiKey}";
+  Future<dynamic> getPlaceDetails(String placeId) async {
+    final url =
+        "${ApiUrl.placeDetailsApi}?place_id=$placeId&key=${ApiUrl.mapApiKey}";
 
-  print("URL: $url"); // debug
+    print("URL: $url"); // debug
 
-  return await http.get(Uri.parse(url));
-}
+    return await http.get(Uri.parse(url));
+  }
+
   Future<Map<String, dynamic>?> getBannerList(
       Map<String, dynamic> param) async {
     String url = ApiUrl.bannerListApi + "banner_type=" + param['banner_type'];
@@ -2002,32 +2005,32 @@ Future<dynamic> getPlaceDetails(String placeId) async {
 
   //Job model started
   Future<Map<String, dynamic>?> getJobcategoryList(
-    Map<String, dynamic> param) async {
+      Map<String, dynamic> param) async {
+    String categoryType = param['category_type'];
 
-  String categoryType = param['category_type'];
+    String url =
+        "${ApiUrl.getJobCategoryUrl}?category_type=$categoryType&order_by=created_at&descending=true&page=1&size=50";
 
-  String url =
-      "${ApiUrl.getJobCategoryUrl}?category_type=$categoryType&order_by=created_at&descending=true&page=1&size=50";
+    Utils().customPrint('url =>$url');
 
-  Utils().customPrint('url =>$url');
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": 'Bearer ${param['accessToken']}',
+      },
+    );
 
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": 'Bearer ${param['accessToken']}',
-    },
-  );
+    Utils().customPrint("response ====${response.body}");
 
-  Utils().customPrint("response ====${response.body}");
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body.toString());
-  } else {
-    return null;
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else {
+      return null;
+    }
   }
-}
+
   Future<Map<String, dynamic>?> getJobSubcategoryList(
       Map<String, dynamic> param) async {
     String url = ApiUrl.getJobSubCategoryUrl + param['category_id'];
@@ -2052,7 +2055,8 @@ Future<dynamic> getPlaceDetails(String placeId) async {
   Future<Map<String, dynamic>?> getJobListApi(
       Map<String, dynamic> param) async {
     String url = ApiUrl.getJobListUrl;
-    Utils().customPrint('url---------------------------------------------> =>$url');
+    Utils().customPrint(
+        'url---------------------------------------------> =>$url');
     Utils().customPrint('parma =>$param');
     final response = await http.get(Uri.parse(url), headers: {
       "Accept": "application/json",
@@ -2091,57 +2095,54 @@ Future<dynamic> getPlaceDetails(String placeId) async {
     }
   }
 
-
   // get list of candidate
 
- Future<Map<String, dynamic>?> getListOfCandiateResume(
-    Map<String, dynamic> param) async {
+  Future<Map<String, dynamic>?> getListOfCandiateResume(
+      Map<String, dynamic> param) async {
+    String baseUrl = ApiUrl.getResumeListCandedate;
 
-  String baseUrl = ApiUrl.getResumeListCandedate;
+    Map<String, String> query = {};
 
-  Map<String, String> query = {};
-
-  void addIfNotEmpty(String key, dynamic value) {
-    if (value != null &&
-        value.toString().trim().isNotEmpty &&
-        value.toString() != "null") {
-      query[key] = value.toString();
+    void addIfNotEmpty(String key, dynamic value) {
+      if (value != null &&
+          value.toString().trim().isNotEmpty &&
+          value.toString() != "null") {
+        query[key] = value.toString();
+      }
     }
+
+    addIfNotEmpty("name", param["name"]);
+    addIfNotEmpty("preferred_city", param["preferred_city"]);
+    addIfNotEmpty("experience", param["experience"]);
+    addIfNotEmpty("expected_salary", param["expected_salary"]);
+    addIfNotEmpty("category_id", param["category_id"]);
+    addIfNotEmpty("subcategory_id", param["subcategory_id"]);
+    // addIfNotEmpty("job_type", param["job_type"]);
+//
+    if (param["accommodation"] != null) {
+      query["accommodation"] = param["accommodation"].toString();
+    }
+
+    final uri = Uri.parse(baseUrl).replace(queryParameters: query);
+
+    print("🌍 FILTER URL => $uri");
+
+    final response = await http.get(
+      uri,
+      headers: {
+        "accept": "application/json",
+        "Authorization": "Bearer ${param['accessToken']}"
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+
+    return null;
   }
 
-  addIfNotEmpty("name", param["name"]);
-  addIfNotEmpty("preferred_city", param["preferred_city"]);
-  addIfNotEmpty("experience", param["experience"]);
-  addIfNotEmpty("expected_salary", param["expected_salary"]);
-  addIfNotEmpty("category_id", param["category_id"]);
-  addIfNotEmpty("subcategory_id", param["subcategory_id"]);
-  // addIfNotEmpty("job_type", param["job_type"]);
-// 
-  if (param["accommodation"] != null) {
-    query["accommodation"] = param["accommodation"].toString();
-  }
-
-  final uri = Uri.parse(baseUrl).replace(queryParameters: query);
-
-  print("🌍 FILTER URL => $uri");
-
-  final response = await http.get(
-    uri,
-    headers: {
-      "accept": "application/json",
-      "Authorization": "Bearer ${param['accessToken']}"
-    },
-  );
-
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
-  }
-
-  return null;
-}
-
-
- // ✅ POST Resume API
+  // ✅ POST Resume API
   Future<Map<String, dynamic>?> postResumeApi(
       Map<String, dynamic> param) async {
     try {
@@ -2238,88 +2239,92 @@ Future<dynamic> getPlaceDetails(String placeId) async {
     }
     return null;
   }
+
 // ----------------------------------->
-/// Get jobs posted by current user
-Future<Map<String, dynamic>?> getMyPostedJobsApi(Map<String, dynamic> param) async {
-  try {
-    // You need to create this API endpoint with your backend team
-    // It should return jobs where created_by = current user
-    final uri = Uri.parse("${ApiUrl}admin/jobs/job-provider/my-jobs/").replace(
-      queryParameters: {
-        'user_id': param['user_id'].toString(),
-        'page': param['page']?.toString() ?? '1',
-        'size': param['size']?.toString() ?? '50',
-      },
-    );
+  /// Get jobs posted by current user
+  Future<Map<String, dynamic>?> getMyPostedJobsApi(
+      Map<String, dynamic> param) async {
+    try {
+      // You need to create this API endpoint with your backend team
+      // It should return jobs where created_by = current user
+      final uri =
+          Uri.parse("${ApiUrl}admin/jobs/job-provider/my-jobs/").replace(
+        queryParameters: {
+          'user_id': param['user_id'].toString(),
+          'page': param['page']?.toString() ?? '1',
+          'size': param['size']?.toString() ?? '50',
+        },
+      );
 
-    Utils().customPrint('url ========> ${uri.toString()}');
-    Utils().customPrint('param => $param');
+      Utils().customPrint('url ========> ${uri.toString()}');
+      Utils().customPrint('param => $param');
 
-    final response = await http.get(
-      uri,
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": 'Bearer ${param['accessToken']}',
-      },
-    );
+      final response = await http.get(
+        uri,
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": 'Bearer ${param['accessToken']}',
+        },
+      );
 
-    Utils().customPrint("response status code: ${response.statusCode}");
+      Utils().customPrint("response status code: ${response.statusCode}");
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint("Authentication error: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        Utils().customPrint("Authentication error: ${response.statusCode}");
+        return null;
+      } else {
+        Utils().customPrint("API error: ${response.statusCode}");
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception in getMyPostedJobsApi: $e");
       return null;
-    } else {
-      Utils().customPrint("API error: ${response.statusCode}");
-      return json.decode(response.body);
     }
-  } catch (e) {
-    Utils().customPrint("Exception in getMyPostedJobsApi: $e");
-    return null;
   }
-}
 
-/// Get applied jobs by job ID (you already have this)
-Future<Map<String, dynamic>?> getListAppliedJobByJobId(Map<String, dynamic> param) async {
-  try {
-    final uri = Uri.parse(ApiUrl.getListAppliedJob).replace(
-      queryParameters: {
-        'job_id': param['job_id'].toString(),
-        'page': param['page']?.toString() ?? '1',
-        'size': param['size']?.toString() ?? '50',
-      },
-    );
+  /// Get applied jobs by job ID (you already have this)
+  Future<Map<String, dynamic>?> getListAppliedJobByJobId(
+      Map<String, dynamic> param) async {
+    try {
+      final uri = Uri.parse(ApiUrl.getListAppliedJob).replace(
+        queryParameters: {
+          'job_id': param['job_id'].toString(),
+          'page': param['page']?.toString() ?? '1',
+          'size': param['size']?.toString() ?? '50',
+        },
+      );
 
-    Utils().customPrint('url ========> ${uri.toString()}');
-    Utils().customPrint('param => $param');
+      Utils().customPrint('url ========> ${uri.toString()}');
+      Utils().customPrint('param => $param');
 
-    final response = await http.get(
-      uri,
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": 'Bearer ${param['accessToken']}',
-      },
-    );
+      final response = await http.get(
+        uri,
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": 'Bearer ${param['accessToken']}',
+        },
+      );
 
-    Utils().customPrint("response status code: ${response.statusCode}");
+      Utils().customPrint("response status code: ${response.statusCode}");
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint("Authentication error: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        Utils().customPrint("Authentication error: ${response.statusCode}");
+        return null;
+      } else {
+        Utils().customPrint("API error: ${response.statusCode}");
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception in getListAppliedJobByJobId: $e");
       return null;
-    } else {
-      Utils().customPrint("API error: ${response.statusCode}");
-      return json.decode(response.body);
     }
-  } catch (e) {
-    Utils().customPrint("Exception in getListAppliedJobByJobId: $e");
-    return null;
   }
-}
 
   // --------------------------
 
@@ -2473,7 +2478,9 @@ Future<Map<String, dynamic>?> getListAppliedJobByJobId(Map<String, dynamic> para
     // if (!await InternetConnectionChecker().hasConnection) {
     //   return null;
     // }
-    var Url = ApiUrl.API_BUSINESS_TYPE_CATEGORY+"&business_type="+param['business_type'];
+    var Url = ApiUrl.API_BUSINESS_TYPE_CATEGORY +
+        "&business_type=" +
+        param['business_type'];
     Utils().customPrint("url => ${Url}");
     final response = await http.get(Uri.parse(Url), headers: {
       "Accept": "application/json",
@@ -2519,36 +2526,34 @@ Future<Map<String, dynamic>?> getListAppliedJobByJobId(Map<String, dynamic> para
     }
   }
 
-
-  // show all store type 
+  // show all store type
   Future<Map<String, dynamic>?> getAllStoreTypes({
-  required String accessToken,
-}) async {
-  final String url = ApiUrl.API_STORE_TYPE_CATEGORY;
+    required String accessToken,
+  }) async {
+    final String url = ApiUrl.API_STORE_TYPE_CATEGORY;
 
-  Utils().customPrint("url => $url");
+    Utils().customPrint("url => $url");
 
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $accessToken",
-    },
-  );
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $accessToken",
+      },
+    );
 
-  Utils().customPrint("response => ${response.body}");
+    Utils().customPrint("response => ${response.body}");
 
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  } else if (response.statusCode == 401 || response.statusCode == 403) {
-    Utils().customPrint("Unauthorized");
-    return null;
-  } else {
-    return json.decode(response.body);
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint("Unauthorized");
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
   }
-}
-
 
   Future<Map<String, dynamic>?> getMainCatgory(
       Map<String, dynamic> param) async {
@@ -2848,192 +2853,160 @@ Future<Map<String, dynamic>?> getListAppliedJobByJobId(Map<String, dynamic> para
 // Market place product add
   // Add this method to your WebServicesHelper class
 
+  Future<Map<String, dynamic>?> getMarketPlaceSuperCategory(
+      Map<String, dynamic> param) async {
+    String url = ApiUrl.API_MP_SUPERCATEGORY_LIST;
 
-  
-Future<Map<String, dynamic>?> getMarketPlaceSuperCategory(
-    Map<String, dynamic> param) async {
+    Utils().customPrint("GET market place super category  type => $url");
 
-  String url = ApiUrl.API_MP_SUPERCATEGORY_LIST;
-  
-  Utils().customPrint("GET market place super category  type => $url");
-  
-  try {
-    final response = await http.get(
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${param['access_token']}",
+        },
+      );
+
+      print("Type API Status: ${response.statusCode}");
+      print("Type API Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        print("Parsed data structure: ${data.keys}");
+        return data;
+      } else {
+        print("Failed to load types. Status: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      print("Error in API call: $e");
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> PostMarketPlaceProduct(
+      String url, Map<String, dynamic> data,
+      {Map<String, String>? headers}) async {
+    try {
+      print("Making POST request to: $url");
+      print("Request data: $data");
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers ?? {},
+        body: json.encode(data),
+      );
+
+      print("Response status: ${response.statusCode}");
+      print("Response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        print("Request failed with status: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      print("Error in POST request: $e");
+      return null;
+    }
+  }
+
+// post message for market place product
+  Future<Map<String, dynamic>?> postMarketPlaceMessage(
+      Map<String, dynamic> param) async {
+    String url =
+        "${ApiUrl.POST_MARKET_PLACE_PRODUCT_MESSAGE}?product_id=${param['product_id']}&sender_id=${param['sender_id']}&receiver_id=${param['receiver_id']}&message=${param['message']}";
+
+    Utils().customPrint('FINAL URL => $url');
+
+    final response = await http.post(
       Uri.parse(url),
       headers: {
         "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${param['access_token']}",
+        "Authorization": 'Bearer ${param['accessToken']}',
       },
     );
 
-    print("Type API Status: ${response.statusCode}");
-    print("Type API Body: ${response.body}");
+    Utils().customPrint("response ==== '${response.body}'");
+    Utils().customPrint("status Message code ==== ${response.statusCode}");
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      print("Parsed data structure: ${data.keys}");
-      return data;
-    } else {
-      print("Failed to load types. Status: ${response.statusCode}");
-      return null;
-    }
-  } catch (e) {
-    print("Error in API call: $e");
-    return null;
-  }
-}
-
-Future<Map<String, dynamic>?> PostMarketPlaceProduct(
-  String url, 
-  Map<String, dynamic> data, 
-  {Map<String, String>? headers}
-) async {
-  try {
-    print("Making POST request to: $url");
-    print("Request data: $data");
-    
-    final response = await http.post(
-      Uri.parse(url),
-      headers: headers ?? {},
-      body: json.encode(data),
-    );
-    
-    print("Response status: ${response.statusCode}");
-    print("Response body: ${response.body}");
-    
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      print("Request failed with status: ${response.statusCode}");
-      return null;
+      return json.decode(response.body);
     }
-  } catch (e) {
-    print("Error in POST request: $e");
-    return null;
   }
-}
-// post message for market place product 
-Future<Map<String, dynamic>?> postMarketPlaceMessage(
-    Map<String, dynamic> param) async {
-
-  String url =
-      "${ApiUrl.POST_MARKET_PLACE_PRODUCT_MESSAGE}?product_id=${param['product_id']}&sender_id=${param['sender_id']}&receiver_id=${param['receiver_id']}&message=${param['message']}";
-
-  Utils().customPrint('FINAL URL => $url');
-
-  final response = await http.post(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Authorization": 'Bearer ${param['accessToken']}',
-    },
-  );
-
-  Utils().customPrint("response ==== '${response.body}'");
-  Utils().customPrint("status Message code ==== ${response.statusCode}");
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  } else {
-    return json.decode(response.body);
-  }
-}
-
 
 // Get Market Place Product
- 
-Future<Map<String, dynamic>?> getMarketPlaceProduct(
-    Map<String, dynamic> params) async {
 
-  var baseUrl = ApiUrl.Get_Product_Market_Place;
+  Future<Map<String, dynamic>?> getMarketPlaceProduct(
+      Map<String, dynamic> params) async {
+    var baseUrl = ApiUrl.Get_Product_Market_Place;
 
-  // base query
-  final query = <String, String>{
-  "return_all": params["return_all"] ?? "false",
-  "display_type": params["display_type"] ?? "active",
-  "order_by": params["order_by"] ?? "created_at",
-  "descending": params["descending"] ?? "true",
-  "page": (params["page"] ?? "1").toString(),
-  "size": (params["size"] ?? "50").toString(),
-};
+    // base query
+    final query = <String, String>{
+      "return_all": params["return_all"] ?? "false",
+      "display_type": params["display_type"] ?? "active",
+      "order_by": params["order_by"] ?? "created_at",
+      "descending": params["descending"] ?? "true",
+      "page": (params["page"] ?? "1").toString(),
+      "size": (params["size"] ?? "50").toString(),
+    };
 
 // send title only if not empty
-if (params["title"] != null &&
-    params["title"].toString().trim().isNotEmpty) {
-  query["title"] = params["title"];
-}
+    if (params["title"] != null &&
+        params["title"].toString().trim().isNotEmpty) {
+      query["title"] = params["title"];
+    }
 
 // send hashtag only if not empty
-if (params["hashtag"] != null &&
-    params["hashtag"].toString().trim().isNotEmpty) {
-  query["hashtag"] = params["hashtag"];
-}
+    if (params["hashtag"] != null &&
+        params["hashtag"].toString().trim().isNotEmpty) {
+      query["hashtag"] = params["hashtag"];
+    }
 
-  // 👇 OPTIONAL category filter (sirf jab bhejo)
-  if (params["mp_category_id"] != null &&
-      params["mp_category_id"].toString().isNotEmpty) {
-    query["mp_category_id"] = params["mp_category_id"].toString();
-  }
+    // 👇 OPTIONAL category filter (sirf jab bhejo)
+    if (params["mp_category_id"] != null &&
+        params["mp_category_id"].toString().isNotEmpty) {
+      query["mp_category_id"] = params["mp_category_id"].toString();
+    }
 
-  if (params["mp_sub_category_id"] != null &&
-      params["mp_sub_category_id"].toString().isNotEmpty) {
-    query["mp_sub_category_id"] = params["mp_sub_category_id"].toString();
-  }
+    if (params["mp_sub_category_id"] != null &&
+        params["mp_sub_category_id"].toString().isNotEmpty) {
+      query["mp_sub_category_id"] = params["mp_sub_category_id"].toString();
+    }
 
-  Uri uri = Uri.parse(baseUrl).replace(queryParameters: query);
+    Uri uri = Uri.parse(baseUrl).replace(queryParameters: query);
 
-  print("🌐 Final URL => $uri");
+    print("🌐 Final URL => $uri");
 
-  final response = await http.get(
-    uri,
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": 'Bearer ${params["access_token"]}',
-    },
-  );
-
-  print("📡 Response status => ${response.statusCode}");
-  print("📡 Response body   => ${response.body}");
-
-  return json.decode(response.body);
-}
-// Add Interset Market Place 
-Future<Map<String, dynamic>?> postMarketPlaceInterest(
-    Map<String, dynamic> param) async {
-
-  String url =
-      "${ApiUrl.POST_MARKET_PLACE_INTERESTED}?user_id=${param['user_id']}&product_id=${param['product_id']}";
-
-  Utils().customPrint('FINAL URL => $url');
-
-  final response = await http.post(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Authorization": 'Bearer ${param['accessToken']}',
-    },
-  );
-
-  Utils().customPrint("response ==== '${response.body}'");
-  Utils().customPrint("status code ==== ${response.statusCode}");
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  } else {
-    return json.decode(response.body);
-  }
-}
-// get market place interest
-Future<Map<String, dynamic>?> getMarketPlaceInterest(Map<String, dynamic> param) async {
-  // FIXED: Proper URL parameter construction
-  String url = "${ApiUrl.GET_MARKET_PLACE_INTERESTED}${param['user_id']}";
-
-  Utils().customPrint('FINAL URL => $url');
-
-  try {
     final response = await http.get(
+      uri,
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": 'Bearer ${params["access_token"]}',
+      },
+    );
+
+    print("📡 Response status => ${response.statusCode}");
+    print("📡 Response body   => ${response.body}");
+
+    return json.decode(response.body);
+  }
+
+// Add Interset Market Place
+  Future<Map<String, dynamic>?> postMarketPlaceInterest(
+      Map<String, dynamic> param) async {
+    String url =
+        "${ApiUrl.POST_MARKET_PLACE_INTERESTED}?user_id=${param['user_id']}&product_id=${param['product_id']}";
+
+    Utils().customPrint('FINAL URL => $url');
+
+    final response = await http.post(
       Uri.parse(url),
       headers: {
         "Accept": "application/json",
@@ -3047,137 +3020,160 @@ Future<Map<String, dynamic>?> getMarketPlaceInterest(Map<String, dynamic> param)
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      Utils().customPrint("❌ API Error: ${response.statusCode} - ${response.body}");
-      return {
-        "status": response.statusCode,
-        "message": "Failed to fetch data",
-        "detail": response.body
-      };
+      return json.decode(response.body);
     }
-  } catch (e) {
-    Utils().customPrint("❌ Network Error: $e");
-    return {
-      "status": 500,
-      "message": "Network error: $e"
-    };
   }
-}
 
-// market place for petch api  
-Future<Map<String, dynamic>?> petchProductById(Map<String, dynamic> param) async {
-  String url = "${ApiUrl.PETCH_PRODUCT_BY_ID}/${param['product_id']}/?activate=${param['activate']}";
+// get market place interest
+  Future<Map<String, dynamic>?> getMarketPlaceInterest(
+      Map<String, dynamic> param) async {
+    // FIXED: Proper URL parameter construction
+    String url = "${ApiUrl.GET_MARKET_PLACE_INTERESTED}${param['user_id']}";
 
-  Utils().customPrint('ACTIVATE/DEACTIVATE API URL => $url');
+    Utils().customPrint('FINAL URL => $url');
 
-  try {
-    final response = await http.patch(
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": 'Bearer ${param['accessToken']}',
+        },
+      );
+
+      Utils().customPrint("response ==== '${response.body}'");
+      Utils().customPrint("status code ==== ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        Utils().customPrint(
+            "❌ API Error: ${response.statusCode} - ${response.body}");
+        return {
+          "status": response.statusCode,
+          "message": "Failed to fetch data",
+          "detail": response.body
+        };
+      }
+    } catch (e) {
+      Utils().customPrint("❌ Network Error: $e");
+      return {"status": 500, "message": "Network error: $e"};
+    }
+  }
+
+// market place for petch api
+  Future<Map<String, dynamic>?> petchProductById(
+      Map<String, dynamic> param) async {
+    String url =
+        "${ApiUrl.PETCH_PRODUCT_BY_ID}/${param['product_id']}/?activate=${param['activate']}";
+
+    Utils().customPrint('ACTIVATE/DEACTIVATE API URL => $url');
+
+    try {
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": 'Bearer ${param['accessToken']}',
+        },
+      );
+
+      Utils().customPrint("Product Activaet response ==== '${response.body}'");
+      Utils().customPrint(
+          "Product Activate  status code ==== ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        Utils().customPrint(
+            "❌ Product Activate/Deactivate API Error: ${response.statusCode}");
+        return {
+          "status": response.statusCode,
+          "message": "Failed to fetch product Activate/Deactivate"
+        };
+      }
+    } catch (e) {
+      Utils().customPrint("❌ Product Activate/Deactivate Network Error: $e");
+      return {"status": 500, "message": "Network error: $e"};
+    }
+  }
+
+// get market  place product by id
+
+  Future<Map<String, dynamic>?> getProductById(
+      Map<String, dynamic> param) async {
+    String url =
+        "${ApiUrl.GET_PRODUCT_BY_ID}?product_id=${param['product_id']}";
+
+    Utils().customPrint('PRODUCT DETAIL URL => $url');
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": 'Bearer ${param['accessToken']}',
+        },
+      );
+
+      Utils().customPrint("Product detail response ==== '${response.body}'");
+      Utils().customPrint(
+          "Product detail status code ==== ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        Utils()
+            .customPrint("❌ Product detail API Error: ${response.statusCode}");
+        return {
+          "status": response.statusCode,
+          "message": "Failed to fetch product details"
+        };
+      }
+    } catch (e) {
+      Utils().customPrint("❌ Product detail Network Error: $e");
+      return {"status": 500, "message": "Network error: $e"};
+    }
+  }
+
+// Update market place product
+
+  Future<Map<String, dynamic>?> updateMarketPlaceProduct(
+      Map<String, dynamic> param) async {
+    Utils().customPrint("PUT PARAM ==> $param");
+
+    // Validate ID
+    if (param['product_id'] == null) {
+      print("❌ Error: product_id is missing");
+      return null;
+    }
+
+    // Build URL
+    String url = "${ApiUrl.Put_Product_Market_PLACE}${param['product_id']}/";
+
+    print("PUT URL ==> $url");
+
+    final response = await http.put(
       Uri.parse(url),
+      body: json.encode(param),
       headers: {
         "Accept": "application/json",
-        "Authorization": 'Bearer ${param['accessToken']}',
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${param['access_token']}",
       },
     );
 
-    Utils().customPrint("Product Activaet response ==== '${response.body}'");
-    Utils().customPrint("Product Activate  status code ==== ${response.statusCode}");
+    Utils().customPrint("PUT Response Code: ${response.statusCode}");
+    Utils().customPrint("PUT Response Body: ${response.body}");
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
     } else {
-      Utils().customPrint("❌ Product Activate/Deactivate API Error: ${response.statusCode}");
-      return {
-        "status": response.statusCode,
-        "message": "Failed to fetch product Activate/Deactivate"
-      };
-    }
-  } catch (e) {
-    Utils().customPrint("❌ Product Activate/Deactivate Network Error: $e");
-    return {
-      "status": 500,
-      "message": "Network error: $e"
-    };
-  }
-}
-
-
-
-// get market  place product by id 
-
-Future<Map<String, dynamic>?> getProductById(Map<String, dynamic> param) async {
-  String url = "${ApiUrl.GET_PRODUCT_BY_ID}?product_id=${param['product_id']}";
-
-  Utils().customPrint('PRODUCT DETAIL URL => $url');
-
-  try {
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        "Accept": "application/json",
-        "Authorization": 'Bearer ${param['accessToken']}',
-      },
-    );
-
-    Utils().customPrint("Product detail response ==== '${response.body}'");
-    Utils().customPrint("Product detail status code ==== ${response.statusCode}");
-
-    if (response.statusCode == 200) {
       return json.decode(response.body);
-    } else {
-      Utils().customPrint("❌ Product detail API Error: ${response.statusCode}");
-      return {
-        "status": response.statusCode,
-        "message": "Failed to fetch product details"
-      };
     }
-  } catch (e) {
-    Utils().customPrint("❌ Product detail Network Error: $e");
-    return {
-      "status": 500,
-      "message": "Network error: $e"
-    };
   }
-}
-
-
-// Update market place product 
-
-Future<Map<String, dynamic>?> updateMarketPlaceProduct(
-    Map<String, dynamic> param) async {
-
-  Utils().customPrint("PUT PARAM ==> $param");
-
-  // Validate ID
-  if (param['product_id'] == null) {
-    print("❌ Error: product_id is missing");
-    return null;
-  }
-
-  // Build URL
-  String url = "${ApiUrl.Put_Product_Market_PLACE}${param['product_id']}/";
-
-  print("PUT URL ==> $url");
-
-  final response = await http.put(
-    Uri.parse(url),
-    body: json.encode(param),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${param['access_token']}",
-    },
-  );
-
-  Utils().customPrint("PUT Response Code: ${response.statusCode}");
-  Utils().customPrint("PUT Response Body: ${response.body}");
-
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    return json.decode(response.body);
-  } else if (response.statusCode == 401 || response.statusCode == 403) {
-    return null;
-  } else {
-    return json.decode(response.body);
-  }
-}
 
   Future<Map<String, dynamic>?> getMPBrandList(
       Map<String, dynamic> param) async {
@@ -3203,96 +3199,87 @@ Future<Map<String, dynamic>?> updateMarketPlaceProduct(
       return res;
     }
   }
-  // 
+  //
 
-
-  // ----->GET Tag List 
+  // ----->GET Tag List
   Future<Map<String, dynamic>?> getTagList(Map<String, dynamic> param) async {
     print("🔥 getTagList() CALLED!");
-  String url = ApiUrl.getListJobTags; 
-  // example: ...job-tag-list/?display_type=all&order_by=created_at&descending=true&page=1&size=50
+    String url = ApiUrl.getListJobTags;
+    // example: ...job-tag-list/?display_type=all&order_by=created_at&descending=true&page=1&size=50
 
-  // Add category_id
-  if (param['category_id'] != null && param['category_id'] != '') {
-    url = "$url&category_id=${param['category_id']}";
-  }
+    // Add category_id
+    if (param['category_id'] != null && param['category_id'] != '') {
+      url = "$url&category_id=${param['category_id']}";
+    }
 
-  // Add subcategory_id
-  if (param['subcategory_id'] != null && param['subcategory_id'] != '') {
-    url = "$url&subcategory_id=${param['subcategory_id']}";
-  }
+    // Add subcategory_id
+    if (param['subcategory_id'] != null && param['subcategory_id'] != '') {
+      url = "$url&subcategory_id=${param['subcategory_id']}";
+    }
 
-  Utils().customPrint("🔥 Final TagList URL => $url");
-  print("Final TagList URL========================= => $url");
+    Utils().customPrint("🔥 Final TagList URL => $url");
+    print("Final TagList URL========================= => $url");
 
-
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${param['access_token']}",
-    },
-  );
-
-  Utils().customPrint("🔥 TagList Response => ${response.body}");
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  }
-  return null;
-}
-
-
-Future<Map<String, dynamic>?> getMpcategoryList(
-    Map<String, dynamic> param) async {
-
-  var baseUrl = ApiUrl.API_MP_CATEGORY_LIST;
-
-  String finalUrl = baseUrl;
-
-  // ⭐ if super category filter comes → build query
-  if (param['super_category_id'] != null &&
-      param['super_category_id'].toString().isNotEmpty) {
-
-    finalUrl =
-        "$baseUrl?super_category_id=${param['super_category_id']}"
-        "&order_by=created_at"
-        "&descending=true"
-        "&display_type=active"
-        "&page=1"
-        "&size=50";
-  }
-
-  Utils().customPrint("CATEGORY URL => $finalUrl");
-
-  try {
     final response = await http.get(
-      Uri.parse(finalUrl),
+      Uri.parse(url),
       headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": 'Bearer ${param['access_token']}',
+        "Authorization": "Bearer ${param['access_token']}",
       },
     );
 
-    Utils().customPrint("CATEGORY RESPONSE => ${response.body}");
+    Utils().customPrint("🔥 TagList Response => ${response.body}");
 
     if (response.statusCode == 200) {
-      return json.decode(response.body.toString());
-    } 
-    else if (response.statusCode == 401 || response.statusCode == 403) {
-      return null;
-    } 
-    else {
-      return json.decode(response.body.toString());
+      return json.decode(response.body);
     }
-  } catch (e) {
-    Utils().customPrint("CATEGORY ERROR => $e");
     return null;
   }
-}
 
+  Future<Map<String, dynamic>?> getMpcategoryList(
+      Map<String, dynamic> param) async {
+    var baseUrl = ApiUrl.API_MP_CATEGORY_LIST;
+
+    String finalUrl = baseUrl;
+
+    // ⭐ if super category filter comes → build query
+    if (param['super_category_id'] != null &&
+        param['super_category_id'].toString().isNotEmpty) {
+      finalUrl = "$baseUrl?super_category_id=${param['super_category_id']}"
+          "&order_by=created_at"
+          "&descending=true"
+          "&display_type=active"
+          "&page=1"
+          "&size=50";
+    }
+
+    Utils().customPrint("CATEGORY URL => $finalUrl");
+
+    try {
+      final response = await http.get(
+        Uri.parse(finalUrl),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": 'Bearer ${param['access_token']}',
+        },
+      );
+
+      Utils().customPrint("CATEGORY RESPONSE => ${response.body}");
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body.toString());
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        return null;
+      } else {
+        return json.decode(response.body.toString());
+      }
+    } catch (e) {
+      Utils().customPrint("CATEGORY ERROR => $e");
+      return null;
+    }
+  }
 
   Future<Map<String, dynamic>?> getMpSubcatgory(
       Map<String, dynamic> param) async {
@@ -3368,11 +3355,11 @@ Future<Map<String, dynamic>?> getMpcategoryList(
     }
   }
 
-  // store Job Module 
+  // store Job Module
 
   Future<Map<String, dynamic>?> getJobyStoreApi(
       Map<String, dynamic> param) async {
-    String url = ApiUrl.getJobByStoreApi ;
+    String url = ApiUrl.getJobByStoreApi;
     Utils().customPrint('url =>$url');
     Utils().customPrint('parma =>$param');
     final response = await http.get(Uri.parse(url), headers: {
@@ -3390,6 +3377,7 @@ Future<Map<String, dynamic>?> getMpcategoryList(
       return res;
     }
   }
+
   Future<Map<String, dynamic>?> PostapplyJobStoreApi(
       Map<String, dynamic> param) async {
     String url = ApiUrl.applyJobStoreUrl;
@@ -3413,63 +3401,58 @@ Future<Map<String, dynamic>?> getMpcategoryList(
     }
   }
 
+  // store video
 
-  // store video 
+  Future<Map<String, dynamic>?> getStoreVideo(
+      Map<String, dynamic> param) async {
+    if (!await InternetConnectionChecker().hasConnection) {
+      return null;
+    }
 
-   Future<Map<String, dynamic>?> getStoreVideo(
-    Map<String, dynamic> param) async {
+    String url = ApiUrl.getStoreVideo;
 
-  if (!await InternetConnectionChecker().hasConnection) {
-    return null;
+    final storeId = param['store_id'];
+
+    if (storeId != null &&
+        storeId.toString().isNotEmpty &&
+        storeId.toString() != "null") {
+      // ✅ Store specific videos
+      url += "?store_id=$storeId"
+          "&display_type=active"
+          "&page=1"
+          "&size=20";
+    } else {
+      // ✅ Home page → ALL store videos
+      url += "?display_type=active"
+          "&page=1"
+          "&size=20";
+    }
+
+    Utils().customPrint("VIDEO URL => $url");
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${param['access_token']}",
+      },
+    );
+
+    Utils().customPrint("VIDEO RESPONSE => ${response.body}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      return null;
+    }
   }
-
-  String url = ApiUrl.getStoreVideo;
-
-  final storeId = param['store_id'];
-
-  if (storeId != null &&
-      storeId.toString().isNotEmpty &&
-      storeId.toString() != "null") {
-    // ✅ Store specific videos
-    url +=
-        "?store_id=$storeId"
-        "&display_type=active"
-        "&page=1"
-        "&size=20";
-  } else {
-    // ✅ Home page → ALL store videos
-    url +=
-        "?display_type=active"
-        "&page=1"
-        "&size=20";
-  }
-
-  Utils().customPrint("VIDEO URL => $url");
-
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${param['access_token']}",
-    },
-  );
-
-  Utils().customPrint("VIDEO RESPONSE => ${response.body}");
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  } else {
-    return null;
-  }
-}
-
 
   Future<Map<String, dynamic>?> getAllStoreVideoCategoury(
       Map<String, dynamic> param) async {
     Utils().customPrint("categoury  url => ${ApiUrl.getVideoCategoury}");
     var Url = ApiUrl.getVideoCategoury;
-   
+
     final response = await http.get(
       Uri.parse(Url),
       headers: {
@@ -3493,7 +3476,7 @@ Future<Map<String, dynamic>?> getMpcategoryList(
     }
   }
 
-   Future<Map<String, dynamic>?> postStoreReactionVideo(
+  Future<Map<String, dynamic>?> postStoreReactionVideo(
       Map<String, dynamic> param) async {
     String url = ApiUrl.postStoreVideoReaction;
     Utils().customPrint('url =>$url');
@@ -3518,9 +3501,10 @@ Future<Map<String, dynamic>?> getMpcategoryList(
 
   Future<Map<String, dynamic>?> getAllStoreVideoDescreptionDetail(
       Map<String, dynamic> param) async {
-    Utils().customPrint("categoury   url => ${ApiUrl.getStoreVideoTotalReaction}");
-    var Url = ApiUrl.getStoreVideoTotalReaction+param['video_id'];
-   
+    Utils()
+        .customPrint("categoury   url => ${ApiUrl.getStoreVideoTotalReaction}");
+    var Url = ApiUrl.getStoreVideoTotalReaction + param['video_id'];
+
     final response = await http.get(
       Uri.parse(Url),
       headers: {
@@ -3544,224 +3528,207 @@ Future<Map<String, dynamic>?> getMpcategoryList(
     }
   }
 
+// get store offer
+  Future<Map<String, dynamic>?> getStoreOffer(
+      Map<String, dynamic> param) async {
+    String url = ApiUrl.getStoreOffer;
 
+    if (param['store_id'] != null) {
+      // 👉 STORE PAGE (specific store)
+      url += "?store_id=${param['store_id']}&display_type=active"
+          "&order_by=created_at"
+          "&descending=true"
+          "&page=1"
+          "&size=50";
+    } else {
+      // 👉 HOME PAGE (all stores)
+      url += "?display_type=all"
+          "&order_by=created_at"
+          "&descending=true"
+          "&page=1"
+          "&size=10";
+    }
 
-// get store offer 
-Future<Map<String, dynamic>?> getStoreOffer(
-    Map<String, dynamic> param) async {
+    Utils().customPrint("GET OFFER URL => $url");
 
-  String url = ApiUrl.getStoreOffer;
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Authorization": "Bearer ${param['access_token']}",
+      },
+    );
 
-  if (param['store_id'] != null) {
-    // 👉 STORE PAGE (specific store)
-    url +=
-        "?store_id=${param['store_id']}&display_type=active"
-        "&order_by=created_at"
-        "&descending=true"
-        "&page=1"
-        "&size=50";
-  } else {
-    // 👉 HOME PAGE (all stores)
-    url +=
-        "?display_type=all"
-        "&order_by=created_at"
-        "&descending=true"
-        "&page=1"
-        "&size=10";
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    return null;
   }
 
-  Utils().customPrint("GET OFFER URL => $url");
+  Future<Map<String, dynamic>?> getStoreOfferSubCategory(
+      Map<String, dynamic> param) async {
+    // read category id from param
+    String categoryId = param["offer_category_id"].toString();
 
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Authorization": "Bearer ${param['access_token']}",
-    },
-  );
+    // build url dynamically
+    String url =
+        "${ApiUrl.getStoreOfferSubCategory}?offer_category_id=$categoryId";
 
-  if (response.statusCode == 200) {
+    Utils().customPrint("offer SubCategory URL => $url");
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("response ====${response.body}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint('Login test 46');
+      return null;
+    } else {
+      return json.decode(response.body.toString());
+    }
+  }
+
+  Future<Map<String, dynamic>?> getStoreOfferCategory(
+      Map<String, dynamic> param) async {
+    Utils().customPrint(
+        "customer event categoury  url => ${ApiUrl.getStoreOfferCategory}");
+    var Url = ApiUrl.getStoreOfferCategory;
+
+    final response = await http.get(
+      Uri.parse(Url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+    Utils().customPrint("response ====${response.body}");
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint('Login test 46');
+      return null;
+    } else if (response.statusCode == 400) {
+      final res = json.decode(response.body.toString());
+      return res;
+    } else {
+      final res = json.decode(response.body.toString());
+      // return
+      return res;
+    }
+  }
+
+// customer event mangemnt api
+
+  Future<Map<String, dynamic>?> getCustomerEventCategory(
+      Map<String, dynamic> param) async {
+    Utils().customPrint(
+        "customer event categoury  url => ${ApiUrl.getCustomerEventCategory}");
+    var Url = ApiUrl.getCustomerEventCategory;
+
+    final response = await http.get(
+      Uri.parse(Url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+    Utils().customPrint("response ====${response.body}");
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint('Login test 46');
+      return null;
+    } else if (response.statusCode == 400) {
+      final res = json.decode(response.body.toString());
+      return res;
+    } else {
+      final res = json.decode(response.body.toString());
+      // return
+      return res;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getCustomerEventSubCategory(
+      Map<String, dynamic> param) async {
+    // read category id from param
+    String categoryId = param["event_category_id"].toString();
+
+    // build url dynamically
+    String url =
+        "${ApiUrl.getCustomerEventSubCategory}&event_category_id=$categoryId";
+
+    Utils().customPrint("SubCategory URL => $url");
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("response ====${response.body}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint('Login test 46');
+      return null;
+    } else {
+      return json.decode(response.body.toString());
+    }
+  }
+
+  Future<Map<String, dynamic>?> getCustomerEvent(
+      Map<String, dynamic> param) async {
+    String baseUrl = ApiUrl.getCustomerEvent;
+    List<String> queryList = [];
+
+    if (param['user_id'] != null && param['user_id'].toString().isNotEmpty) {
+      queryList.add("user_id=${param['user_id']}");
+    }
+
+    // NEW FILTERS
+    if (param['title'] != null && param['title'].toString().isNotEmpty) {
+      queryList.add("title=${Uri.encodeComponent(param['title'])}");
+    }
+
+    if (param['hashtag'] != null && param['hashtag'].toString().isNotEmpty) {
+      queryList.add("hashtag=${Uri.encodeComponent(param['hashtag'])}");
+    }
+
+    queryList.addAll([
+      "display_type=all",
+      "return_all=false",
+      "order_by=created_at",
+      "descending=true",
+      "page=1",
+      "size=50",
+    ]);
+
+    final url = "$baseUrl?${queryList.join("&")}";
+    print("FINAL URL => $url");
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Authorization": 'Bearer ${param['accessToken']}',
+      },
+    );
+
     return json.decode(response.body);
   }
-  return null;
-}
 
-
-Future<Map<String, dynamic>?> getStoreOfferSubCategory(
-    Map<String, dynamic> param) async {
-
-  // read category id from param
-  String categoryId = param["offer_category_id"].toString();
-
-  // build url dynamically
-  String url =
-      "${ApiUrl.getStoreOfferSubCategory}?offer_category_id=$categoryId";
-
-  Utils().customPrint("offer SubCategory URL => $url");
-
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    },
-  );
-
-  Utils().customPrint("response ====${response.body}");
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body.toString());
-  } else if (response.statusCode == 401 || response.statusCode == 403) {
-    Utils().customPrint('Login test 46');
-    return null;
-  } else {
-    return json.decode(response.body.toString());
-  }
-}
-
-
-
-Future<Map<String, dynamic>?> getStoreOfferCategory(
-      Map<String, dynamic> param) async {
-    Utils().customPrint("customer event categoury  url => ${ApiUrl.getStoreOfferCategory}");
-    var Url = ApiUrl.getStoreOfferCategory;
-   
-    final response = await http.get(
-      Uri.parse(Url),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    );
-    Utils().customPrint("response ====${response.body}");
-    if (response.statusCode == 200) {
-      return json.decode(response.body.toString());
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint('Login test 46');
-      return null;
-    } else if (response.statusCode == 400) {
-      final res = json.decode(response.body.toString());
-      return res;
-    } else {
-      final res = json.decode(response.body.toString());
-      // return
-      return res;
-    }
-  }
-
-
-
-// customer event mangemnt api 
-
-Future<Map<String, dynamic>?> getCustomerEventCategory(
-      Map<String, dynamic> param) async {
-    Utils().customPrint("customer event categoury  url => ${ApiUrl.getCustomerEventCategory}");
-    var Url = ApiUrl.getCustomerEventCategory;
-   
-    final response = await http.get(
-      Uri.parse(Url),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    );
-    Utils().customPrint("response ====${response.body}");
-    if (response.statusCode == 200) {
-      return json.decode(response.body.toString());
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint('Login test 46');
-      return null;
-    } else if (response.statusCode == 400) {
-      final res = json.decode(response.body.toString());
-      return res;
-    } else {
-      final res = json.decode(response.body.toString());
-      // return
-      return res;
-    }
-  }
-
-
-Future<Map<String, dynamic>?> getCustomerEventSubCategory(
-    Map<String, dynamic> param) async {
-
-  // read category id from param
-  String categoryId = param["event_category_id"].toString();
-
-  // build url dynamically
-  String url =
-      "${ApiUrl.getCustomerEventSubCategory}&event_category_id=$categoryId";
-
-  Utils().customPrint("SubCategory URL => $url");
-
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    },
-  );
-
-  Utils().customPrint("response ====${response.body}");
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body.toString());
-  } else if (response.statusCode == 401 || response.statusCode == 403) {
-    Utils().customPrint('Login test 46');
-    return null;
-  } else {
-    return json.decode(response.body.toString());
-  }
-}
-
-
-
-Future<Map<String, dynamic>?> getCustomerEvent(
-    Map<String, dynamic> param) async {
-
-  String baseUrl = ApiUrl.getCustomerEvent;
-  List<String> queryList = [];
-
-  if (param['user_id'] != null &&
-      param['user_id'].toString().isNotEmpty) {
-    queryList.add("user_id=${param['user_id']}");
-  }
-
-  // NEW FILTERS
-  if (param['title'] != null &&
-      param['title'].toString().isNotEmpty) {
-    queryList.add("title=${Uri.encodeComponent(param['title'])}");
-  }
-
-  if (param['hashtag'] != null &&
-      param['hashtag'].toString().isNotEmpty) {
-    queryList.add("hashtag=${Uri.encodeComponent(param['hashtag'])}");
-  }
-
-  queryList.addAll([
-    "display_type=all",
-    "return_all=false",
-    "order_by=created_at",
-    "descending=true",
-    "page=1",
-    "size=50",
-  ]);
-
-  final url = "$baseUrl?${queryList.join("&")}";
-  print("FINAL URL => $url");
-
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Authorization": 'Bearer ${param['accessToken']}',
-    },
-  );
-
-  return json.decode(response.body);
-}
-
-Future<Map<String, dynamic>?> postCustomerEvent(
+  Future<Map<String, dynamic>?> postCustomerEvent(
       Map<String, dynamic> param) async {
     String url = ApiUrl.postCustomerEvent;
     Utils().customPrint('url =>$url');
@@ -3784,9 +3751,7 @@ Future<Map<String, dynamic>?> postCustomerEvent(
     }
   }
 
-
-
-Future<Map<String, dynamic>?> registerCustomerEvent(
+  Future<Map<String, dynamic>?> registerCustomerEvent(
       Map<String, dynamic> param) async {
     String url = ApiUrl.registerCustomerEvent;
     Utils().customPrint('url =>$url');
@@ -3809,167 +3774,152 @@ Future<Map<String, dynamic>?> registerCustomerEvent(
     }
   }
 
+  Future<Map<String, dynamic>?> getRegisterationCustomer({
+    required int eventId,
+    required int userId,
+    int page = 1,
+    int size = 50,
+  }) async {
+    final uri = Uri.parse(ApiUrl.getRegisterCustomerEvent).replace(
+      queryParameters: {
+        "event_id": eventId.toString(),
+        "user_id": userId.toString(),
+        "page": page.toString(),
+        "size": size.toString(),
+      },
+    );
 
-Future<Map<String, dynamic>?> getRegisterationCustomer({
-  required int eventId,
-  required int userId,
-  int page = 1,
-  int size = 50,
-}) async {
-  final uri = Uri.parse(ApiUrl.getRegisterCustomerEvent).replace(
-    queryParameters: {
-      "event_id": eventId.toString(),
-      "user_id": userId.toString(),
-      "page": page.toString(),
-      "size": size.toString(),
-    },
-  );
+    Utils().customPrint("Register API URL => $uri");
 
-  Utils().customPrint("Register API URL => $uri");
+    final response = await http.get(
+      uri,
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
 
-  final response = await http.get(
-    uri,
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    },
-  );
+    Utils().customPrint("Response => ${response.body}");
 
-  Utils().customPrint("Response => ${response.body}");
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  } else {
-    return json.decode(response.body);
-  }
-}
-
-
-
-
-
-Future<Map<String, dynamic>?> getInternshipProgramSuperCategory(Map<String, dynamic> param) async {
-  Utils().customPrint("Intership program super category Get api Url  url => ${ApiUrl.getInternshipprogramsupercategory}");
-  var Url = ApiUrl.getInternshipprogramsupercategory;
-  
-  final response = await http.get(
-    Uri.parse(Url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    },
-  );
-  Utils().customPrint("response ====${response.body}");
-  if (response.statusCode == 200) {
-    return json.decode(response.body.toString());
-  } else if (response.statusCode == 401 || response.statusCode == 403) {
-    Utils().customPrint('Login test 46');
-    return null;
-  } else if (response.statusCode == 400) {
-    final res = json.decode(response.body.toString());
-    return res;
-  } else {
-    final res = json.decode(response.body.toString());
-    return res;
-  }
-}
-
-
-Future<Map<String, dynamic>?> getInternshipProgramCategory(
-    Map<String, dynamic> param) async {
-
-  String url = ApiUrl.getstoreinternshipProgramCategory;
-
-  /// ✅ ADD QUERY PARAM
-  if (param.isNotEmpty) {
-    final query = Uri(queryParameters: param).query;
-    url = "$url?$query";
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      return json.decode(response.body);
+    }
   }
 
-  Utils().customPrint("Final URL => $url");
+  Future<Map<String, dynamic>?> getInternshipProgramSuperCategory(
+      Map<String, dynamic> param) async {
+    Utils().customPrint(
+        "Intership program super category Get api Url  url => ${ApiUrl.getInternshipprogramsupercategory}");
+    var Url = ApiUrl.getInternshipprogramsupercategory;
 
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    },
-  );
-
-  Utils().customPrint("response ====${response.body}");
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  } else if (response.statusCode == 401 || response.statusCode == 403) {
-    return null;
-  } else {
-    return json.decode(response.body);
-  }
-}
-  
-
-  
-Future<Map<String, dynamic>?> getInternshipProgramSubcategory(
-    Map<String, dynamic> param) async {
-
-  String url = ApiUrl.getstoreinternshipProgramsubcategory;
-
-  // Attach query parameters
-  if (param.isNotEmpty) {
-    url += "?category_id=${param['category_id']}";
+    final response = await http.get(
+      Uri.parse(Url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+    Utils().customPrint("response ====${response.body}");
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint('Login test 46');
+      return null;
+    } else if (response.statusCode == 400) {
+      final res = json.decode(response.body.toString());
+      return res;
+    } else {
+      final res = json.decode(response.body.toString());
+      return res;
+    }
   }
 
-  Utils().customPrint("SubCategory URL => $url");
+  Future<Map<String, dynamic>?> getInternshipProgramCategory(
+      Map<String, dynamic> param) async {
+    String url = ApiUrl.getstoreinternshipProgramCategory;
 
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    },
-  );
+    /// ✅ ADD QUERY PARAM
+    if (param.isNotEmpty) {
+      final query = Uri(queryParameters: param).query;
+      url = "$url?$query";
+    }
 
-  Utils().customPrint("response => ${response.body}");
+    Utils().customPrint("Final URL => $url");
 
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  } else if (response.statusCode == 401 || response.statusCode == 403) {
-    return null;
-  } else {
-    return json.decode(response.body);
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("response ====${response.body}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
   }
-}
 
+  Future<Map<String, dynamic>?> getInternshipProgramSubcategory(
+      Map<String, dynamic> param) async {
+    String url = ApiUrl.getstoreinternshipProgramsubcategory;
 
+    // Attach query parameters
+    if (param.isNotEmpty) {
+      url += "?category_id=${param['category_id']}";
+    }
+
+    Utils().customPrint("SubCategory URL => $url");
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("response => ${response.body}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
+  }
 
   Future<Map<String, dynamic>?> getInternshipProgram(
-    Map<String, dynamic> param) async {
+      Map<String, dynamic> param) async {
+    String url = "${ApiUrl.getstoreinternshiProgram}"
+        "?display_type=active&created_at&descending=true&page=1&size=50";
 
-  String url =
-      "${ApiUrl.getstoreinternshiProgram}"
-     
-      "?display_type=active&created_at&descending=true&page=1&size=50";
+    Utils().customPrint("GET Intternship Program URL => $url");
 
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${param['access_token']}",
+      },
+    );
 
-  Utils().customPrint("GET Intternship Program URL => $url");
-
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${param['access_token']}",
-    },
-  );
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    return null;
   }
-  return null;
-}
 
-
-Future<Map<String, dynamic>?> postApplyInternshipProgram(
+  Future<Map<String, dynamic>?> postApplyInternshipProgram(
       Map<String, dynamic> param) async {
     String url = ApiUrl.getapplyinternship;
     Utils().customPrint('apply internship url  =>$url');
@@ -3992,116 +3942,211 @@ Future<Map<String, dynamic>?> postApplyInternshipProgram(
     }
   }
 
+  Future<Map<String, dynamic>?> getSkillProgramSuperCategory(
+      Map<String, dynamic> param) async {
+    Utils().customPrint(
+        "skill program supercategory Get api Url  url => ${ApiUrl.getskillsupercategory}");
+    var Url = ApiUrl.getskillsupercategory;
 
-  Future<Map<String, dynamic>?> getSkillProgramSuperCategory(Map<String, dynamic> param) async {
-  Utils().customPrint("skill program supercategory Get api Url  url => ${ApiUrl.getskillsupercategory}");
-  var Url = ApiUrl.getskillsupercategory;
-  
-  final response = await http.get(
-    Uri.parse(Url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    },
-  );
-  Utils().customPrint("response ====${response.body}");
-  if (response.statusCode == 200) {
-    return json.decode(response.body.toString());
-  } else if (response.statusCode == 401 || response.statusCode == 403) {
-    Utils().customPrint('Login test 46');
-    return null;
-  } else if (response.statusCode == 400) {
-    final res = json.decode(response.body.toString());
-    return res;
-  } else {
-    final res = json.decode(response.body.toString());
-    return res;
+    final response = await http.get(
+      Uri.parse(Url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+    Utils().customPrint("response ====${response.body}");
+    if (response.statusCode == 200) {
+      return json.decode(response.body.toString());
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      Utils().customPrint('Login test 46');
+      return null;
+    } else if (response.statusCode == 400) {
+      final res = json.decode(response.body.toString());
+      return res;
+    } else {
+      final res = json.decode(response.body.toString());
+      return res;
+    }
   }
-}
-
-
-
-
-
-
-
 
   Future<Map<String, dynamic>?> getSkillProgramCategory(
-    Map<String, dynamic> param) async {
+      Map<String, dynamic> param) async {
+    String baseUrl = ApiUrl.getskillprogramcategory;
 
-  String baseUrl = ApiUrl.getskillprogramcategory;
+    // 🔥 SAFE + CLEAN QUERY PARAM BUILD
+    Uri uri = Uri.parse(baseUrl).replace(
+      queryParameters: param.isNotEmpty
+          ? param.map((key, value) => MapEntry(key, value.toString()))
+          : null,
+    );
 
-  // 🔥 SAFE + CLEAN QUERY PARAM BUILD
-  Uri uri = Uri.parse(baseUrl).replace(
-    queryParameters: param.isNotEmpty
-        ? param.map((key, value) =>
-            MapEntry(key, value.toString()))
-        : null,
-  );
+    Utils().customPrint("skill program category URL => $uri");
 
-  Utils().customPrint(
-      "skill program category URL => $uri");
+    final response = await http.get(
+      uri,
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
 
-  final response = await http.get(
-    uri,
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    },
-  );
+    Utils().customPrint("response === ${response.body}");
 
-  Utils().customPrint("response === ${response.body}");
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  } else if (response.statusCode == 401 ||
-      response.statusCode == 403) {
-    return null;
-  } else {
-    return json.decode(response.body);
-  }
-}
-  
-Future<Map<String, dynamic>?> getSkillProgramSubcategory(
-    Map<String, dynamic> param) async {
-
-  String url = ApiUrl.getskillprogramsubcategory;
-
-  // Attach query parameters
-  if (param.isNotEmpty) {
-    url += "?category_id=${param['category_id']}";
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
   }
 
-  Utils().customPrint("SubCategory URL => $url");
+  Future<Map<String, dynamic>?> getSkillProgramSubcategory(
+      Map<String, dynamic> param) async {
+    String url = ApiUrl.getskillprogramsubcategory;
 
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    },
-  );
+    // Attach query parameters
+    if (param.isNotEmpty) {
+      url += "?category_id=${param['category_id']}";
+    }
 
-  Utils().customPrint("response => ${response.body}");
+    Utils().customPrint("SubCategory URL => $url");
 
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  } else if (response.statusCode == 401 || response.statusCode == 403) {
-    return null;
-  } else {
-    return json.decode(response.body);
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+    );
+
+    Utils().customPrint("response => ${response.body}");
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      return null;
+    } else {
+      return json.decode(response.body);
+    }
   }
-}
 
+  Future<Map<String, dynamic>?> getSkillProgramType(
+      Map<String, dynamic> param) async {
+    String url = ApiUrl.getskillprogramtype;
 
-Future<Map<String, dynamic>?> getSkillProgramType(
-    Map<String, dynamic> param) async {
+    Utils().customPrint("GET skill program type => $url");
 
-  String url = ApiUrl.getskillprogramtype;
-  
-  Utils().customPrint("GET skill program type => $url");
-  
-  try {
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${param['access_token']}",
+        },
+      );
+
+      print("Type API Status: ${response.statusCode}");
+      print("Type API Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        print("Parsed data structure: ${data.keys}");
+        return data;
+      } else {
+        print("Failed to load types. Status: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      print("Error in API call: $e");
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getSkillProgram(
+      Map<String, dynamic> param) async {
+    // Build the base URL
+    String baseUrl = ApiUrl.getskillprogram;
+
+    // Create a list to hold query parameters
+    List<String> queryParams = [];
+
+    // Add required parameters
+
+    queryParams.add("order_by=created_at");
+    queryParams.add("descending=true");
+    queryParams.add("page=1");
+    queryParams.add("size=50");
+
+    // Add filter parameters if they exist
+
+    if (param.containsKey('category_id') &&
+        param['category_id'] != null &&
+        param['category_id'] != 0) {
+      queryParams.add("category_id=${param['category_id']}");
+    }
+
+    if (param.containsKey('subcategory_id') &&
+        param['subcategory_id'] != null &&
+        param['subcategory_id'] != 0) {
+      queryParams.add("subcategory_id=${param['subcategory_id']}");
+    }
+
+    if (param.containsKey('type_id') &&
+        param['type_id'] != null &&
+        param['type_id'] != 0) {
+      queryParams.add("type_id=${param['type_id']}");
+    }
+
+    if (param.containsKey('program_mode') &&
+        param['program_mode'] != null &&
+        param['program_mode'].toString().isNotEmpty) {
+      queryParams.add("program_mode=${param['program_mode']}");
+    }
+
+    if (param.containsKey('title') &&
+        param['title'] != null &&
+        param['title'].toString().isNotEmpty) {
+      queryParams.add("title=${Uri.encodeComponent(param['title'])}");
+    }
+
+    if (param.containsKey('min_price') &&
+        param['min_price'] != null &&
+        param['min_price'] > 0) {
+      queryParams.add("min_price=${param['min_price']}");
+    }
+
+    if (param.containsKey('max_price') &&
+        param['max_price'] != null &&
+        param['max_price'] > 0) {
+      queryParams.add("max_price=${param['max_price']}");
+    }
+
+    if (param.containsKey('duration') &&
+        param['duration'] != null &&
+        param['duration'].toString().isNotEmpty) {
+      queryParams.add("duration=${Uri.encodeComponent(param['duration'])}");
+    }
+
+    if (param.containsKey('fees_type') &&
+        param['fees_type'] != null &&
+        param['fees_type'].toString().isNotEmpty) {
+      queryParams.add("fees_type=${param['fees_type']}");
+    }
+
+    if (param.containsKey('display_type') &&
+        param['display_type'] != null &&
+        param['display_type'].toString().isNotEmpty) {
+      queryParams.add("display_type=${param['display_type']}");
+    }
+
+    // Join all query parameters
+    String url = "$baseUrl?${queryParams.join('&')}";
+
+    Utils().customPrint("GET Skill Program URL => $url");
+
     final response = await http.get(
       Uri.parse(url),
       headers: {
@@ -4111,106 +4156,13 @@ Future<Map<String, dynamic>?> getSkillProgramType(
       },
     );
 
-    print("Type API Status: ${response.statusCode}");
-    print("Type API Body: ${response.body}");
-
     if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      print("Parsed data structure: ${data.keys}");
-      return data;
-    } else {
-      print("Failed to load types. Status: ${response.statusCode}");
-      return null;
+      return json.decode(response.body);
     }
-  } catch (e) {
-    print("Error in API call: $e");
     return null;
   }
-}
 
-
-
-Future<Map<String, dynamic>?> getSkillProgram(
-    Map<String, dynamic> param) async {
-  
-  // Build the base URL
-  String baseUrl = ApiUrl.getskillprogram;
-  
-  // Create a list to hold query parameters
-  List<String> queryParams = [];
-  
-  // Add required parameters
-  
-  queryParams.add("order_by=created_at");
-  queryParams.add("descending=true");
-  queryParams.add("page=1");
-  queryParams.add("size=50");
-  
-  // Add filter parameters if they exist
-
-  if (param.containsKey('category_id') && param['category_id'] != null && param['category_id'] != 0) {
-    queryParams.add("category_id=${param['category_id']}");
-  }
-  
-  if (param.containsKey('subcategory_id') && param['subcategory_id'] != null && param['subcategory_id'] != 0) {
-    queryParams.add("subcategory_id=${param['subcategory_id']}");
-  }
-  
-  if (param.containsKey('type_id') && param['type_id'] != null && param['type_id'] != 0) {
-    queryParams.add("type_id=${param['type_id']}");
-  }
-  
-  if (param.containsKey('program_mode') && param['program_mode'] != null && param['program_mode'].toString().isNotEmpty) {
-    queryParams.add("program_mode=${param['program_mode']}");
-  }
-  
-  if (param.containsKey('title') && param['title'] != null && param['title'].toString().isNotEmpty) {
-    queryParams.add("title=${Uri.encodeComponent(param['title'])}");
-  }
-  
-  if (param.containsKey('min_price') && param['min_price'] != null && param['min_price'] > 0) {
-    queryParams.add("min_price=${param['min_price']}");
-  }
-  
-  if (param.containsKey('max_price') && param['max_price'] != null && param['max_price'] > 0) {
-    queryParams.add("max_price=${param['max_price']}");
-  }
-  
-  if (param.containsKey('duration') && param['duration'] != null && param['duration'].toString().isNotEmpty) {
-    queryParams.add("duration=${Uri.encodeComponent(param['duration'])}");
-  }
-  
-  if (param.containsKey('fees_type') && param['fees_type'] != null && param['fees_type'].toString().isNotEmpty) {
-    queryParams.add("fees_type=${param['fees_type']}");
-  }
-  
-  if (param.containsKey('display_type') && param['display_type'] != null && param['display_type'].toString().isNotEmpty) {
-    queryParams.add("display_type=${param['display_type']}");
-  }
-  
-  // Join all query parameters
-  String url = "$baseUrl?${queryParams.join('&')}";
-  
-  Utils().customPrint("GET Skill Program URL => $url");
-
-  final response = await http.get(
-    Uri.parse(url),
-    headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-      "Authorization": "Bearer ${param['access_token']}",
-    },
-  );
-
-  if (response.statusCode == 200) {
-    return json.decode(response.body);
-  }
-  return null;
-}
-
-
-
-Future<Map<String, dynamic>?> postApplySkillProgram(
+  Future<Map<String, dynamic>?> postApplySkillProgram(
       Map<String, dynamic> param) async {
     String url = ApiUrl.appliedskillprogram;
     Utils().customPrint('apply skill program url  =>$url');
@@ -4233,119 +4185,111 @@ Future<Map<String, dynamic>?> postApplySkillProgram(
     }
   }
 
-// gigs works 
+// gigs works
 
+  /// 🔥 GET GIGS SUPER CATEGORY
+  /// This API fetches all active gig super categories
+  Future<Map<String, dynamic>?> getGigsSuperCategory(
+      Map<String, dynamic> param) async {
+    final String url = ApiUrl.getGigsSuperCategory;
 
-/// 🔥 GET GIGS SUPER CATEGORY
-/// This API fetches all active gig super categories
-Future<Map<String, dynamic>?> getGigsSuperCategory(
-    Map<String, dynamic> param) async {
+    Utils().customPrint("Gigs SuperCategory API => $url");
 
-  final String url = ApiUrl.getGigsSuperCategory;
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      );
 
-  Utils().customPrint("Gigs SuperCategory API => $url");
+      Utils().customPrint("Response => ${response.body}");
 
-  try {
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    );
+      // ✅ SUCCESS
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
 
-    Utils().customPrint("Response => ${response.body}");
+      // 🔐 AUTH ERROR
+      else if (response.statusCode == 401 || response.statusCode == 403) {
+        Utils().customPrint("Unauthorized Access");
+        return null;
+      }
 
-    // ✅ SUCCESS
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    }
-
-    // 🔐 AUTH ERROR
-    else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint("Unauthorized Access");
+      // ⚠️ OTHER ERRORS
+      else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
       return null;
     }
-
-    // ⚠️ OTHER ERRORS
-    else {
-      return json.decode(response.body);
-    }
-
-  } catch (e) {
-    Utils().customPrint("Exception => $e");
-    return null;
   }
-}
 
-/// 🔥 GET GIGS CATEGORY (BASED ON SUPER CATEGORY)
-Future<Map<String, dynamic>?> getGigsCategory(
-    Map<String, dynamic> param) async {
+  /// 🔥 GET GIGS CATEGORY (BASED ON SUPER CATEGORY)
+  Future<Map<String, dynamic>?> getGigsCategory(
+      Map<String, dynamic> param) async {
+    final String baseUrl = ApiUrl.getGigsCategory;
 
-  final String baseUrl = ApiUrl.getGigsCategory;
+    /// ✅ Example param: { "super_category_id": 1 }
+    Uri uri = Uri.parse(baseUrl).replace(
+      queryParameters: param.map(
+        (key, value) => MapEntry(key, value.toString()),
+      ),
+    );
 
-  /// ✅ Example param: { "super_category_id": 1 }
-  Uri uri = Uri.parse(baseUrl).replace(
-    queryParameters: param.map(
-      (key, value) => MapEntry(key, value.toString()),
-    ),
-  );
+    Utils().customPrint("Category URL => $uri");
 
-  Utils().customPrint("Category URL => $uri");
+    try {
+      final response = await http.get(uri, headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      });
 
-  try {
-    final response = await http.get(uri, headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    });
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      return json.decode(response.body);
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Error => $e");
+      return null;
     }
-
-  } catch (e) {
-    Utils().customPrint("Error => $e");
-    return null;
   }
-}
 
-/// 🔥 GET GIGS SUBCATEGORY (BASED ON CATEGORY)
-Future<Map<String, dynamic>?> getGigsSubCategory(
-    Map<String, dynamic> param) async {
+  /// 🔥 GET GIGS SUBCATEGORY (BASED ON CATEGORY)
+  Future<Map<String, dynamic>?> getGigsSubCategory(
+      Map<String, dynamic> param) async {
+    final String baseUrl = ApiUrl.getGigsSubCategory;
 
-  final String baseUrl = ApiUrl.getGigsSubCategory;
+    /// ✅ Example param: { "category_id": 5 }
+    Uri uri = Uri.parse(baseUrl).replace(
+      queryParameters: param.map(
+        (key, value) => MapEntry(key, value.toString()),
+      ),
+    );
 
-  /// ✅ Example param: { "category_id": 5 }
-  Uri uri = Uri.parse(baseUrl).replace(
-    queryParameters: param.map(
-      (key, value) => MapEntry(key, value.toString()),
-    ),
-  );
+    Utils().customPrint("SubCategory URL => $uri");
 
-  Utils().customPrint("SubCategory URL => $uri");
+    try {
+      final response = await http.get(uri, headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      });
 
-  try {
-    final response = await http.get(uri, headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    });
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      return json.decode(response.body);
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Error => $e");
+      return null;
     }
-
-  } catch (e) {
-    Utils().customPrint("Error => $e");
-    return null;
   }
-}
 
-
-Future<Map<String, dynamic>?> postGigsWorksProfile(
+  Future<Map<String, dynamic>?> postGigsWorksProfile(
       Map<String, dynamic> param) async {
     String url = ApiUrl.addGigsProfile;
     Utils().customPrint('Gigs works porfile  =>$url');
@@ -4368,146 +4312,125 @@ Future<Map<String, dynamic>?> postGigsWorksProfile(
     }
   }
 
-
   /// 🔥 UPDATE GIG PROFILE
-Future<Map<String, dynamic>?> updateGigsWorksProfile(
-    Map<String, dynamic> param, int gigId) async {
-  try {
-    final url = "${ApiUrl.updateGigsProfile}$gigId";
+  Future<Map<String, dynamic>?> updateGigsWorksProfile(
+      Map<String, dynamic> param, int gigId) async {
+    try {
+      final url = "${ApiUrl.updateGigsProfile}$gigId";
 
-    print("UPDATE URL => $url");
-    print("PARAM => $param");
+      print("UPDATE URL => $url");
+      print("PARAM => $param");
 
-    final response = await http.put(
-      Uri.parse(url),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${param["accessToken"]}",
-      },
-      body: jsonEncode(param),
-    );
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${param["accessToken"]}",
+        },
+        body: jsonEncode(param),
+      );
 
-    print("STATUS CODE => ${response.statusCode}");
-    print("RAW RESPONSE => ${response.body}");
+      print("STATUS CODE => ${response.statusCode}");
+      print("RAW RESPONSE => ${response.body}");
 
-    if (response.body.isEmpty) {
-      return {
-        "status": response.statusCode,
-        "message": "Empty response"
-      };
+      if (response.body.isEmpty) {
+        return {"status": response.statusCode, "message": "Empty response"};
+      }
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      print("UPDATE ERROR => $e");
+      return null;
     }
-
-    return jsonDecode(response.body);
-
-  } catch (e) {
-    print("UPDATE ERROR => $e");
-    return null;
   }
-}
 
+  Future<Map<String, dynamic>?> getUserGigProfile(
+      Map<String, dynamic> param) async {
+    try {
+      if (param['access_token'] == null ||
+          param['access_token'].toString().isEmpty) {
+        return {
+          'status': 401,
+          'data': null,
+          'message': 'Access token is required'
+        };
+      }
 
+      String baseUrl = ApiUrl.getGigsProfile;
 
-Future<Map<String, dynamic>?> getUserGigProfile(
-    Map<String, dynamic> param) async {
-
-  try {
-    if (param['access_token'] == null ||
-        param['access_token'].toString().isEmpty) {
-      return {
-        'status': 401,
-        'data': null,
-        'message': 'Access token is required'
+      /// 🔥 ADD QUERY PARAMS DYNAMICALLY
+      Map<String, String> queryParams = {
+        "page": "1",
+        "size": "50",
       };
-    }
 
-    String baseUrl = ApiUrl.getGigsProfile;
+      /// ✅ USER ID (optional)
+      if (param['user_id'] != null && param['user_id'].toString().isNotEmpty) {
+        queryParams["user_id"] = param['user_id'].toString();
+        queryParams["display_type"] = "active";
+      } else {
+        queryParams["is_active"] = "true";
+      }
 
-    /// 🔥 ADD QUERY PARAMS DYNAMICALLY
-    Map<String, String> queryParams = {
-      "page": "1",
-      "size": "50",
-    };
+      /// 🔥 NEW: SUBCATEGORY FILTER
+      if (param['subcategory_id'] != null &&
+          param['subcategory_id'].toString().isNotEmpty) {
+        queryParams["subcategory_id"] = param['subcategory_id'].toString();
+      }
 
-    /// ✅ USER ID (optional)
-    if (param['user_id'] != null &&
-        param['user_id'].toString().isNotEmpty) {
-      queryParams["user_id"] = param['user_id'].toString();
-      queryParams["display_type"] = "active";
-    } else {
-      queryParams["is_active"] = "true";
-    }
+      /// 🔥 BUILD FINAL URL
+      final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
 
-    /// 🔥 NEW: SUBCATEGORY FILTER
-    if (param['subcategory_id'] != null &&
-        param['subcategory_id'].toString().isNotEmpty) {
-      queryParams["subcategory_id"] =
-          param['subcategory_id'].toString();
-    }
+      Utils().customPrint("✅ FINAL URL => $uri");
 
-    /// 🔥 BUILD FINAL URL
-    final uri = Uri.parse(baseUrl).replace(queryParameters: queryParams);
+      final response = await http.get(
+        uri,
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer ${param['access_token']}",
+        },
+      );
 
-    Utils().customPrint("✅ FINAL URL => $uri");
+      Utils().customPrint("STATUS => ${response.statusCode}");
+      Utils().customPrint("BODY => ${response.body}");
 
-    final response = await http.get(
-      uri,
-      headers: {
-        "Accept": "application/json",
-        "Authorization": "Bearer ${param['access_token']}",
-      },
-    );
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
 
-    Utils().customPrint("STATUS => ${response.statusCode}");
-    Utils().customPrint("BODY => ${response.body}");
+        if (data['data'] != null) {
+          if (data['data'] is List) {
+            return {
+              'status': 200,
+              'data': data['data'],
+              'message': 'Profile found'
+            };
+          }
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-
-      if (data['data'] != null) {
-        if (data['data'] is List) {
-          return {
-            'status': 200,
-            'data': data['data'],
-            'message': 'Profile found'
-          };
+          if (data['data'] is Map<String, dynamic>) {
+            return {
+              'status': 200,
+              'data': data['data'],
+              'message': 'Profile found'
+            };
+          }
         }
 
-        if (data['data'] is Map<String, dynamic>) {
-          return {
-            'status': 200,
-            'data': data['data'],
-            'message': 'Profile found'
-          };
-        }
+        return {'status': 404, 'data': null, 'message': 'No profile found'};
       }
 
       return {
-        'status': 404,
+        'status': response.statusCode,
         'data': null,
-        'message': 'No profile found'
+        'message': 'Something went wrong'
       };
+    } catch (e) {
+      Utils().customPrint("❌ ERROR => $e");
+
+      return {'status': 500, 'data': null, 'message': 'Internal error'};
     }
-
-    return {
-      'status': response.statusCode,
-      'data': null,
-      'message': 'Something went wrong'
-    };
-
-  } catch (e) {
-    Utils().customPrint("❌ ERROR => $e");
-
-    return {
-      'status': 500,
-      'data': null,
-      'message': 'Internal error'
-    };
   }
-}
 
-
-
-Future<Map<String, dynamic>?> hireGigsWorksProfile(
+  Future<Map<String, dynamic>?> hireGigsWorksProfile(
       Map<String, dynamic> param) async {
     String url = ApiUrl.hireGigs;
     Utils().customPrint('hire Gigs works porfile  =>$url');
@@ -4530,791 +4453,719 @@ Future<Map<String, dynamic>?> hireGigsWorksProfile(
     }
   }
 
+  Future<Map<String, dynamic>?> getHireGigs(Map<String, dynamic> param) async {
+    try {
+      /// 🔴 ONLY access_token REQUIRED
+      if (param['access_token'] == null ||
+          param['access_token'].toString().isEmpty) {
+        return {
+          'status': 401,
+          'data': null,
+          'message': 'Access token is required'
+        };
+      }
 
-Future<Map<String, dynamic>?> getHireGigs(
-    Map<String, dynamic> param) async {
+      /// 🔥 BUILD URL (OPTIONAL USER ID)
+      String baseUrl = ApiUrl.getHiredGigs;
+      String url;
 
-  try {
-    /// 🔴 ONLY access_token REQUIRED
-    if (param['access_token'] == null ||
-        param['access_token'].toString().isEmpty) {
-      return {
-        'status': 401,
-        'data': null,
-        'message': 'Access token is required'
-      };
-    }
+      if (param['user_id'] != null && param['user_id'].toString().isNotEmpty) {
+        /// ✅ WITH USER ID
+        url =
+            "$baseUrl?user_id=${param['user_id']}&display_type=active&page=1&size=50";
+      } else {
+        /// ✅ WITHOUT USER ID (DEFAULT PROFILE)
+        url = "$baseUrl?display_type=active&page=1&size=50";
+      }
 
-    /// 🔥 BUILD URL (OPTIONAL USER ID)
-    String baseUrl = ApiUrl.getHiredGigs;
-    String url;
+      Utils().customPrint("✅ URL => $url");
 
-    if (param['user_id'] != null &&
-        param['user_id'].toString().isNotEmpty) {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer ${param['access_token']}",
+        },
+      );
 
-      /// ✅ WITH USER ID
-      url =
-          "$baseUrl?user_id=${param['user_id']}&display_type=active&page=1&size=50";
+      Utils().customPrint("STATUS => ${response.statusCode}");
+      Utils().customPrint("BODY => ${response.body}");
 
-    } else {
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
 
-      /// ✅ WITHOUT USER ID (DEFAULT PROFILE)
-      url =
-          "$baseUrl?display_type=active&page=1&size=50";
-    }
+        if (data['data'] != null) {
+          /// 🔥 LIST HANDLE
+          if (data['data'] is List) {
+            List list = data['data'];
 
-    Utils().customPrint("✅ URL => $url");
+            if (list.isNotEmpty) {
+              return {'status': 200, 'data': list, 'message': 'Profile found'};
+            }
+          }
 
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        "Accept": "application/json",
-        "Authorization": "Bearer ${param['access_token']}",
-      },
-    );
-
-    Utils().customPrint("STATUS => ${response.statusCode}");
-    Utils().customPrint("BODY => ${response.body}");
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-
-      if (data['data'] != null) {
-
-        /// 🔥 LIST HANDLE
-        if (data['data'] is List) {
-          List list = data['data'];
-
-          if (list.isNotEmpty) {
+          /// 🔥 OBJECT HANDLE
+          if (data['data'] is Map<String, dynamic>) {
             return {
               'status': 200,
-              'data': list,
+              'data': data['data'],
               'message': 'Profile found'
             };
           }
         }
 
-        /// 🔥 OBJECT HANDLE
-        if (data['data'] is Map<String, dynamic>) {
-          return {
-            'status': 200,
-            'data': data['data'],
-            'message': 'Profile found'
-          };
-        }
+        return {'status': 404, 'data': null, 'message': 'No profile found'};
       }
 
       return {
-        'status': 404,
+        'status': response.statusCode,
         'data': null,
-        'message': 'No profile found'
+        'message': 'Something went wrong'
       };
+    } catch (e) {
+      Utils().customPrint("❌ ERROR => $e");
+
+      return {'status': 500, 'data': null, 'message': 'Internal error'};
     }
-
-    return {
-      'status': response.statusCode,
-      'data': null,
-      'message': 'Something went wrong'
-    };
-
-  } catch (e) {
-    Utils().customPrint("❌ ERROR => $e");
-
-    return {
-      'status': 500,
-      'data': null,
-      'message': 'Internal error'
-    };
   }
-}
 
-Future<Map<String, dynamic>?> updateGigsWorks(
-    Map<String, dynamic> param, int gigId) async {
-  try {
-    final url = "${ApiUrl.updateHiredGigs}$gigId";
+  Future<Map<String, dynamic>?> updateGigsWorks(
+      Map<String, dynamic> param, int gigId) async {
+    try {
+      final url = "${ApiUrl.updateHiredGigs}$gigId";
 
-    print("UPDATE hired gigs => $url");
-    print("PARAM => $param");
+      print("UPDATE hired gigs => $url");
+      print("PARAM => $param");
 
-    final response = await http.put(
-      Uri.parse(url),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer ${param["accessToken"]}",
-      },
-      body: jsonEncode(param),
-    );
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ${param["accessToken"]}",
+        },
+        body: jsonEncode(param),
+      );
 
-    print("STATUS CODE => ${response.statusCode}");
-    print("RAW RESPONSE => ${response.body}");
+      print("STATUS CODE => ${response.statusCode}");
+      print("RAW RESPONSE => ${response.body}");
 
-    if (response.body.isEmpty) {
-      return {
-        "status": response.statusCode,
-        "message": "Empty response"
-      };
+      if (response.body.isEmpty) {
+        return {"status": response.statusCode, "message": "Empty response"};
+      }
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      print("UPDATE ERROR => $e");
+      return null;
     }
-
-    return jsonDecode(response.body);
-
-  } catch (e) {
-    print("UPDATE ERROR => $e");
-    return null;
   }
-}
 
-
-Future<Map<String, dynamic>?> toggleGigActivation(
+  Future<Map<String, dynamic>?> toggleGigActivation(
     Map<String, dynamic> param,
     bool activate,
-) async {
+  ) async {
+    String url =
+        "${ApiUrl.actdeactGigs}${param['hire_id']}/status?activate=$activate";
 
-  String url =
-      "${ApiUrl.actdeactGigs}${param['hire_id']}/status?activate=$activate";
+    Utils().customPrint('ACTIVATE/DEACTIVATE API URL => $url');
 
-  Utils().customPrint('ACTIVATE/DEACTIVATE API URL => $url');
+    try {
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": 'Bearer ${param['accessToken']}',
+        },
+      );
 
-  try {
-    final response = await http.patch(
-      Uri.parse(url),
-      headers: {
-        "Accept": "application/json",
-        "Authorization": 'Bearer ${param['accessToken']}',
-      },
-    );
+      Utils().customPrint("Response ==== ${response.body}");
+      Utils().customPrint("Status ==== ${response.statusCode}");
 
-    Utils().customPrint("Response ==== ${response.body}");
-    Utils().customPrint("Status ==== ${response.statusCode}");
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      return {
-        "status": response.statusCode,
-        "message": activate
-            ? "Failed to activate hire"
-            : "Failed to deactivate hire"
-      };
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {
+          "status": response.statusCode,
+          "message":
+              activate ? "Failed to activate hire" : "Failed to deactivate hire"
+        };
+      }
+    } catch (e) {
+      return {"status": 500, "message": "Network error: $e"};
     }
-  } catch (e) {
-    return {
-      "status": 500,
-      "message": "Network error: $e"
-    };
   }
-}
 
 // these is an function or module we aree create for a vechile managemnet
 
+  Future<Map<String, dynamic>?> vechileCategory(
+      Map<String, dynamic> param) async {
+    final String url = ApiUrl.vechileCategory;
 
-Future<Map<String, dynamic>?> vechileCategory(
-    Map<String, dynamic> param) async {
-
-  final String url = ApiUrl.vechileCategory;
-
-  /// ✅ Example param: { "vechile_type_id": 1 } → 1 = Cab, 2 = Ambulance
-  /// (backend spells it "vechile_type_id")
-  final Uri uri = Uri.parse(url).replace(
-    queryParameters: param.isEmpty
-        ? null
-        : param.map((key, value) => MapEntry(key, value.toString())),
-  );
-
-  Utils().customPrint("Vechile Category API => $uri");
-
-  try {
-    final response = await http.get(
-      uri,
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
+    /// ✅ Example param: { "vechile_type_id": 1 } → 1 = Cab, 2 = Ambulance
+    /// (backend spells it "vechile_type_id")
+    final Uri uri = Uri.parse(url).replace(
+      queryParameters: param.isEmpty
+          ? null
+          : param.map((key, value) => MapEntry(key, value.toString())),
     );
 
-    Utils().customPrint("Response => ${response.body}");
+    Utils().customPrint("Vechile Category API => $uri");
 
-    // ✅ SUCCESS
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    }
+    try {
+      final response = await http.get(
+        uri,
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      );
 
-    // 🔐 AUTH ERROR
-    else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint("Unauthorized Access");
+      Utils().customPrint("Response => ${response.body}");
+
+      // ✅ SUCCESS
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+
+      // 🔐 AUTH ERROR
+      else if (response.statusCode == 401 || response.statusCode == 403) {
+        Utils().customPrint("Unauthorized Access");
+        return null;
+      }
+
+      // ⚠️ OTHER ERRORS
+      else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
       return null;
     }
-
-    // ⚠️ OTHER ERRORS
-    else {
-      return json.decode(response.body);
-    }
-
-  } catch (e) {
-    Utils().customPrint("Exception => $e");
-    return null;
   }
-}
 
+  /// GET /admin/vehicle-type/ → list of vehicle types (1 = Cab, 2 = Ambulance)
+  Future<Map<String, dynamic>?> getVechileTypes() async {
+    final String url = ApiUrl.vechileTypeList;
 
-/// GET /admin/vehicle-type/ → list of vehicle types (1 = Cab, 2 = Ambulance)
-Future<Map<String, dynamic>?> getVechileTypes() async {
+    Utils().customPrint("Vechile Type API => $url");
 
-  final String url = ApiUrl.vechileTypeList;
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      );
 
-  Utils().customPrint("Vechile Type API => $url");
+      Utils().customPrint("Response => ${response.body}");
 
-  try {
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        Utils().customPrint("Unauthorized Access");
+        return null;
+      } else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
+      return null;
+    }
+  }
+
+  /// GET /admin/vehicle-facility/ → list of facilities
+  /// (Patient Transport, ICU Ambulance, Oxygen Support, ...)
+  Future<Map<String, dynamic>?> getVechileFacilities() async {
+    final String url = ApiUrl.vechileFacilityList;
+
+    Utils().customPrint("Vechile Facility API => $url");
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      );
+
+      Utils().customPrint("Response => ${response.body}");
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        Utils().customPrint("Unauthorized Access");
+        return null;
+      } else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getVechileSubCategory(
+      Map<String, dynamic> param) async {
+    final String baseUrl = ApiUrl.vechileSubCategory;
+
+    /// ✅ Example param: { "category_id": 5 }
+    Uri uri = Uri.parse(baseUrl).replace(
+      queryParameters: param.map(
+        (key, value) => MapEntry(key, value.toString()),
+      ),
     );
 
-    Utils().customPrint("Response => ${response.body}");
+    Utils().customPrint("vechile SubCategory URL => $uri");
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint("Unauthorized Access");
-      return null;
-    } else {
-      return json.decode(response.body);
-    }
-  } catch (e) {
-    Utils().customPrint("Exception => $e");
-    return null;
-  }
-}
-
-/// GET /admin/vehicle-facility/ → list of facilities
-/// (Patient Transport, ICU Ambulance, Oxygen Support, ...)
-Future<Map<String, dynamic>?> getVechileFacilities() async {
-
-  final String url = ApiUrl.vechileFacilityList;
-
-  Utils().customPrint("Vechile Facility API => $url");
-
-  try {
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
+    try {
+      final response = await http.get(uri, headers: {
         "Accept": "application/json",
         "Content-Type": "application/json",
-      },
-    );
+      });
 
-    Utils().customPrint("Response => ${response.body}");
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint("Unauthorized Access");
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Error => $e");
       return null;
-    } else {
-      return json.decode(response.body);
     }
-  } catch (e) {
-    Utils().customPrint("Exception => $e");
-    return null;
   }
-}
 
-Future<Map<String, dynamic>?> getVechileSubCategory(
-    Map<String, dynamic> param) async {
-
-  final String baseUrl = ApiUrl.vechileSubCategory;
-
-  /// ✅ Example param: { "category_id": 5 }
-  Uri uri = Uri.parse(baseUrl).replace(
-    queryParameters: param.map(
-      (key, value) => MapEntry(key, value.toString()),
-    ),
-  );
-
-  Utils().customPrint("vechile SubCategory URL => $uri");
-
-  try {
-    final response = await http.get(uri, headers: {
-      "Accept": "application/json",
-      "Content-Type": "application/json",
-    });
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      return json.decode(response.body);
-    }
-
-  } catch (e) {
-    Utils().customPrint("Error => $e");
-    return null;
-  }
-}
-
-Future<Map<String, dynamic>?> postDrivers(
+  Future<Map<String, dynamic>?> postDrivers(
     Map<String, dynamic> body,
     String accessToken,
-) async {
+  ) async {
+    String url = ApiUrl.driver;
 
-  String url = ApiUrl.driver;
+    Utils().customPrint('Driver Post => $url');
+    Utils().customPrint('Body => $body');
 
-  Utils().customPrint('Driver Post => $url');
-  Utils().customPrint('Body => $body');
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: json.encode(body),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $accessToken",
+        },
+      );
 
-  try {
-    final response = await http.post(
-      Uri.parse(url),
-      body: json.encode(body),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $accessToken",
-      },
-    );
+      Utils().customPrint("Response => ${response.body}");
 
-    Utils().customPrint("Response => ${response.body}");
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        return null;
+      } else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
       return null;
-    } else {
-      return json.decode(response.body);
     }
-
-  } catch (e) {
-    Utils().customPrint("Exception => $e");
-    return null;
   }
-}
 
-
-Future<Map<String, dynamic>?> postVechile(
+  Future<Map<String, dynamic>?> postVechile(
     Map<String, dynamic> body,
     String accessToken,
-) async {
+  ) async {
+    String url = ApiUrl.vechilRegister;
 
-  String url = ApiUrl.vechilRegister;
+    Utils().customPrint('Vechile Post => $url');
+    Utils().customPrint('Body => $body');
 
-  Utils().customPrint('Vechile Post => $url');
-  Utils().customPrint('Body => $body');
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: json.encode(body),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $accessToken",
+        },
+      );
 
-  try {
-    final response = await http.post(
-      Uri.parse(url),
-      body: json.encode(body),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $accessToken",
-      },
-    );
+      Utils().customPrint("Response => ${response.body}");
 
-    Utils().customPrint("Response => ${response.body}");
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        return null;
+      } else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
       return null;
-    } else {
-      return json.decode(response.body);
     }
-
-  } catch (e) {
-    Utils().customPrint("Exception => $e");
-    return null;
   }
-}
 
+  Future<Map<String, dynamic>?> updateDriverProfile(
+    int driverId,
+    Map<String, dynamic> body,
+    String token,
+  ) async {
+    try {
+      final url = "${ApiUrl.updateDriver}$driverId";
 
-Future<Map<String, dynamic>?> updateDriverProfile(
-  int driverId,
-  Map<String, dynamic> body,
-  String token,
-) async {
-  try {
-    final url = "${ApiUrl.updateDriver}$driverId";
+      print("API => $url");
+      print("BODY => $body");
 
-    print("API => $url");
-    print("BODY => $body");
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(body),
+      );
 
-    final response = await http.put(
-      Uri.parse(url),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode(body),
-    );
+      print("STATUS => ${response.statusCode}");
+      print("RESPONSE => ${response.body}");
 
-    print("STATUS => ${response.statusCode}");
-    print("RESPONSE => ${response.body}");
+      if (response.body.isEmpty) {
+        return {"status": response.statusCode, "message": "Empty response"};
+      }
 
-    if (response.body.isEmpty) {
-      return {
-        "status": response.statusCode,
-        "message": "Empty response"
-      };
+      return jsonDecode(response.body);
+    } catch (e) {
+      print("ERROR => $e");
+      return null;
     }
-
-    return jsonDecode(response.body);
-
-  } catch (e) {
-    print("ERROR => $e");
-    return null;
   }
-}
 
+  Future<Map<String, dynamic>?> getDriverByUserId(
+      String userId, String token) async {
+    try {
+      final url =
+          "${ApiUrl.getDriverProfile}?display_type=active&order_by=id&descending=false&user_id=$userId";
 
-Future<Map<String, dynamic>?> getDriverByUserId(
-    String userId, String token) async {
-  try {
-    final url =
-        "${ApiUrl.getDriverProfile}?display_type=active&order_by=id&descending=false&user_id=$userId";
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      );
 
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        "Authorization": "Bearer $token",
-      },
-    );
+      if (response.body.isEmpty) return null;
 
-    if (response.body.isEmpty) return null;
-
-    return jsonDecode(response.body);
-  } catch (e) {
-    print("GET DRIVER LIST ERROR => $e");
-    return null;
+      return jsonDecode(response.body);
+    } catch (e) {
+      print("GET DRIVER LIST ERROR => $e");
+      return null;
+    }
   }
-}
 
 // Fetch a single driver's full detail (including image) by driver id.
 // Endpoint: {apiUrl}drivers/{driverId}  e.g. .../drivers/24
-Future<Map<String, dynamic>?> getDriverById(String driverId) async {
-  final String url = "${ApiUrl.driver}$driverId";
+  Future<Map<String, dynamic>?> getDriverById(String driverId) async {
+    final String url = "${ApiUrl.driver}$driverId";
 
-  Utils().customPrint("🧑 Driver detail API => $url");
+    Utils().customPrint("🧑 Driver detail API => $url");
 
-  try {
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    );
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      );
 
-    Utils().customPrint("Driver detail response => ${response.body}");
+      Utils().customPrint("Driver detail response => ${response.body}");
 
-    if (response.body.isEmpty) return null;
-    return json.decode(response.body);
-  } catch (e) {
-    Utils().customPrint("GET DRIVER BY ID ERROR => $e");
-    return null;
+      if (response.body.isEmpty) return null;
+      return json.decode(response.body);
+    } catch (e) {
+      Utils().customPrint("GET DRIVER BY ID ERROR => $e");
+      return null;
+    }
   }
-}
-
 
 // Add these methods to your WebServicesHelper class
 
-Future<Map<String, dynamic>?> getVehicleByUserId(
-    String userId, String token) async {
-  try {
-    final url =
-        "${ApiUrl.getVehicle}?page=1&size=10&display_type=all&order_by=id&user_id=$userId&descending=false";
+  Future<Map<String, dynamic>?> getVehicleByUserId(
+      String userId, String token) async {
+    try {
+      final url =
+          "${ApiUrl.getVehicle}?page=1&size=10&display_type=all&order_by=id&user_id=$userId&descending=false";
 
-    print("🚀 VEHICLE API => $url");
-    print("👤 USER ID => $userId");
+      print("🚀 VEHICLE API => $url");
+      print("👤 USER ID => $userId");
 
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        "Authorization": "Bearer $token",
-      },
-    );
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      );
 
-    if (response.body.isEmpty) return null;
+      if (response.body.isEmpty) return null;
 
-    print("🚗 RESPONSE => ${response.body}");
+      print("🚗 RESPONSE => ${response.body}");
 
-    final decoded = jsonDecode(response.body);
+      final decoded = jsonDecode(response.body);
 
-    // 🔥 SAFETY CHECK
-    if (decoded['data'] == null) {
-      print("❌ NO VEHICLE DATA FOUND");
+      // 🔥 SAFETY CHECK
+      if (decoded['data'] == null) {
+        print("❌ NO VEHICLE DATA FOUND");
+        return null;
+      }
+
+      return decoded;
+    } catch (e) {
+      print("GET VEHICLE ERROR => $e");
       return null;
     }
-
-    return decoded;
-  } catch (e) {
-    print("GET VEHICLE ERROR => $e");
-    return null;
   }
-}
-Future<Map<String, dynamic>?> updateVehicle(
-  int vehicleId,
-  Map<String, dynamic> body,
-  String token,
-) async {
-  try {
-    final url = "${ApiUrl.updateVehicle}$vehicleId"; // ✅ FIXED
 
-    print("🚗 Vehicle Update API => $url");
+  Future<Map<String, dynamic>?> updateVehicle(
+    int vehicleId,
+    Map<String, dynamic> body,
+    String token,
+  ) async {
+    try {
+      final url = "${ApiUrl.updateVehicle}$vehicleId"; // ✅ FIXED
 
-    final response = await http.put(
-      Uri.parse(url),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode(body),
-    );
+      print("🚗 Vehicle Update API => $url");
 
-    print("🚗 STATUS => ${response.statusCode}");
-    print("🚗 RESPONSE => ${response.body}");
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(body),
+      );
 
-    if (response.body.isEmpty) {
-      return {"status": response.statusCode, "message": "Empty response"};
+      print("🚗 STATUS => ${response.statusCode}");
+      print("🚗 RESPONSE => ${response.body}");
+
+      if (response.body.isEmpty) {
+        return {"status": response.statusCode, "message": "Empty response"};
+      }
+
+      return jsonDecode(response.body);
+    } catch (e) {
+      print("UPDATE VEHICLE ERROR => $e");
+      return null;
     }
-
-    return jsonDecode(response.body);
-  } catch (e) {
-    print("UPDATE VEHICLE ERROR => $e");
-    return null;
   }
-}
-
 
 // Add this to your WebServicesHelper class
-Future<Map<String, dynamic>?> toggleVehicleActivation(
-  Map<String, dynamic> param,
-  bool activate,
-) async {
-  String url =
-      "${ApiUrl.patchVechile}${param['vechile_id']}/status?activate=$activate";
+  Future<Map<String, dynamic>?> toggleVehicleActivation(
+    Map<String, dynamic> param,
+    bool activate,
+  ) async {
+    String url =
+        "${ApiUrl.patchVechile}${param['vechile_id']}/status?activate=$activate";
 
-  Utils().customPrint('ACTIVATE/DEACTIVATE API URL => $url');
+    Utils().customPrint('ACTIVATE/DEACTIVATE API URL => $url');
 
-  try {
-    final response = await http.patch(
-      Uri.parse(url),
-      headers: {
-        "Accept": "application/json",
-        "Authorization": 'Bearer ${param['accessToken']}',
-      },
-    );
+    try {
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": 'Bearer ${param['accessToken']}',
+        },
+      );
 
-    Utils().customPrint("Response ==== ${response.body}");
-    Utils().customPrint("Status ==== ${response.statusCode}");
+      Utils().customPrint("Response ==== ${response.body}");
+      Utils().customPrint("Status ==== ${response.statusCode}");
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      return {
-        "status": response.statusCode,
-        "message": activate
-            ? "Failed to activate vehicle"
-            : "Failed to deactivate vehicle"
-      };
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {
+          "status": response.statusCode,
+          "message": activate
+              ? "Failed to activate vehicle"
+              : "Failed to deactivate vehicle"
+        };
+      }
+    } catch (e) {
+      return {"status": 500, "message": "Network error: $e"};
     }
-  } catch (e) {
-    return {
-      "status": 500,
-      "message": "Network error: $e"
-    };
   }
-}
 
-Future<Map<String, dynamic>?> toggleDriverActivation(
-  Map<String, dynamic> param,
-  bool activate,
-) async {
-  String url =
-      "${ApiUrl.patchDrivers}${param['driver_id']}/status?activate=$activate";
+  Future<Map<String, dynamic>?> toggleDriverActivation(
+    Map<String, dynamic> param,
+    bool activate,
+  ) async {
+    String url =
+        "${ApiUrl.patchDrivers}${param['driver_id']}/status?activate=$activate";
 
-  Utils().customPrint('ACTIVATE/DEACTIVATE API URL => $url');
+    Utils().customPrint('ACTIVATE/DEACTIVATE API URL => $url');
 
-  try {
-    final response = await http.patch(
-      Uri.parse(url),
-      headers: {
-        "Accept": "application/json",
-        "Authorization": 'Bearer ${param['accessToken']}',
-      },
-    );
+    try {
+      final response = await http.patch(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": 'Bearer ${param['accessToken']}',
+        },
+      );
 
-    Utils().customPrint("Response ==== ${response.body}");
-    Utils().customPrint("Status ==== ${response.statusCode}");
+      Utils().customPrint("Response ==== ${response.body}");
+      Utils().customPrint("Status ==== ${response.statusCode}");
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      return {
-        "status": response.statusCode,
-        "message": activate
-            ? "Failed to activate driver"
-            : "Failed to deactivate Driver"
-      };
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        return {
+          "status": response.statusCode,
+          "message": activate
+              ? "Failed to activate driver"
+              : "Failed to deactivate Driver"
+        };
+      }
+    } catch (e) {
+      return {"status": 500, "message": "Network error: $e"};
     }
-  } catch (e) {
-    return {
-      "status": 500,
-      "message": "Network error: $e"
-    };
   }
-}
 
+  Future<Map<String, dynamic>?> getVechile(Map<String, dynamic> param) async {
+    final String url = ApiUrl.getVechile;
 
-Future<Map<String, dynamic>?> getVechile(
-    Map<String, dynamic> param) async {
-
-  final String url = ApiUrl.getVechile;
-
-  /// 🔥 ADD QUERY PARAMS HERE
-  final uri = Uri.parse(url).replace(
-    queryParameters:
-        param.map((key, value) => MapEntry(key, value.toString())),
-  );
-
-  Utils().customPrint("🚗 Vehicle API => $uri");
-
-  try {
-    final response = await http.get(
-      uri,
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
+    /// 🔥 ADD QUERY PARAMS HERE
+    final uri = Uri.parse(url).replace(
+      queryParameters:
+          param.map((key, value) => MapEntry(key, value.toString())),
     );
 
-    Utils().customPrint("Response => ${response.body}");
+    Utils().customPrint("🚗 Vehicle API => $uri");
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint("Unauthorized Access");
+    try {
+      final response = await http.get(
+        uri,
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      );
+
+      Utils().customPrint("Response => ${response.body}");
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        Utils().customPrint("Unauthorized Access");
+        return null;
+      } else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
       return null;
-    } else {
-      return json.decode(response.body);
     }
-
-  } catch (e) {
-    Utils().customPrint("Exception => $e");
-    return null;
   }
-}
 
-
-Future<Map<String, dynamic>?> createVehicleSosAlert(
+  Future<Map<String, dynamic>?> createVehicleSosAlert(
     Map<String, dynamic> body,
     String accessToken,
-) async {
+  ) async {
+    String url = ApiUrl.vehicleSosApi;
 
-  String url = ApiUrl.vehicleSosApi;
+    Utils().customPrint('Vehicle SOS Post => $url');
+    Utils().customPrint('Body => $body');
 
-  Utils().customPrint('Vehicle SOS Post => $url');
-  Utils().customPrint('Body => $body');
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: json.encode(body),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $accessToken",
+        },
+      );
 
-  try {
-    final response = await http.post(
-      Uri.parse(url),
-      body: json.encode(body),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $accessToken",
-      },
-    );
+      Utils().customPrint("Response => ${response.body}");
 
-    Utils().customPrint("Response => ${response.body}");
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        return null;
+      } else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
       return null;
-    } else {
-      return json.decode(response.body);
     }
-
-  } catch (e) {
-    Utils().customPrint("Exception => $e");
-    return null;
   }
-}
 
 // these module si basically implent for a feedabce section
 
-Future<Map<String, dynamic>?> getFeedbackTypes() async {
+  Future<Map<String, dynamic>?> getFeedbackTypes() async {
+    final String url = ApiUrl.feedback_types;
 
-  final String url = ApiUrl.feedback_types;
+    Utils().customPrint("Feedback Types API => $url");
 
-  Utils().customPrint("Feedback Types API => $url");
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      );
 
-  try {
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    );
+      Utils().customPrint("Response => ${response.body}");
 
-    Utils().customPrint("Response => ${response.body}");
-
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
-      Utils().customPrint("Unauthorized Access");
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        Utils().customPrint("Unauthorized Access");
+        return null;
+      } else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
       return null;
-    } else {
-      return json.decode(response.body);
     }
-
-  } catch (e) {
-    Utils().customPrint("Exception => $e");
-    return null;
   }
-}
 
-Future<Map<String, dynamic>?> postFeedback(
+  Future<Map<String, dynamic>?> postFeedback(
     Map<String, dynamic> body,
     String accessToken,
-) async {
+  ) async {
+    String url = ApiUrl.postfeedback;
 
-  String url = ApiUrl.postfeedback;
+    Utils().customPrint('Feedback Post => $url');
+    Utils().customPrint('Body => $body');
 
-  Utils().customPrint('Feedback Post => $url');
-  Utils().customPrint('Body => $body');
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        body: json.encode(body),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $accessToken",
+        },
+      );
 
-  try {
-    final response = await http.post(
-      Uri.parse(url),
-      body: json.encode(body),
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $accessToken",
-      },
-    );
+      Utils().customPrint("Response => ${response.body}");
 
-    Utils().customPrint("Response => ${response.body}");
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return json.decode(response.body);
-    } else if (response.statusCode == 401 || response.statusCode == 403) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        return null;
+      } else {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
       return null;
-    } else {
-      return json.decode(response.body);
     }
-
-  } catch (e) {
-    Utils().customPrint("Exception => $e");
-    return null;
   }
-}
-
-
-
 }

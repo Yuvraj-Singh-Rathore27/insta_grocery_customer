@@ -15,6 +15,7 @@ import '../../../webservices/WebServicesHelper.dart';
 import './RideDetailScreen.dart';
 import './VehicleLocationSearchScreen.dart';
 
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
@@ -58,17 +59,14 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
   BitmapDescriptor? onlineCarIcon;
   BitmapDescriptor? offlineCarIcon;
 
-  // Marker drawn at the customer's own pickup/current location. Its picture is
-  // the image of the currently selected ride category (Passenger Auto, 4/5
-  // Seater cab, ...). When no category is picked it falls back to a default
-  // vehicle badge. Rebuilt every time the selected category changes.
-  BitmapDescriptor? pickupCategoryIcon;
-  // The image URL the pickup icon was last built from, so we don't re-download
-  // and re-render the same picture on every rebuild.
-  String? _pickupIconUrl;
-  // True when the current pickup badge is the real category image (not the
-  // fallback vehicle icon) — lets a failed download be retried later.
-  bool _pickupIconIsImage = false;
+  // Marker drawn at the customer's own pickup/current location.
+  //
+  // This deliberately does NOT use the selected category's image. Drawing the
+  // customer's position as an auto/cab makes it indistinguishable from a real
+  // vehicle marker: it gets tapped as one, and because there is no vehicle
+  // behind it the tap appears to do nothing. It is a location badge instead,
+  // so it is always readable as "you are here" regardless of category.
+  BitmapDescriptor? pickupIcon;
 
   // Nearby-vehicle markers drawn from the SELECTED category's image, tinted by
   // state through a coloured ring (orange = moving, green = standing, red =
@@ -85,6 +83,10 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
   // Auto-fit the camera to all vehicles only once per map instance, so live
   // vehicle updates never yank the camera away from the user's own zoom/pan.
   bool _hasAutoFitted = false;
+
+  // True once the map has been shown at least once. From then on it is never
+  // removed from the widget tree again — see build() for why.
+  bool _mapEverShown = false;
 
   // ✅ Performance: Add caching
   Set<Marker> _cachedMarkers = {};
@@ -110,21 +112,34 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
 
     _loadCustomIcons();
 
-    // Build the pickup marker icon AND the nearby-vehicle marker icons for the
-    // current category (default badge / car icon if none is selected yet) and
-    // rebuild them whenever the category changes so every marker on the map
-    // matches the chosen category (e.g. auto image when "Passenger Auto" is
-    // selected).
-    _loadPickupCategoryIcon();
+    // The pickup badge is category-independent, so it is built once here. The
+    // nearby-vehicle icons are rebuilt on every category change so each vehicle
+    // shows the chosen category's picture (e.g. the auto image for "Passenger
+    // Auto").
+    _loadPickupIcon();
     _loadCategoryVehicleIcons();
     ever(controller.selectedCategory, (_) {
-      _loadPickupCategoryIcon();
+      // A category switch loads a different set of vehicles, so allow one fresh
+      // auto-fit for them. This used to ride on the map being recreated by its
+      // ValueKey; the map is reused now, so reset it here instead.
+      _hasAutoFitted = false;
+      selectedVehicle.value = null;
       _loadCategoryVehicleIcons();
     });
 
     // ✅ Performance: Debounced rebuild listener
     ever(controller.nearbyVehicles, (_) {
       _debounceMarkersUpdate();
+    });
+
+    // Selecting a vehicle changes which marker is drawn red, but the marker set
+    // is only rebuilt when the vehicle list changes — so without this the
+    // highlight never appeared. Rebuild immediately (no auto-fit, which would
+    // fight the camera animation onto the picked vehicle).
+    ever(selectedVehicle, (_) {
+      if (!mounted) return;
+      _cachedMarkers = _buildMarkers();
+      setState(() {});
     });
 
     if (controller.isLocationReady.value) {
@@ -231,56 +246,64 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
     }
   }
 
-  // Builds the pickup-location marker icon from the selected category's image.
-  // Called on init and every time the customer taps a different category chip,
-  // so the badge at the centre of the map always matches the chosen category.
-  Future<void> _loadPickupCategoryIcon() async {
-    final Category? category = controller.selectedCategory.value;
+  // Builds the badge shown at the customer's own pickup/current location.
+  // Independent of the selected category, so it is built once and reused.
+  Future<void> _loadPickupIcon() async {
+    if (pickupIcon != null) return;
 
-    // First usable image URL sent by the category API.
-    String? imageUrl;
-    for (final img in category?.image ?? const <CategoryImage>[]) {
-      final path = img.path;
-      if (path != null && path.isNotEmpty) {
-        imageUrl = path;
-        break;
-      }
-    }
-
-    // Same category image already rendered as a real image → nothing to do.
-    // (If last time we only had the fallback badge, fall through and retry so
-    // a transient download failure can recover on the next selection.)
-    if (imageUrl == _pickupIconUrl &&
-        pickupCategoryIcon != null &&
-        _pickupIconIsImage) {
-      return;
-    }
-
-    BitmapDescriptor? icon;
-    if (imageUrl != null) {
-      icon = await _createImageMarker(imageUrl, size: 130);
-    }
-    final bool gotImage = icon != null;
-
-    // No category image, or the download/render failed → default vehicle badge.
-    icon ??= await _createCustomMarker(
-      icon: widget.vehicleTypeId == 2
-          ? FontAwesomeIcons.truckMedical
-          : FontAwesomeIcons.carSide,
-      color: Colors.tealAccent.shade400,
-      size: 110,
-    );
+    final BitmapDescriptor icon = await _createPickupMarker(size: 110);
 
     if (!mounted) return;
-    // Remember what we rendered so a fallback can be retried later, but a real
-    // image is treated as final for this URL.
-    _pickupIconUrl = imageUrl;
-    _pickupIconIsImage = gotImage;
-    pickupCategoryIcon = icon;
-    // Bypass the marker cache so the new pickup badge is drawn right away.
+    pickupIcon = icon;
+    // Bypass the marker cache so the pickup badge is drawn right away.
     _lastCacheKey = '';
     _cachedMarkers = _buildMarkers();
     setState(() {});
+  }
+
+  // Draws the "you are here" badge: a white disc with a blue ring and a
+  // location glyph. Kept visually distinct from every vehicle marker on
+  // purpose — a car picture at the customer's own position cannot be told
+  // apart from a real vehicle, so it gets tapped as one and the tap appears
+  // to do nothing because there is no vehicle behind it.
+  Future<BitmapDescriptor> _createPickupMarker({double size = 110}) async {
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(recorder);
+    final Offset center = Offset(size / 2, size / 2);
+
+    canvas.drawCircle(center, size / 2, Paint()..color = Colors.white);
+    canvas.drawCircle(
+      center,
+      size / 2 - size * 0.03,
+      Paint()
+        ..color = Colors.blueAccent
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size * 0.06,
+    );
+
+    const IconData glyph = Icons.person_pin_circle;
+    final TextPainter painter = TextPainter(textDirection: TextDirection.ltr)
+      ..text = TextSpan(
+        text: String.fromCharCode(glyph.codePoint),
+        style: TextStyle(
+          fontSize: size * 0.55,
+          fontFamily: glyph.fontFamily,
+          package: glyph.fontPackage,
+          color: Colors.blueAccent,
+        ),
+      )
+      ..layout();
+
+    painter.paint(
+      canvas,
+      Offset((size - painter.width) / 2, (size - painter.height) / 2),
+    );
+
+    final ui.Image image =
+        await recorder.endRecording().toImage(size.toInt(), size.toInt());
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+
+    return BitmapDescriptor.fromBytes(data!.buffer.asUint8List());
   }
 
   // Builds the nearby-vehicle marker icons from the SELECTED category's image,
@@ -347,16 +370,6 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
     setState(() {});
   }
 
-  // Downloads a category image and renders it as a circular map marker with a
-  // white fill and coloured ring, matching the look of the vehicle markers.
-  // Returns null on any failure so the caller can fall back to a default badge.
-  Future<BitmapDescriptor?> _createImageMarker(String url,
-      {double size = 130, Color ringColor = Colors.red}) async {
-    final Uint8List? bytes = await _downloadImageBytes(url);
-    if (bytes == null) return null;
-    return _renderImageMarker(bytes, size: size, ringColor: ringColor);
-  }
-
   // Fetches image bytes with browser-like headers (some hosts reject bare
   // requests with 403) and a timeout so we can fall back instead of hanging.
   Future<Uint8List?> _downloadImageBytes(String url) async {
@@ -414,8 +427,9 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
       canvas.clipPath(Path()..addOval(imgRect));
       // Center-crop the source to a square (BoxFit.cover) so non-square images
       // aren't stretched.
-      final double srcSide =
-          image.width < image.height ? image.width.toDouble() : image.height.toDouble();
+      final double srcSide = image.width < image.height
+          ? image.width.toDouble()
+          : image.height.toDouble();
       final Rect srcRect = Rect.fromCenter(
         center: Offset(image.width / 2, image.height / 2),
         width: srcSide,
@@ -457,23 +471,30 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
     final markers = <Marker>[];
 
     // 📍 Pickup / current-location marker showing the selected category image.
-    // Sits at the customer's location on top of everything (high zIndex) so the
-    // category picture is what the user sees at the centre of the map.
+    // Sits at the customer's location as a "you are here" badge, visually
+    // distinct from every vehicle marker so it is never mistaken for one.
     final double pickupLat = controller.latitude.value;
     final double pickupLng = controller.longitude.value;
-    if (pickupLat != 0.0 && pickupLng != 0.0 && pickupCategoryIcon != null) {
+    if (pickupLat != 0.0 && pickupLng != 0.0 && pickupIcon != null) {
       markers.add(
         Marker(
           markerId: const MarkerId('pickup_location'),
           position: LatLng(pickupLat, pickupLng),
-          icon: pickupCategoryIcon!,
+          icon: pickupIcon!,
           anchor: const Offset(0.5, 0.5),
           flat: true,
           // Sit BELOW the vehicle markers: when a vehicle is at/near the
           // customer's location it must stay visible and, crucially, tappable.
           // A higher-zIndex pickup badge would hide the vehicle and swallow its
           // taps (Google Maps delivers a tap to the top-most marker only).
-          zIndex: 1,
+          zIndex: 0,
+          // zIndex is not enough on its own: the badge is drawn larger than the
+          // vehicle icons, so a tap aimed at a vehicle parked on top of the
+          // customer's own location can still land here. Without a handler that
+          // tap would simply die and the vehicle card would never open, so
+          // forward it to the closest vehicle instead.
+          consumeTapEvents: true,
+          onTap: () => _selectVehicleNearestOnScreen(pickupLat, pickupLng),
         ),
       );
     }
@@ -514,8 +535,9 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
             BitmapDescriptor.defaultMarker;
       } else if (isMoving) {
         // 🟠 MOVING = ORANGE
-        icon =
-            categoryMovingIcon ?? onlineCarIcon ?? BitmapDescriptor.defaultMarker;
+        icon = categoryMovingIcon ??
+            onlineCarIcon ??
+            BitmapDescriptor.defaultMarker;
       } else {
         // 🟢 STANDING = GREEN
         icon = categoryStandingIcon ??
@@ -535,19 +557,86 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
           // Keep vehicles above the pickup badge (zIndex 1) so overlapping
           // vehicles stay visible and clickable; the selected one sits highest.
           zIndex: isSelected ? 3 : 2,
-          onTap: () {
-            _imageIndex.value = 0;
-
-            selectedVehicle.value = vehicle;
-            _fetchDriverDetail(vehicle);
-
-            _animateToVehicle(lat, lng);
-          },
+          // Handle the tap ourselves instead of letting Google Maps run its
+          // default marker behaviour (info window + camera recentre), which
+          // otherwise competes with the card animation.
+          consumeTapEvents: true,
+          onTap: () => _selectVehicle(vehicle),
         ),
       );
     }
 
     return markers.toSet();
+  }
+
+  // Opens the vehicle card for [vehicle] and centres the map on it. Single
+  // entry point for every way a vehicle can be picked (marker tap, pickup-badge
+  // tap) so the card, the driver fetch and the red marker stay in sync.
+  void _selectVehicle(Map<String, dynamic> vehicle) {
+    final lat = (vehicle['latitude'] ?? 0.0).toDouble();
+    final lng = (vehicle['longitude'] ?? 0.0).toDouble();
+
+    _imageIndex.value = 0;
+    selectedVehicle.value = vehicle;
+    _fetchDriverDetail(vehicle);
+
+    if (lat != 0.0 && lng != 0.0) {
+      _animateToVehicle(lat, lng);
+    }
+  }
+
+  // Picks the vehicle hidden underneath the customer's pickup badge — a tap
+  // that lands on the badge almost always means the vehicle drawn beneath it.
+  //
+  // The test has to be in SCREEN space, not geographic distance: the badge is a
+  // fixed-size bitmap, so how much map it covers depends entirely on the zoom.
+  // Zoomed out to a whole district it hides vehicles that are kilometres away,
+  // which a metre-based radius rejects — the tap then did nothing at all.
+  Future<void> _selectVehicleNearestOnScreen(double lat, double lng) async {
+    final GoogleMapController? map = mapController;
+
+    if (map != null) {
+      try {
+        // Screen coordinates come back in device pixels, the same units the
+        // marker bitmaps are sized in (badge 110px → 55px radius), so the two
+        // are directly comparable without any devicePixelRatio conversion.
+        final ScreenCoordinate origin =
+            await map.getScreenCoordinate(LatLng(lat, lng));
+
+        Map<String, dynamic>? nearest;
+        double nearestPx = double.infinity;
+
+        for (final vehicle in controller.nearbyVehicles) {
+          if (vehicle is! Map) continue;
+          final vLat = (vehicle['latitude'] ?? 0.0).toDouble();
+          final vLng = (vehicle['longitude'] ?? 0.0).toDouble();
+          if (vLat == 0.0 || vLng == 0.0) continue;
+
+          final ScreenCoordinate sc =
+              await map.getScreenCoordinate(LatLng(vLat, vLng));
+          final double dx = (sc.x - origin.x).toDouble();
+          final double dy = (sc.y - origin.y).toDouble();
+          final double px = math.sqrt(dx * dx + dy * dy);
+
+          if (px < nearestPx) {
+            nearestPx = px;
+            nearest = Map<String, dynamic>.from(vehicle);
+          }
+        }
+
+        // Within the badge's own radius (55px) plus a little slack → it was
+        // covering that vehicle, so the tap was meant for it.
+        if (nearest != null && nearestPx <= 65) {
+          _selectVehicle(nearest);
+          return;
+        }
+      } catch (e) {
+        debugPrint("❌ Pickup tap hit-test error => $e");
+      }
+    }
+
+    // Nothing was hidden under the badge: behave like a plain tap on the map.
+    selectedVehicle.value = null;
   }
 
   // ✅ Performance: Quick cache key generation
@@ -558,6 +647,11 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
     buffer.write(selectedVehicle.value?['id'] ?? 'none');
     buffer.write('|');
     buffer.write(controller.selectedCategory.value?.id ?? 'all');
+    buffer.write('|');
+    // The pickup badge is part of the marker set, so its position has to be
+    // part of the key — otherwise picking a new location left the old badge on
+    // the map (and its tap handler pointing at the old spot).
+    buffer.write('${controller.latitude.value}:${controller.longitude.value}');
     for (var vehicle in vehicles.take(20)) {
       buffer.write(
           '${vehicle['id']}:${vehicle['latitude']}:${vehicle['longitude']}|');
@@ -658,24 +752,30 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Obx(() => Stack(
-            children: [
-              if (controller.hasInitialFetchDone.value &&
-                  controller.isLocationReady.value)
-                _buildMap(),
-              if (!controller.hasInitialFetchDone.value ||
-                  !controller.isLocationReady.value)
-                _buildLoadingState(),
-              if (controller.hasInitialFetchDone.value &&
-                  controller.isLocationReady.value &&
-                  controller.nearbyVehicles.isEmpty)
-                _buildEmptyState(),
-              _buildTopBar(),
-              _buildCategoryFilter(),
-              if (selectedVehicle.value != null)
-                _buildBottomSheet(selectedVehicle.value!),
-            ],
-          )),
+      body: Obx(() {
+        final bool ready = controller.hasInitialFetchDone.value &&
+            controller.isLocationReady.value;
+        // Latch: once the map has been built it stays in the tree for good.
+        // Dropping it out of the Stack destroys the underlying platform view,
+        // which silently kills mapController and every marker tap handler —
+        // that is why vehicles stopped responding after the my-location button
+        // (getCurrentLocation flips isLocationReady false) or a type switch.
+        // Later loading states are drawn as an overlay on top instead.
+        if (ready) _mapEverShown = true;
+
+        return Stack(
+          children: [
+            if (_mapEverShown) _buildMap(),
+            if (!_mapEverShown) _buildLoadingState(),
+            if (ready && controller.nearbyVehicles.isEmpty) _buildEmptyState(),
+            _buildTopBar(),
+            _buildSubCategoryFilter(),
+            _buildCategoryFilter(),
+            if (selectedVehicle.value != null)
+              _buildBottomSheet(selectedVehicle.value!),
+          ],
+        );
+      }),
     );
   }
 
@@ -690,8 +790,11 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
     }
 
     return GoogleMap(
-      key: ValueKey(
-          '${controller.vehicleTypeId.value}_${controller.selectedCategory.value?.id ?? 'all'}'),
+      // No ValueKey here on purpose. Keying the map by category tore down and
+      // recreated the whole platform view on every category tap, which left the
+      // marker set bound to the destroyed map — the markers were still painted
+      // but no longer delivered taps, so the vehicle card refused to open.
+      // The map is reused now and only its markers change.
       initialCameraPosition: CameraPosition(
         target: initialPosition,
         zoom: 14,
@@ -713,6 +816,106 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
       onTap: (LatLng position) {
         selectedVehicle.value = null;
       },
+    );
+  }
+
+  // Subcategory chips, shown in a row just below the location bar at the TOP of
+  // the screen once a category is picked (the category chips stay at the
+  // bottom). Tapping one narrows the nearby vehicles to that subcategory (the
+  // controller adds subcategory_id to the fetch); the leading "All" chip — and
+  // re-tapping the active chip — clears the filter so every vehicle in the
+  // category shows again. Hidden entirely while no category is selected or the
+  // selected category has no subcategories.
+  Widget _buildSubCategoryFilter() {
+    // Subcategory filtering is a Cab-only feature (vehicleTypeId 1). The
+    // Ambulance module (2) has no subcategory row, so bail out with no space.
+    if (widget.vehicleTypeId != 1) return const SizedBox.shrink();
+
+    // Sit below the top location bar (SafeArea + 16 padding + ~56 bar height)
+    // rather than a fixed offset that floats into the notch on some devices.
+    final double topInset = MediaQuery.viewPaddingOf(context).top;
+
+    return Positioned(
+      top: topInset + 84,
+      left: 0,
+      right: 0,
+      child: Obx(() {
+        final subs = controller.subCategoryList;
+        // Nothing to filter by → take up no space.
+        if (controller.selectedCategory.value == null || subs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final bool isAllSelected = controller.selectedSubCategory.value == null;
+
+        return SizedBox(
+          height: 40,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            // +1 for the leading "All" chip.
+            itemCount: subs.length + 1,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _buildSubCategoryChip(
+                  label: "All",
+                  isSelected: isAllSelected,
+                  onTap: () => controller.onSubCategorySelected(null),
+                );
+              }
+              final sub = subs[index - 1];
+              final isSelected =
+                  controller.selectedSubCategory.value?.id == sub.id;
+              return _buildSubCategoryChip(
+                label: sub.name,
+                isSelected: isSelected,
+                onTap: () => controller.onSubCategorySelected(sub),
+              );
+            },
+          ),
+        );
+      }),
+    );
+  }
+
+  // A single subcategory pill. Kept visually distinct from the category chips
+  // (solid red when active vs. the category chips' red outline) so the two
+  // filter rows don't read as the same control.
+  Widget _buildSubCategoryChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.red : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.red : Colors.grey.shade300,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : Colors.black87,
+          ),
+        ),
+      ),
     );
   }
 
