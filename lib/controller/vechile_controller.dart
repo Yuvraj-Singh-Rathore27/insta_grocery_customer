@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
+
 import '../webservices/WebServicesHelper.dart';
-import '../utills/Utils.dart';
 import '../preferences/UserPreferences.dart';
 import '../model/vechile_model.dart';
 import '../model/vehicle_sos_model.dart';
 import '../model/file_model.dart';
-import '../model/responsemodel/FileUploadResponseModel.dart';
-import '../webservices/ApiUrl.dart';
+
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -44,6 +41,11 @@ class VehicleController extends GetxController {
   RxBool isLoadingVehicles = true.obs;
   RxBool isLocationReady = false.obs;
   RxBool hasInitialFetchDone = false.obs;
+  // Null while location hasn't failed / is still being resolved. Set to a
+  // reason ('service_disabled' | 'permission_denied' | 'permission_denied_forever' | 'unknown')
+  // when getCurrentLocation() cannot get a fix, so the UI can show a real
+  // error state instead of spinning on the loading screen forever.
+  RxnString locationError = RxnString();
 
   // ==================== LOCATION ====================
   RxDouble latitude = 0.0.obs;
@@ -118,21 +120,36 @@ class VehicleController extends GetxController {
   Timer? refreshTimer;
 
   @override
-  void onInit() async {
+  void onInit() {
     super.onInit();
     loadUserData();
     // Facility names for the detail screen (no need to block on it)
     loadFacilities();
+    _bootstrap();
+  }
+
+  // Startup sequence for the map screen.
+  //
+  // The type/category APIs do NOT depend on the device location, so they run
+  // alongside the GPS fix instead of behind it. Previously everything was
+  // awaited in one chain starting with getCurrentLocation(): when that call
+  // never returned (no fix indoors, emulator with no location set) onInit
+  // parked on the await forever — no categories, no vehicles, and the map sat
+  // on "Finding nearby vehicles..." with nothing to retry.
+  Future<void> _bootstrap() async {
+    // Both of these swallow their own errors, so the chain can't throw here.
+    final Future<void> catalog =
+        resolveVehicleType().then((_) => getCategories());
+
     await getCurrentLocation();
-    // Step 1: vehicle type API → Step 2: categories of that type
-    await resolveVehicleType();
-    await getCategories();
-    
+
     // ONLY ONE INITIAL FETCH
-    await fetchNearbyVehicles();
-    
+    await fetchNearbyVehicles(force: true);
+
     startLocationListener();
     _startPeriodicRefresh();
+
+    await catalog;
   }
 
   @override
@@ -162,19 +179,107 @@ class VehicleController extends GetxController {
     debugPrint("🚗 VehicleController UserId => $userId");
   }
 
+  // How long we wait for a GPS fix before giving up. Without a bound
+  // getCurrentPosition() can wait for a fix that never comes (indoors, weak
+  // signal, emulator with no location set) and everything behind it stalls.
+  static const Duration locationTimeout = Duration(seconds: 12);
+
   Future<void> getCurrentLocation() async {
     try {
       isLocationReady.value = false;
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low,
-      );
-      latitude.value = position.latitude;
-      longitude.value = position.longitude;
-      isLocationReady.value = true;
-      debugPrint("📍 LAT => ${latitude.value}, LNG => ${longitude.value}");
+      locationError.value = null;
+
+      final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint("❌ Location error => service disabled");
+        locationError.value = 'service_disabled';
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint("❌ Location error => permission denied forever");
+        locationError.value = 'permission_denied_forever';
+        return;
+      }
+
+      if (permission == LocationPermission.denied) {
+        debugPrint("❌ Location error => permission denied");
+        locationError.value = 'permission_denied';
+        return;
+      }
+
+      // Cached fix first: it comes back immediately and is accurate enough to
+      // draw the map and run the first nearby-vehicle fetch while the GPS
+      // warms up. Anything is better than an empty screen here.
+      Position? cached;
+      try {
+        cached = await Geolocator.getLastKnownPosition()
+            .timeout(const Duration(seconds: 5));
+      } catch (e) {
+        debugPrint("⚠️ Last known position unavailable => $e");
+      }
+
+      if (cached != null) {
+        _applyPosition(cached, source: "last known");
+      }
+
+      // Fresh fix, bounded twice: geolocator's own timeLimit, plus a Future
+      // timeout because on some Android devices timeLimit doesn't fire.
+      try {
+        final Position fresh = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.low,
+          timeLimit: locationTimeout,
+        ).timeout(locationTimeout + const Duration(seconds: 3));
+        _applyPosition(fresh, source: "gps");
+      } on TimeoutException {
+        debugPrint("⏱️ Location timed out after ${locationTimeout.inSeconds}s");
+        // The cached fix is already applied and good enough — only report a
+        // failure when we have nothing at all to show.
+        if (cached == null) {
+          isLocationReady.value = false;
+          locationError.value = 'timeout';
+        }
+      } catch (e) {
+        debugPrint("❌ Location error => $e");
+        if (cached == null) {
+          isLocationReady.value = false;
+          locationError.value = 'unknown';
+        }
+      }
     } catch (e) {
       isLocationReady.value = false;
+      locationError.value = 'unknown';
       debugPrint("❌ Location error => $e");
+    }
+  }
+
+  void _applyPosition(Position position, {required String source}) {
+    latitude.value = position.latitude;
+    longitude.value = position.longitude;
+    isLocationReady.value = true;
+    locationError.value = null;
+    debugPrint(
+        "📍 [$source] LAT => ${latitude.value}, LNG => ${longitude.value}");
+  }
+
+  // Retry path for the "couldn't get your location" screen. Redoes the fix and,
+  // if the catalog calls failed/never ran the first time, reloads them too so
+  // the category chips aren't missing after a recovery.
+  Future<void> retryInitialLoad() async {
+    await getCurrentLocation();
+
+    if (categoryList.isEmpty) {
+      await resolveVehicleType();
+      await getCategories();
+    }
+
+    if (latitude.value != 0.0 || longitude.value != 0.0) {
+      await forceRefresh();
     }
   }
 
@@ -429,7 +534,6 @@ class VehicleController extends GetxController {
         _updateVehicleData(newVehicles);
         lastApiResponseHash = _generateResponseHash(newVehicles);
         lastApiCallTime = DateTime.now();
-        hasInitialFetchDone.value = true;
         return;
       }
       
@@ -457,12 +561,18 @@ class VehicleController extends GetxController {
       
       lastApiResponseHash = newResponseHash;
       lastApiCallTime = DateTime.now();
-      hasInitialFetchDone.value = true;
 
     } catch (e) {
       debugPrint("❌ [API] Error: $e");
     } finally {
       isFetchingInProgress = false;
+      // The request is over however it ended — success, null response, thrown
+      // exception, HTTP timeout. Marking it done here (instead of only on the
+      // happy paths) is what stops "Finding nearby vehicles..." from spinning
+      // forever after a failed call: the UI falls through to the empty state
+      // with a Try Again button. The three early returns above happen before
+      // this try block, so a skipped fetch never trips the flag.
+      hasInitialFetchDone.value = true;
     }
   }
   
@@ -719,6 +829,15 @@ Future<void> clearCategoryFilter() async {
   void updateLocation(double lat, double lng) {
     latitude.value = lat;
     longitude.value = lng;
+
+    // A manually picked location is a perfectly valid fix, so it has to clear
+    // the location error and flip isLocationReady. Without this, picking a
+    // location after a failed/timed-out GPS read left the screen stuck on the
+    // loading/error state even though we knew exactly where to search.
+    if (lat != 0.0 || lng != 0.0) {
+      isLocationReady.value = true;
+      locationError.value = null;
+    }
   }
   
   bool isVehicleMoving(int vehicleId) {

@@ -20,6 +20,7 @@ import '../home/store_offer_screen.dart';
 import '../../../toolbar/app_bottom_bar.dart';
 import '../../common/video_player_screen.dart';
 import '../nearme_vender/store_offer.dart';
+import '../../../webservices/WebServicesHelper.dart';
 
 class Home extends StatefulWidget {
   Home({Key? key}) : super(key: key);
@@ -40,6 +41,12 @@ class _HomeState extends State<Home> {
   int _currentIndex = 0;
   int selectedIndex = 0; // Track current tab index
 
+  // Quick Actions grid (Book Cab / Book Ambulance / ...), built from
+  // GET /admin/vehicle-type/ instead of being hardcoded, so any vehicle
+  // type added on the backend shows up here automatically.
+  List<Map<String, dynamic>> _vehicleTypes = [];
+  bool _isLoadingVehicleTypes = true;
+
   @override
   void initState() {
     super.initState();
@@ -57,7 +64,63 @@ class _HomeState extends State<Home> {
 // STEP 3: Other APIs
       homePageController.getBannerList();
       addressController.getAddreessListing();
+      _loadVehicleTypes();
     });
+  }
+
+  Future<void> _loadVehicleTypes() async {
+    try {
+      final response = await WebServicesHelper().getVechileTypes();
+
+      List<dynamic> rawList = [];
+      if (response != null) {
+        if (response['data'] is List) {
+          rawList = response['data'];
+        } else if (response['items'] is List) {
+          rawList = response['items'];
+        }
+      }
+
+      final types = rawList.whereType<Map<String, dynamic>>().toList();
+      if (mounted) {
+        setState(() {
+          _vehicleTypes = types;
+          _isLoadingVehicleTypes = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingVehicleTypes = false);
+    }
+  }
+
+  // Same fallback used on the map screen's category chips: pick an icon from
+  // the type name when the API doesn't send an image for it.
+  IconData _iconForVehicleType(String name) {
+    final n = name.toLowerCase();
+    if (n.contains('ambulance') || n.contains('icu')) {
+      return Icons.local_hospital;
+    }
+    if (n.contains('van')) return Icons.local_shipping;
+    if (n.contains('auto')) return Icons.electric_rickshaw;
+    return Icons.local_taxi;
+  }
+
+  // First usable image URL sent by the vehicle-type API for [type], mirroring
+  // how category images are read on the map screen.
+  String? _imageUrlOfVehicleType(Map<String, dynamic> type) {
+    final dynamic image = type['image'];
+    if (image is List) {
+      for (final img in image) {
+        if (img is Map && img['path'] != null && img['path'].toString().isNotEmpty) {
+          return img['path'].toString();
+        }
+      }
+    } else if (image is Map && image['path'] != null) {
+      return image['path'].toString();
+    } else if (image is String && image.isNotEmpty) {
+      return image;
+    }
+    return null;
   }
 
   @override
@@ -1835,74 +1898,92 @@ class _HomeState extends State<Home> {
 
           const SizedBox(height: 20),
 
-          /// BUTTONS
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              /// BOOK CAB (vehicle type 1)
-              GestureDetector(
-                onTap: () {
-                  /// OPEN SCREEN
-                  Get.to(() => const VehicleMapScreen(vehicleTypeId: 1));
-                },
-                child: Column(
-                  children: [
-                    Container(
-                      height: 75,
-                      width: 75,
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: const Icon(
-                        Icons.local_taxi,
-                        color: Colors.blue,
-                        size: 34,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      "Book Cab",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+          /// BUTTONS — built from GET /admin/vehicle-type/, 2 per row.
+          if (_isLoadingVehicleTypes)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
+            )
+          else if (_vehicleTypes.isEmpty)
+            const SizedBox.shrink()
+          else
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _vehicleTypes.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 1.5,
+              ),
+              itemBuilder: (context, index) {
+                final type = _vehicleTypes[index];
+                final int typeId = type['id'] is int
+                    ? type['id']
+                    : int.tryParse(type['id']?.toString() ?? '') ?? 0;
+                final String name = (type['name'] ?? 'Vehicle').toString();
+                final String? imageUrl = _imageUrlOfVehicleType(type);
+                final bool isAmbulance = typeId == 2;
+                final Color tint =
+                    isAmbulance ? AppColor().colorPrimary : Colors.blue;
 
-              /// BOOK AMBULANCE (vehicle type 2)
-              GestureDetector(
-                onTap: () {
-                  Get.to(() => const VehicleMapScreen(vehicleTypeId: 2));
-                },
-                child: Column(
-                  children: [
-                    Container(
-                      height: 75,
-                      width: 75,
-                      decoration: BoxDecoration(
-                        color: AppColor().colorPrimary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(22),
+                return GestureDetector(
+                  onTap: () {
+                    Get.to(() => VehicleMapScreen(vehicleTypeId: typeId));
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        height: 75,
+                        width: 75,
+                        decoration: BoxDecoration(
+                          color: tint.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: imageUrl != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(22),
+                                child: CachedNetworkImage(
+                                  imageUrl: imageUrl,
+                                  fit: BoxFit.cover,
+                                  placeholder: (_, __) => Icon(
+                                    _iconForVehicleType(name),
+                                    color: tint,
+                                    size: 34,
+                                  ),
+                                  errorWidget: (_, __, ___) => Icon(
+                                    _iconForVehicleType(name),
+                                    color: tint,
+                                    size: 34,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                _iconForVehicleType(name),
+                                color: tint,
+                                size: 34,
+                              ),
                       ),
-                      child:  Icon(
-                        Icons.local_hospital,
-                        color: AppColor().colorPrimary,
-                        size: 34,
+                      const SizedBox(height: 10),
+                      Text(
+                        name,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      "Book Ambulance",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+                    ],
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );

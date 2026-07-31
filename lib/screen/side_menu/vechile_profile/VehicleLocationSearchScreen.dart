@@ -97,13 +97,30 @@ class _VehicleLocationSearchScreenState
     }
   }
 
+  // Bounded on purpose: an unbounded getCurrentPosition() waits for a fix that
+  // may never arrive (indoors, weak signal, emulator with no location set) and
+  // the row's spinner would just keep turning with no error and no result.
+  static const Duration _locationTimeout = Duration(seconds: 12);
+
   Future<void> _useCurrentLocation() async {
     if (_isLocatingMe) return;
     setState(() => _isLocatingMe = true);
     try {
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.low,
-      );
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.low,
+          timeLimit: _locationTimeout,
+        ).timeout(_locationTimeout + const Duration(seconds: 3));
+      } catch (e) {
+        // Fall back to the cached fix before giving up — it is usually good
+        // enough for a pickup point and comes back instantly.
+        debugPrint("⚠️ Current location failed, trying last known => $e");
+        position = await Geolocator.getLastKnownPosition()
+            .timeout(const Duration(seconds: 5));
+      }
+
+      if (position == null) throw Exception("No position available");
 
       String address = "Current Location";
       try {
@@ -126,10 +143,11 @@ class _VehicleLocationSearchScreenState
         "address": address,
       });
     } catch (e) {
+      debugPrint("❌ Use current location failed => $e");
       if (mounted) {
         Get.snackbar(
-          "Error",
-          "Unable to fetch current location",
+          "Location unavailable",
+          "Couldn't get your current location. Please search for it instead.",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white,

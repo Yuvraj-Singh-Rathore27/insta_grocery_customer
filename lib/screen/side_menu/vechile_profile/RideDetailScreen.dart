@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../controller/vechile_controller.dart';
+import '../../../utills/weight_units.dart';
 import '../../../webservices/WebServicesHelper.dart';
 
 class RideDetailsScreen extends StatefulWidget {
@@ -81,6 +82,66 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     _imagePageController.dispose();
     super.dispose();
   }
+
+  // Ambulance is vehicle type 2 (ids come from GET /admin/vehicle-type/).
+  // Facilities — ICU, Oxygen Support, Patient Transport… — are only ever
+  // configured for ambulances, so everything facility-related hangs off this
+  // id and not off the payload happening to carry facility_ids.
+  static const int _ambulanceTypeId = 2;
+
+  // The type this particular vehicle belongs to (1 = Cab, 2 = Ambulance,
+  // 3 = Local Cabs, …). Read straight off the vehicle when the API sends it —
+  // the key is spelled differently across endpoints and is sometimes nested in
+  // the expanded type/category object, so every known shape is tried.
+  int get _vehicleTypeId {
+    final Map category =
+        vehicleData['category'] is Map ? vehicleData['category'] as Map : {};
+
+    final List<dynamic> candidates = [
+      vehicleData['vechile_type_id'], // backend's spelling
+      vehicleData['vehicle_type_id'],
+      vehicleData['vechile_type'] is Map
+          ? (vehicleData['vechile_type'] as Map)['id']
+          : null,
+      vehicleData['vehicle_type'] is Map
+          ? (vehicleData['vehicle_type'] as Map)['id']
+          : null,
+      category['vechile_type_id'],
+      category['vehicle_type_id'],
+    ];
+
+    for (final candidate in candidates) {
+      final int? id = candidate is int
+          ? candidate
+          : int.tryParse(candidate?.toString() ?? '');
+      if (id != null && id != 0) return id;
+    }
+
+    // Nothing on the payload → fall back to the module the customer opened.
+    // The nearby fetch filters by vehicle_type_id, so every vehicle reachable
+    // from that screen is of this type anyway.
+    return controller.vehicleTypeId.value;
+  }
+
+  bool get _isAmbulance => _vehicleTypeId == _ambulanceTypeId;
+
+  // Goods vehicles (type 3) are the ones that carry a payload_capacity. Used
+  // only to scope the legacy dirty-data correction in WeightUnits — the row
+  // itself shows for any non-ambulance vehicle that actually has a capacity,
+  // so a future goods type doesn't silently lose it.
+  static const int _goodsTypeId = 3;
+
+  bool get _isGoodsVehicle => _vehicleTypeId == _goodsTypeId;
+
+  // "2 Ton" / "150 kg" for the payload row, or null when this vehicle has no
+  // usable capacity — the caller then drops the row instead of printing
+  // "Not available". All unit handling lives in WeightUnits so this screen
+  // and any future one can't disagree.
+  String? get _payloadCapacityText => WeightUnits.format(
+        vehicleData['payload_capacity'],
+        assumeTonsBelow:
+            _isGoodsVehicle ? WeightUnits.goodsDirtyDataTonThreshold : null,
+      );
 
   Future<void> _makePhoneCall(String phoneNumber) async {
     final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
@@ -476,6 +537,8 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     final List<int> facilityIds = (vehicleData['facility_ids'] is List)
         ? (vehicleData['facility_ids'] as List).whereType<int>().toList()
         : <int>[];
+    // Goods vehicles carry a payload capacity; null when this vehicle has none.
+    final String? payloadCapacity = _payloadCapacityText;
     // Vehicle photos uploaded by the driver (API sends "image" as a list of
     // files; tolerates a single map or plain URL too).
     final List<String> vehicleImages = _filePathsOf(vehicleData['image']);
@@ -542,17 +605,26 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
             value: category['name'] ?? 'Not available',
           ),
           const SizedBox(height: 16),
-          // Show facilities when the vehicle has them (ambulances);
-          // otherwise fall back to the subcategory row (cabs).
-          if (facilityIds.isNotEmpty)
-            _facilitiesRow(facilityIds)
-          else
+
+          // Facilities are an ambulance-only concept, so the row is gated on
+          // the vehicle TYPE — not on the payload carrying facility_ids. A
+          // local cab (type 3) with a stray facility id on it must never
+          // render a medical facilities row; it gets its subcategory here and
+          // its seating capacity below instead.
+          if (_isAmbulance) ...[
+            if (facilityIds.isNotEmpty) ...[
+              _facilitiesRow(facilityIds),
+              const SizedBox(height: 16),
+            ],
+          ] else ...[
             _infoRow(
               icon: Icons.subdirectory_arrow_right,
               title: "Subcategory",
               value: subCategory['name'] ?? 'Not available',
             ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
+
           Row(
             children: [
               Expanded(
@@ -571,12 +643,30 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _infoRow(
-            icon: Icons.people,
-            title: "Seating Capacity",
-            value: "${vehicleData['seating_capacity'] ?? 2} seats",
-          ),
+
+          // Seating capacity is the passenger-vehicle counterpart of the
+          // facilities row above: it is what matters when booking a cab, so it
+          // shows for every type except ambulances.
+          if (!_isAmbulance) ...[
+            const SizedBox(height: 16),
+            _infoRow(
+              icon: Icons.people,
+              title: "Seating Capacity",
+              value: "${vehicleData['seating_capacity'] ?? 2} seats",
+            ),
+          ],
+
+          // How much weight this vehicle can carry — the number that actually
+          // matters on a goods vehicle (type 3). Shown only when the API sends
+          // a usable capacity, so passenger cabs don't get an empty row.
+          if (!_isAmbulance && payloadCapacity != null) ...[
+            const SizedBox(height: 16),
+            _infoRow(
+              icon: Icons.scale,
+              title: "Payload Capacity",
+              value: payloadCapacity,
+            ),
+          ],
         ],
       ),
     );

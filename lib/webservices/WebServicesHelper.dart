@@ -5049,7 +5049,7 @@ class WebServicesHelper {
           "Accept": "application/json",
           "Content-Type": "application/json",
         },
-      );
+      ).timeout(const Duration(seconds: 15));
 
       Utils().customPrint("Response => ${response.body}");
 

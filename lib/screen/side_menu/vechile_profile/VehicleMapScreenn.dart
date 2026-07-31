@@ -88,6 +88,16 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
   // removed from the widget tree again — see build() for why.
   bool _mapEverShown = false;
 
+  // Last-resort guard on the loading screen. The controller already bounds the
+  // GPS call and always marks the fetch done, but if anything else stalls
+  // (a hung platform channel, a plugin that never answers) the customer would
+  // be left staring at "Finding nearby vehicles..." with no way out. After
+  // this long we show the recovery screen instead, which offers a retry and a
+  // manual location picker.
+  Timer? _loadingWatchdog;
+  bool _loadingTimedOut = false;
+  static const Duration _loadingWatchdogDuration = Duration(seconds: 30);
+
   // ✅ Performance: Add caching
   Set<Marker> _cachedMarkers = {};
   Timer? _debounceTimer;
@@ -148,6 +158,19 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
     ever(controller.isLocationReady, (bool ready) {
       if (ready) _resolveCurrentAddress();
     });
+
+    _startLoadingWatchdog();
+  }
+
+  // (Re)arms the loading-screen guard. Called on entry and on every retry, so
+  // a retry that also stalls still lands back on the recovery screen.
+  void _startLoadingWatchdog() {
+    _loadingWatchdog?.cancel();
+    _loadingTimedOut = false;
+    _loadingWatchdog = Timer(_loadingWatchdogDuration, () {
+      if (!mounted || _mapEverShown) return;
+      setState(() => _loadingTimedOut = true);
+    });
   }
 
   Future<void> _resolveCurrentAddress() async {
@@ -197,6 +220,7 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _loadingWatchdog?.cancel();
     super.dispose();
   }
 
@@ -761,12 +785,22 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
         // that is why vehicles stopped responding after the my-location button
         // (getCurrentLocation flips isLocationReady false) or a type switch.
         // Later loading states are drawn as an overlay on top instead.
-        if (ready) _mapEverShown = true;
+        if (ready) {
+          _mapEverShown = true;
+          _loadingWatchdog?.cancel();
+        }
+
+        // Either the controller told us why it couldn't locate the customer,
+        // or nothing resolved at all within the watchdog window. Both mean the
+        // spinner is going nowhere, so show the recovery screen.
+        final bool locationFailed = !_mapEverShown &&
+            (controller.locationError.value != null || _loadingTimedOut);
 
         return Stack(
           children: [
             if (_mapEverShown) _buildMap(),
-            if (!_mapEverShown) _buildLoadingState(),
+            if (!_mapEverShown && locationFailed) _buildLocationErrorState(),
+            if (!_mapEverShown && !locationFailed) _buildLoadingState(),
             if (ready && controller.nearbyVehicles.isEmpty) _buildEmptyState(),
             _buildTopBar(),
             _buildSubCategoryFilter(),
@@ -1110,6 +1144,131 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
     );
   }
 
+  // Shown instead of the endless spinner when we couldn't locate the customer
+  // — location services off, permission denied/denied forever, or no fix
+  // arrived in time. Gives a real way out (enable/grant, open settings, retry,
+  // or pick the pickup point by hand) instead of staring at "Finding nearby
+  // vehicles..." forever.
+  Widget _buildLocationErrorState() {
+    // No reason from the controller means the watchdog fired: something
+    // upstream never answered, which reads to the customer as a timeout.
+    final String reason = controller.locationError.value ?? 'timeout';
+
+    final bool deniedForever = reason == 'permission_denied_forever';
+    final bool timedOut = reason == 'timeout' || reason == 'unknown';
+    final String title = reason == 'service_disabled'
+        ? "Location is turned off"
+        : timedOut
+            ? "Couldn't get your location"
+            : "Location permission needed";
+    final String message = reason == 'service_disabled'
+        ? "Please turn on location services to find vehicles near you."
+        : deniedForever
+            ? "Location permission was denied. Please enable it from app settings to find vehicles near you."
+            : timedOut
+                ? "We couldn't find where you are. Check that GPS is on and try again, or set your pickup location manually."
+                : "Please allow location access to find vehicles near you.";
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.white, Colors.grey.shade50],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.location_off_outlined,
+                  size: 64,
+                  color: Colors.red.shade300,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  // Back to the loading screen, watchdog re-armed — a retry
+                  // that stalls too must land here again rather than hang.
+                  setState(_startLoadingWatchdog);
+
+                  if (deniedForever) {
+                    await Geolocator.openAppSettings();
+                  } else if (reason == 'service_disabled') {
+                    await Geolocator.openLocationSettings();
+                  }
+                  await controller.retryInitialLoad();
+                },
+                icon: Icon(
+                  timedOut ? Icons.refresh : Icons.my_location,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  deniedForever || reason == 'service_disabled'
+                      ? "Open Settings"
+                      : timedOut
+                          ? "Try Again"
+                          : "Allow Location",
+                  style: const TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Always available: the customer may simply not want to share
+              // their location, or GPS may never come back. Picking a place by
+              // hand is a complete substitute — updateLocation() clears the
+              // error and unblocks the map exactly like a real fix.
+              TextButton.icon(
+                onPressed: _onSelectLocationTap,
+                icon: const Icon(Icons.search, color: Colors.black54, size: 20),
+                label: const Text(
+                  "Set location manually",
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _fitAllMarkers() async {
     if (mapController == null) return;
     if (_hasAutoFitted) return;
@@ -1315,7 +1474,8 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
             _buildMapButton(
               onTap: () async {
                 await controller.getCurrentLocation();
-                if (controller.latitude.value != 0.0) {
+                if (controller.latitude.value != 0.0 &&
+                    controller.locationError.value == null) {
                   selectedLocationLabel.value = null;
                   currentAddress.value = null;
                   _resolveCurrentAddress();
@@ -1329,6 +1489,18 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
                     ),
                   );
                   await controller.forceRefresh();
+                } else {
+                  // The map is already on screen here, so there is no error
+                  // state to fall back to — say it out loud instead of letting
+                  // the button look like it did nothing.
+                  Get.snackbar(
+                    "Location unavailable",
+                    "Couldn't get your current location. Tap the search bar to set it manually.",
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.red,
+                    colorText: Colors.white,
+                    duration: const Duration(seconds: 3),
+                  );
                 }
               },
               icon: Icons.my_location,
@@ -1365,6 +1537,42 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
     }
     final single = _filePathOf(file);
     return single != null ? [single] : [];
+  }
+
+  // Business / company the vehicle runs under. The API spells this
+  // differently across endpoints and sometimes nests it in an expanded object
+  // (or hangs it off the driver), so every known shape is tried.
+  //
+  // Returns null when the vehicle genuinely has no business name — the card
+  // then shows its own "not provided" placeholder, so blank/whitespace/"null"
+  // values from the API can never reach the UI as an empty-looking line.
+  String? _businessNameOf(Map<String, dynamic> vehicle) {
+    final Map driver = vehicle['driver'] is Map ? vehicle['driver'] as Map : {};
+
+    String? nameOf(dynamic value) {
+      if (value is Map) return value['name']?.toString();
+      if (value is String) return value;
+      return null;
+    }
+
+    final List<String?> candidates = [
+      vehicle['business_name']?.toString(),
+      vehicle['company_name']?.toString(),
+      vehicle['firm_name']?.toString(),
+      nameOf(vehicle['business']),
+      nameOf(vehicle['company']),
+      nameOf(vehicle['vendor']),
+      driver['business_name']?.toString(),
+      driver['company_name']?.toString(),
+      nameOf(driver['business']),
+    ];
+
+    for (final candidate in candidates) {
+      final String value = (candidate ?? '').trim();
+      if (value.isNotEmpty && value.toLowerCase() != 'null') return value;
+    }
+
+    return null;
   }
 
   // Distance shown on the vehicle card → "850 m away" / "12.4 km away".
@@ -1452,6 +1660,8 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
     final bool isActive =
         vehicle['is_active'] == true || vehicle['is_active'] == 1;
     final String? distanceText = _distanceTextFor(vehicle);
+    // Null for the usual case of an individual driver with no business.
+    final String? businessName = _businessNameOf(vehicle);
 
     final Size screen = MediaQuery.sizeOf(context);
     // The card must never eat the whole map: cap it at ~68% of the screen on
@@ -1530,27 +1740,31 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
                         ),
                         const SizedBox(height: 14),
 
-                        // ── Vehicle name + ACTIVE badge ──
+                        // ── ACTIVE badge ──
+                        // Vehicle name (make/model) is intentionally hidden
+                        // here: the card identifies the operator by business
+                        // name only. Kept commented so it can be restored.
                         Row(
                           children: [
-                            Expanded(
-                              child: Text(
-                                (vehicle['make_model'] ?? 'Vehicle')
-                                    .toString()
-                                    .split(' ')
-                                    .map((w) => w.isEmpty
-                                        ? w
-                                        : w[0].toUpperCase() +
-                                            w.substring(1).toLowerCase())
-                                    .join(' '),
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
+                            // Expanded(
+                            //   child: Text(
+                            //     (vehicle['make_model'] ?? 'Vehicle')
+                            //         .toString()
+                            //         .split(' ')
+                            //         .map((w) => w.isEmpty
+                            //             ? w
+                            //             : w[0].toUpperCase() +
+                            //                 w.substring(1).toLowerCase())
+                            //         .join(' '),
+                            //     style: const TextStyle(
+                            //       fontSize: 20,
+                            //       fontWeight: FontWeight.bold,
+                            //       color: Colors.black87,
+                            //     ),
+                            //     overflow: TextOverflow.ellipsis,
+                            //   ),
+                            // ),
+                            const Spacer(),
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -1575,6 +1789,40 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
                                       ? Colors.green.shade700
                                       : Colors.grey.shade600,
                                 ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+
+                        // ── Business / company name. Shown on EVERY vehicle:
+                        // when there is no name the card says so outright
+                        // instead of leaving a gap, so "this driver has no
+                        // business behind them" can't be mistaken for a row
+                        // that failed to load. Sits under the vehicle title
+                        // so it reads as "who operates this".
+                        Row(
+                          children: [
+                            Icon(Icons.storefront_outlined,
+                                size: 16, color: Colors.grey.shade500),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                businessName ?? "Business name not provided",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  // The placeholder is deliberately lighter and
+                                  // less bold than a real name, so it never
+                                  // reads as the business actually being called
+                                  // that.
+                                  fontWeight: businessName != null
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                  color: businessName != null
+                                      ? Colors.grey.shade800
+                                      : Colors.grey.shade500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -1959,9 +2207,12 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
   }
 
   // Vehicle photo height scales with the screen so the card stays balanced
-  // on small phones and tall devices alike.
+  // on small phones and tall devices alike. The card is capped at 68% of the
+  // screen and scrolls internally, so a taller photo can't push the buttons
+  // off — but keep the bump modest: this sits over the map and the driver row
+  // and action buttons below it still need to be reachable without scrolling.
   double _cardImageHeight() =>
-      (MediaQuery.sizeOf(context).height * 0.17).clamp(110.0, 170.0);
+      (MediaQuery.sizeOf(context).height * 0.20).clamp(132.0, 195.0);
 
   Widget _vehicleImagePlaceholder() {
     return Container(
