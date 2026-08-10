@@ -2,16 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../res/AppColor.dart';
+import '../screen/daskboard/DashBord.dart';
+import '../screen/daskboard/orders/my_orders_screen.dart';
+import '../screen/daskboard/settings/my_profile_screen.dart';
+import '../screen/market_place/buyer/buyer_super_category.dart';
 
 class AppBottomBar extends StatelessWidget {
   final int currentIndex;
-  final Function(int) onTap;
+
+  /// Optional override. When it is null the bar navigates to the tapped tab's
+  /// screen itself, so every screen hosting the bar switches the same way.
+  final Function(int)? onTap;
 
   const AppBottomBar({
     super.key,
     required this.currentIndex,
-    required this.onTap,
+    this.onTap,
   });
+
+  void _handleTap(int index) {
+    if (onTap != null) {
+      onTap!(index);
+      return;
+    }
+    if (index == currentIndex) return;
+
+    switch (index) {
+      case 0:
+        // Home is the root tab: drop the pushed tab screens instead of
+        // stacking another dashboard on top of them.
+        Get.offAll(() => DashBord(0, ""));
+        break;
+      case 1:
+        Get.to(() => const MyOrdersScreen());
+        break;
+      case 2:
+        Get.to(() => MarketPlaceSuperCategoryScreen());
+        break;
+      case 3:
+        Get.to(() => const MyProfileScreen());
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,8 +77,9 @@ class AppBottomBar extends StatelessWidget {
             ),
             _bottomItem(
               index: 2,
-              label: "Videos",
-              icon: Icons.video_library_rounded,
+              label: "Market Place",
+              icon: Icons.production_quantity_limits_outlined
+              ,
             ),
             _bottomItem(
               index: 3,
@@ -67,7 +100,7 @@ class AppBottomBar extends StatelessWidget {
     final bool isSelected = currentIndex == index;
 
     return GestureDetector(
-      onTap: () => onTap(index),
+      onTap: () => _handleTap(index),
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),

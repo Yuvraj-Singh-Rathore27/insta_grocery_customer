@@ -1776,7 +1776,7 @@ class WebServicesHelper {
       url = url + "&store_group_id=" + param['store_group_id'];
     }
 
-    Utils().customPrint('url =>$url');
+    Utils().customPrint('url======================================================== =>$url');
     final response = await http.get(Uri.parse(url), headers: {
       "Accept": "application/json",
       "Content-Type": "application/json",

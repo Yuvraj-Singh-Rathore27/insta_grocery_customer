@@ -1740,31 +1740,30 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
                         ),
                         const SizedBox(height: 14),
 
-                        // ── ACTIVE badge ──
-                        // Vehicle name (make/model) is intentionally hidden
-                        // here: the card identifies the operator by business
-                        // name only. Kept commented so it can be restored.
+                        // ── Vehicle model (make & model) + ACTIVE badge ──
+                        // The model doubles as the vehicle's company/brand, so
+                        // it stays the card title; the business name sits under
+                        // it as the operator line.
                         Row(
                           children: [
-                            // Expanded(
-                            //   child: Text(
-                            //     (vehicle['make_model'] ?? 'Vehicle')
-                            //         .toString()
-                            //         .split(' ')
-                            //         .map((w) => w.isEmpty
-                            //             ? w
-                            //             : w[0].toUpperCase() +
-                            //                 w.substring(1).toLowerCase())
-                            //         .join(' '),
-                            //     style: const TextStyle(
-                            //       fontSize: 20,
-                            //       fontWeight: FontWeight.bold,
-                            //       color: Colors.black87,
-                            //     ),
-                            //     overflow: TextOverflow.ellipsis,
-                            //   ),
-                            // ),
-                            const Spacer(),
+                            Expanded(
+                              child: Text(
+                                (vehicle['make_model'] ?? 'Vehicle')
+                                    .toString()
+                                    .split(' ')
+                                    .map((w) => w.isEmpty
+                                        ? w
+                                        : w[0].toUpperCase() +
+                                            w.substring(1).toLowerCase())
+                                    .join(' '),
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(

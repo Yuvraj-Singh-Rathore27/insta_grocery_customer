@@ -39,7 +39,6 @@ class _HomeState extends State<Home> {
   late double height, width;
 
   int _currentIndex = 0;
-  int selectedIndex = 0; // Track current tab index
 
   // Quick Actions grid (Book Cab / Book Ambulance / ...), built from
   // GET /admin/vehicle-type/ instead of being hardcoded, so any vehicle
@@ -176,16 +175,8 @@ class _HomeState extends State<Home> {
           ),
         ),
       ),
-      bottomNavigationBar: AppBottomBar(
-        currentIndex: selectedIndex,
-        onTap: (index) {
-          setState(() {
-            selectedIndex = index;
-          });
-        },
-      ),
-
-      // 🦶 Bottom Navigation Bar
+      // 🦶 Bottom Navigation Bar — the bar routes to each tab's screen itself.
+      bottomNavigationBar: const AppBottomBar(currentIndex: 0),
     );
   }
 

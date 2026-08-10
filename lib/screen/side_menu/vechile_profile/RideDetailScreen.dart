@@ -143,6 +143,44 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
             _isGoodsVehicle ? WeightUnits.goodsDirtyDataTonThreshold : null,
       );
 
+  // Business / company the vehicle runs under. The API spells this differently
+  // across endpoints and sometimes nests it in an expanded object (or hangs it
+  // off the driver), so every known shape is tried — same resolution order as
+  // the map card, so the two screens can never disagree on the name.
+  //
+  // Returns null when the vehicle genuinely has no business name, so
+  // blank/whitespace/"null" values from the API can't reach the UI as an
+  // empty-looking row.
+  String? get _businessName {
+    final Map driver =
+        vehicleData['driver'] is Map ? vehicleData['driver'] as Map : {};
+
+    String? nameOf(dynamic value) {
+      if (value is Map) return value['name']?.toString();
+      if (value is String) return value;
+      return null;
+    }
+
+    final List<String?> candidates = [
+      vehicleData['business_name']?.toString(),
+      vehicleData['company_name']?.toString(),
+      vehicleData['firm_name']?.toString(),
+      nameOf(vehicleData['business']),
+      nameOf(vehicleData['company']),
+      nameOf(vehicleData['vendor']),
+      driver['business_name']?.toString(),
+      driver['company_name']?.toString(),
+      nameOf(driver['business']),
+    ];
+
+    for (final candidate in candidates) {
+      final String value = (candidate ?? '').trim();
+      if (value.isNotEmpty && value.toLowerCase() != 'null') return value;
+    }
+
+    return null;
+  }
+
   Future<void> _makePhoneCall(String phoneNumber) async {
     final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
     if (cleanNumber.isEmpty) {
@@ -597,6 +635,16 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
             icon: Icons.build,
             title: "Make & Model",
             value: vehicleData['make_model'] ?? 'Not available',
+          ),
+          const SizedBox(height: 16),
+          // Operator behind the vehicle, directly under the model — same
+          // model-then-business order the map card uses. Always rendered so a
+          // driver with no business reads as "none on file" rather than a row
+          // that failed to load.
+          _infoRow(
+            icon: Icons.storefront_outlined,
+            title: "Business Name",
+            value: _businessName ?? 'Not available',
           ),
           const SizedBox(height: 16),
           _infoRow(
