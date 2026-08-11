@@ -29,10 +29,7 @@ class _StoreTypeSearchState extends State<StoreTypeSearch> {
             is_wallaticon: true,
             is_supporticon: false,
             is_whatsappicon: false,
-            onPressed: () => {
-                  // showcityList(controller)
-                },
-            onTitleTapped: () => {}),
+            ),
         body: SingleChildScrollView(
           physics: const ScrollPhysics(),
           child: Container(

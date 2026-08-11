@@ -31,13 +31,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             iconnotifiction: true,
             is_wallaticon: true,
             is_supporticon: false,
-            is_whatsappicon: false,
-            onPressed: ()=>{
-
-            },
-            onTitleTapped: ()=>{
-
-            }
+            is_whatsappicon: false
         ),
         body: Container(
       decoration: BoxDecoration(

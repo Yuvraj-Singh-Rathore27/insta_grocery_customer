@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:insta_grocery_customer/screen/address_managment/clientSetLocation.dart';
 
 
 import '../../controller/homepage_controller.dart';
@@ -75,14 +74,7 @@ class DashBordState extends State<DashBord> {
               iconnotifiction: true,
               is_wallaticon: true,
               is_supporticon: false,
-              is_whatsappicon: false,
-              onPressed: ()=>{
-                Get.to(ClientLocationSetOnMap(type: "pickup"))
-
-              },
-              onTitleTapped: ()=>{
-
-              }
+              is_whatsappicon: false
             ),
             body: Stack(children: [
               Padding(

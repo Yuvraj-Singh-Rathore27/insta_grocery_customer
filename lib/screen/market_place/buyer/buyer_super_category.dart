@@ -177,27 +177,27 @@ class MarketPlaceSuperCategoryScreen extends StatelessWidget {
           );
         },
       ),
-    floatingActionButton: Container(
-    height: 60,
-    width: 60,
-    decoration: BoxDecoration(
-      color: Colors.red,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.red.withOpacity(0.4),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        )
-      ],
-    ),
-    child: IconButton(
-      icon: const Icon(Icons.add, color: Colors.white, size: 30),
-      onPressed: () {
-        Get.to(() => AddProduct());
-      },
-    ),
-  ),
+  //   floatingActionButton: Container(
+  //   height: 60,
+  //   width: 60,
+  //   decoration: BoxDecoration(
+  //     color: Colors.red,
+  //     borderRadius: BorderRadius.circular(16),
+  //     boxShadow: [
+  //       BoxShadow(
+  //         color: Colors.red.withOpacity(0.4),
+  //         blurRadius: 10,
+  //         offset: const Offset(0, 4),
+  //       )
+  //     ],
+  //   ),
+  //   child: IconButton(
+  //     icon: const Icon(Icons.add, color: Colors.white, size: 30),
+  //     onPressed: () {
+  //       Get.to(() => AddProduct());
+  //     },
+  //   ),
+  // ),
 
   floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 

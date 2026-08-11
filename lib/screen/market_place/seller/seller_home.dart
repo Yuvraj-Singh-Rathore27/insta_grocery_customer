@@ -48,8 +48,6 @@ class _SellerHomePageState extends State<SellerHomePage> {
         is_wallaticon: true,
         is_supporticon: false,
         is_whatsappicon: false,
-        onPressed: () => {},
-        onTitleTapped: () => {},
       ),
       body: RefreshIndicator(
         onRefresh: () async {

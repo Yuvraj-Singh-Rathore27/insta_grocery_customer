@@ -25,9 +25,7 @@ class _MorePageState extends State<NotificationPage> {
             iconnotifiction: true,
             is_wallaticon: true,
             is_supporticon: false,
-            is_whatsappicon: false,
-            onPressed: () => {},
-            onTitleTapped: () => {}),
+            is_whatsappicon: false),
         body: Container(
           margin: const EdgeInsets.all(10),
           child: Column(

@@ -39,9 +39,7 @@ class _StoreEnquiryScreenState extends State<StoreEnquiryScreen> {
     is_wallaticon: true,
     is_supporticon: false,
     is_whatsappicon: false,
-    onPressed: () => {
-    },
-    onTitleTapped: () => {}),
+    ),
     body: SingleChildScrollView(
       child:  Padding(
         padding: EdgeInsets.all(10),

@@ -44,8 +44,7 @@ class _StoreDetailsPageState extends State<StoreDetailsPage> {
           is_wallaticon: true,
           is_supporticon: false,
           is_whatsappicon: false,
-          onPressed: () => {},
-          onTitleTapped: () => {}),
+          ),
       body: SingleChildScrollView(
         child: Column(
           children: [

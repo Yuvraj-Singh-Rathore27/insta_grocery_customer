@@ -37,8 +37,6 @@ class BuyerHome extends StatelessWidget {
         is_wallaticon: true,
         is_supporticon: false,
         is_whatsappicon: false,
-        onPressed: () {},
-        onTitleTapped: () {},
       ),
 
       body: SingleChildScrollView(

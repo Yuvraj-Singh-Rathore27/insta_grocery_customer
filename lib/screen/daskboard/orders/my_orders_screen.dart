@@ -26,37 +26,47 @@ class MyOrdersScreen extends StatelessWidget {
         ),
         leading: BackButton(color: AppColor().blackColor),
       ),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.receipt_long_rounded,
-              size: 64,
-              color: AppColor().grey_Li.withOpacity(0.4),
+      // Scrollable so the empty state still fits in landscape or with a large
+      // system font scale.
+      body: LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight - 40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.receipt_long_rounded,
+                  size: 64,
+                  color: AppColor().grey_Li.withOpacity(0.4),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  "No orders yet",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColor().blackColor,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Your orders will show up here once you place one.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColor().grey_Li.withOpacity(0.7),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 14),
-            Text(
-              "No orders yet",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColor().blackColor,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              "Your orders will show up here once you place one.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColor().grey_Li.withOpacity(0.7),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
-      bottomNavigationBar: const AppBottomBar(currentIndex: 1),
+      bottomNavigationBar: const AppBottomBar(currentIndex: AppTab.orders),
     );
   }
 }

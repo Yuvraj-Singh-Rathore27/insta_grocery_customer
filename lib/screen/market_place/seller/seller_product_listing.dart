@@ -34,8 +34,6 @@ class _FavouriteProductState extends State<FavouriteProduct> {
         is_wallaticon: true,
         is_supporticon: false,
         is_whatsappicon: false,
-        onPressed: () => {},
-        onTitleTapped: () => {},
       ),
       body: SingleChildScrollView(
         child: Container(

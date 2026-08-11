@@ -31,6 +31,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   // gradient, glows and icon chips stay in one family.
   final Color _primary = AppColor().colorPrimary;
 
+  /// Page gutter — tighter on small phones.
+  double get _hPad => MediaQuery.of(context).size.width < 360 ? 14 : 18;
+
   @override
   void initState() {
     super.initState();
@@ -75,100 +78,108 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             SafeArea(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _backButton(),
-                    const SizedBox(height: 18),
-                    Text(
-                      "Profile",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppColor().blackColor,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    _profileCard(),
-                    const SizedBox(height: 24),
-
-                    /// GROUP 1 — everyday account screens
-                    _tile(
-                      icon: Icons.receipt_long_rounded,
-                      label: "My Orders",
-                      onTap: () => Get.to(() => const MyOrdersScreen()),
-                    ),
-                    _tile(
-                      icon: Icons.location_on_outlined,
-                      label: "My Addresses",
-                      onTap: () => Get.to(() => const AddressListing()),
-                    ),
-                    _tile(
-                      icon: Icons.notifications_none_rounded,
-                      label: "Notifications",
-                      onTap: () => Get.to(() => const NotificationPage()),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    /// GROUP 2 — security & help
-                    _tile(
-                      icon: Icons.lock_outline_rounded,
-                      label: "Change Password",
-                      onTap: () => Get.to(() => const ChangePasswordScreen()),
-                    ),
-                    _tile(
-                      icon: Icons.support_agent_rounded,
-                      label: "Help & Support",
-                      onTap: () => Get.to(() => const MySupportsPage()),
-                    ),
-                    _tile(
-                      icon: Icons.privacy_tip_outlined,
-                      label: "Privacy & Policy",
-                      onTap: () => Get.to(() => CmsPage()),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    /// GROUP 3 — destructive
-                    _tile(
-                      icon: Icons.logout_rounded,
-                      label: "Logout",
-                      danger: true,
-                      onTap: _showLogoutDialog,
-                    ),
-
-                    const SizedBox(height: 18),
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _primary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Text(
-                          "Version 1.0.1",
+                padding: EdgeInsets.fromLTRB(_hPad, 10, _hPad, 24),
+                // On tablets the column stops stretching and stays centred
+                // instead of spreading tiles across the full width.
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _backButton(),
+                        const SizedBox(height: 18),
+                        Text(
+                          "Profile",
                           style: TextStyle(
-                            color: _primary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: AppColor().blackColor,
+                            letterSpacing: -0.5,
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 18),
+                        _profileCard(),
+                        const SizedBox(height: 24),
+
+                        /// GROUP 1 — everyday account screens
+                        _tile(
+                          icon: Icons.receipt_long_rounded,
+                          label: "My Orders",
+                          onTap: () => Get.to(() => const MyOrdersScreen()),
+                        ),
+                        _tile(
+                          icon: Icons.location_on_outlined,
+                          label: "My Addresses",
+                          onTap: () => Get.to(() => const AddressListing()),
+                        ),
+                        _tile(
+                          icon: Icons.notifications_none_rounded,
+                          label: "Notifications",
+                          onTap: () => Get.to(() => const NotificationPage()),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        /// GROUP 2 — security & help
+                        _tile(
+                          icon: Icons.lock_outline_rounded,
+                          label: "Change Password",
+                          onTap: () =>
+                              Get.to(() => const ChangePasswordScreen()),
+                        ),
+                        _tile(
+                          icon: Icons.support_agent_rounded,
+                          label: "Help & Support",
+                          onTap: () => Get.to(() => const MySupportsPage()),
+                        ),
+                        _tile(
+                          icon: Icons.privacy_tip_outlined,
+                          label: "Privacy & Policy",
+                          onTap: () => Get.to(() => CmsPage()),
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        /// GROUP 3 — destructive
+                        _tile(
+                          icon: Icons.logout_rounded,
+                          label: "Logout",
+                          danger: true,
+                          onTap: _showLogoutDialog,
+                        ),
+
+                        const SizedBox(height: 18),
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _primary.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Text(
+                              "Version 1.0.1",
+                              style: TextStyle(
+                                color: _primary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: const AppBottomBar(currentIndex: 3),
+      bottomNavigationBar: const AppBottomBar(currentIndex: AppTab.profile),
     );
   }
 
