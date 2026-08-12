@@ -12,6 +12,7 @@ import '../../../res/AppColor.dart';
 import '../../../res/AppDimens.dart';
 import '../../../res/ImageRes.dart';
 import '../../../toolbar/TopBar.dart';
+import '../../../toolbar/app_bottom_bar.dart';
 import 'buyer_subcategory_product.dart';
 
 class BuyerHome extends StatelessWidget {
@@ -48,6 +49,8 @@ class BuyerHome extends StatelessWidget {
               const SizedBox(
                 height: 10,
               ),
+              _buildSellerBanner(),
+              const SizedBox(height: 14),
               buildCategorySection(),
               SizedBox(height: 10),
               // _buildFeaturedListing(),
@@ -58,7 +61,9 @@ class BuyerHome extends StatelessWidget {
         ),
       ),
 
-      // bottomNavigationBar: _buildBottomButton(),
+      // ✅ SHARED BOTTOM NAV BAR
+      bottomNavigationBar:
+          const AppBottomBar(currentIndex: AppTab.marketPlace),
     );
   }
 
@@ -94,6 +99,118 @@ class BuyerHome extends StatelessWidget {
             borderRadius: BorderRadius.circular(12), // rounded corners
             borderSide: BorderSide.none, // remove harsh border
           ),
+        ),
+      ),
+    );
+  }
+
+  // -----------------------------------------------------------
+  //                 SELLER BANNER (-> SellerHomePage)
+  // -----------------------------------------------------------
+  Widget _buildSellerBanner() {
+    return GestureDetector(
+      onTap: () => Get.to(() => SellerHomePage()),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              AppColor().colorPrimary,
+              AppColor().colorPrimary.withOpacity(0.75),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColor().colorPrimary.withOpacity(0.25),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // ---------------- ICON ----------------
+            Container(
+              height: 46,
+              width: 46,
+              decoration: BoxDecoration(
+                color: AppColor().whiteColor.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.storefront_outlined,
+                color: AppColor().whiteColor,
+                size: 26,
+              ),
+            ),
+
+            const SizedBox(width: 12),
+
+            // ---------------- TEXT ----------------
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Start Selling Today",
+                    style: TextStyle(
+                      color: AppColor().whiteColor,
+                      fontSize: AppDimens().front_medium,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: "Inter",
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    "List your products & reach nearby buyers",
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColor().whiteColor.withOpacity(0.9),
+                      fontSize: AppDimens().front_12,
+                      fontFamily: "Helvetica",
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            // ---------------- CTA ----------------
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColor().whiteColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Become Seller",
+                    style: TextStyle(
+                      color: AppColor().colorPrimary,
+                      fontSize: AppDimens().front_12,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: "Inter",
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 11,
+                    color: AppColor().colorPrimary,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -359,11 +476,13 @@ class BuyerHome extends StatelessWidget {
                   ],
                 ),
               );
+              
             });
           },
         );
       },
     );
+    
   }
 
   // -----------------------------------------------------------

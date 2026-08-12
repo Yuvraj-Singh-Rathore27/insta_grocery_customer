@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:insta_grocery_customer/controller/buyercontroller.dart';
 import 'package:insta_grocery_customer/screen/market_place/seller/add_product.dart';
+
+import '../../../toolbar/app_bottom_bar.dart';
 import 'buyer_home.dart';
 
 class MarketPlaceSuperCategoryScreen extends StatelessWidget {
@@ -199,86 +201,9 @@ class MarketPlaceSuperCategoryScreen extends StatelessWidget {
   //   ),
   // ),
 
-  floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-
-  // ✅ BOTTOM NAV BAR
-  bottomNavigationBar: Obx(() {
-    return Container(
-      height: 65,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-          )
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-
-          /// 🔥 HOME
-          GestureDetector(
-            onTap: () {
-              controller.changeIndex(0);
-            },
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.home,
-                  color: controller.selectedIndex.value == 0
-                      ? Colors.red
-                      : Colors.grey,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "Home",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: controller.selectedIndex.value == 0
-                        ? Colors.red
-                        : Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 40), // FAB space
-
-          /// 🔥 MY EVENTS
-          GestureDetector(
-            onTap: () {
-              controller.changeIndex(1);
-            },
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.calendar_month,
-                  color: controller.selectedIndex.value == 1
-                      ? Colors.red
-                      : Colors.grey,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "My Products",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: controller.selectedIndex.value == 1
-                        ? Colors.red
-                        : Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }),
+      // ✅ SHARED BOTTOM NAV BAR
+      bottomNavigationBar:
+          const AppBottomBar(currentIndex: AppTab.marketPlace),
     );
   }
 }
