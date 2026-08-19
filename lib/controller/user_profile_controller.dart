@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../model/blood_group_model.dart';
 import '../model/responsemodel/LoginResponseModelNew.dart';
-import '../preferences/UserPreferences.dart';
+import '../preferences/session_manager.dart';
 import '../screen/dialog/helperProgressBar.dart';
 import '../screen/login/login_screen.dart';
 import '../utills/Utils.dart';
@@ -45,8 +45,11 @@ class UserProfileController extends GetxController {
     // TODO: implement onInit
     super.onInit();
      store = GetStorage();
-    userId= store.read(UserPreferences.user_id);
-    accessToken= store.read(UserPreferences.access_token);
+    // Read through SessionManager: a missing key used to be assigned straight
+    // into these non-nullable Strings, which threw a TypeError in onInit and
+    // took the whole home screen down with it.
+    userId = SessionManager.userId;
+    accessToken = SessionManager.accessToken;
      print("UserProfileController Userid => ${userId}");
      print("UserProfileController accessToken => ${accessToken}");
 
@@ -121,7 +124,14 @@ class UserProfileController extends GetxController {
 
 
   Future<void> getUserDetails() async {
-    BuildContext? context=Get.context;
+    // The session may have been written after this controller was created
+    // (login → dashboard reuses the same instance), so read it again here
+    // instead of trusting the values captured in onInit.
+    userId = SessionManager.userId;
+    accessToken = SessionManager.accessToken;
+
+    if (userId.isEmpty) return;
+
     final param = {
       "user_id":userId,
       "accessToken":accessToken,
@@ -133,16 +143,7 @@ class UserProfileController extends GetxController {
 
     if (response != null) {
       if(response['status']==401){
-
-        final  store = GetStorage();
-        store.erase();
-        Navigator.pushAndRemoveUntil(
-          context!,
-          MaterialPageRoute(
-            builder: (BuildContext context) =>  LoginScreen(),
-          ),
-              (route) => false,
-        );
+        await _forceLogout();
         return;
 
       }
@@ -151,6 +152,17 @@ class UserProfileController extends GetxController {
         if (loginRespone.status==200) {
 
             userData.value=loginRespone;
+
+            // The endpoint returns the account's current access token. Saving
+            // it here keeps the stored token alive when the server rotates or
+            // re-issues it, and repairs sessions written by older builds that
+            // never stored a token at all.
+            final String? freshToken = loginRespone.data?.accessToken;
+            if (freshToken != null && freshToken.isNotEmpty) {
+              await SessionManager.saveAccessToken(freshToken);
+              accessToken = SessionManager.accessToken;
+            }
+
             print("DAATAA=> ${userData.value.data?.userProfile?.firstName}");
 
         } else {
@@ -162,8 +174,24 @@ class UserProfileController extends GetxController {
     }
   }
 
+  /// Ends the session after the server rejected our token.
+  ///
+  /// This used to call `store.erase()`, which wiped every GetStorage key —
+  /// session, store code and everything else — and then pushed the login
+  /// screen through a possibly-null context. Only the session keys are
+  /// cleared now, and navigation goes through Get so it can't crash on a
+  /// missing context.
+  Future<void> _forceLogout() async {
+    await SessionManager.clear();
+
+    userId = "";
+    accessToken = "";
+
+    Utils.showCustomTosstError("Session expired, please log in again");
+    Get.offAll(() => LoginScreen());
+  }
+
   Future<void> deleteAccount() async {
-    BuildContext? context=Get.context;
     final param = {
       "user_id":userId,
       "accessToken":accessToken,
@@ -176,16 +204,7 @@ class UserProfileController extends GetxController {
 
     if (response != null) {
       if(response['status']==401){
-
-        final  store = GetStorage();
-        store.erase();
-        Navigator.pushAndRemoveUntil(
-          context!,
-          MaterialPageRoute(
-            builder: (BuildContext context) =>  LoginScreen(),
-          ),
-              (route) => false,
-        );
+        await _forceLogout();
         return;
 
       }

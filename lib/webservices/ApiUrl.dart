@@ -327,6 +327,13 @@ class ApiUrl {
   // vehicle SOS / emergency alert
   static const vehicleSosApi = "${apiUrl}vehicle-sos/";
 
+  // vehicle booking (customer side)
+  // POST  {vehicleBooking}                        → create booking
+  // GET   {vehicleBooking}?customer_id=&page=&size=  → my bookings
+  // GET   {vehicleBooking}{booking_id}            → single booking
+  // POST  {vehicleBooking}{booking_id}/cancel     → cancel booking
+  static const vehicleBooking = "${apiUrl}bookings/";
+
 // these module si basically implent for a feedabce section
   static const feedback_types = "${apiUrl}feedback-types/";
   static const postfeedback = "${apiUrl}user/feedback/";

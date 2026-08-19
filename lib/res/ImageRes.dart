@@ -216,5 +216,10 @@ class ImageRes {
   // team member image 
   var team_member_image="assets/images/team_member.jpeg";
   var car1="assets/images/car1.png";
+  var onboarding1="assets/grocery/onboarding1.png";
+  var onboarding2="assets/grocery/onboarding2.png";
+  var onboarding3="assets/grocery/onboarding3.png";
+    var locationImage1="assets/grocery/LocationImage1.png";
+
 
 }

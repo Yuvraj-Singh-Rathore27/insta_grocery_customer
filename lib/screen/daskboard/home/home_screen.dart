@@ -39,6 +39,12 @@ class _HomeState extends State<Home> {
   List<Map<String, dynamic>> _vehicleTypes = [];
   bool _isLoadingVehicleTypes = true;
 
+  // First paint waits for every call the page needs, so the screen appears
+  // complete instead of showing the static parts and then popping the banner
+  // and Quick Actions in one at a time. Pull-to-refresh doesn't set this —
+  // there the existing content stays put behind the refresh spinner.
+  bool _isBooting = true;
+
   // Quick Actions shows one row of three until "View all" is tapped.
   bool _showAllVehicleTypes = false;
 
@@ -65,16 +71,31 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
+  }
+
+  /// Loads everything the first paint needs, then reveals the page in one go.
+  /// `finally` matters: if any call throws, the loader must still come down,
+  /// otherwise the screen is stuck on the spinner forever.
+  Future<void> _bootstrap() async {
+    try {
       await userProfileController.getUserDetails();
 
       // Location first — the top bar's city label depends on it.
       await _determinePosition();
 
-      homePageController.getBannerList();
-      addressController.getAddreessListing();
-      _loadVehicleTypes();
-    });
+      // These three don't depend on each other, so run them together rather
+      // than paying for three round trips back to back.
+      await Future.wait([
+        homePageController.getBannerList(),
+        addressController.getAddreessListing(),
+        _loadVehicleTypes(),
+      ]);
+    } catch (e) {
+      debugPrint("Home bootstrap failed: $e");
+    } finally {
+      if (mounted) setState(() => _isBooting = false);
+    }
   }
 
   Future<void> _loadVehicleTypes() async {
@@ -138,7 +159,11 @@ class _HomeState extends State<Home> {
 
     return Scaffold(
       backgroundColor: AppColor().whiteColor,
-      body: SafeArea(
+      // The bar is outside the loading switch so it doesn't jump into place
+      // when the content arrives.
+      body: _isBooting
+          ? _buildFullScreenLoader()
+          : SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
             await _refreshHomeScreen();
@@ -162,6 +187,38 @@ class _HomeState extends State<Home> {
       ),
       // 🦶 Bottom Navigation Bar — the bar routes to each tab's screen itself.
       bottomNavigationBar: const AppBottomBar(currentIndex: AppTab.home),
+    );
+  }
+
+  /// Shown until every first-paint call has finished, so the page never
+  /// assembles itself piece by piece in front of the user.
+  Widget _buildFullScreenLoader() {
+    return SafeArea(
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 38,
+              width: 38,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.6,
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(AppColor().colorPrimary),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              "Getting things ready...",
+              style: TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w500,
+                color: AppColor().blackColorMore,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

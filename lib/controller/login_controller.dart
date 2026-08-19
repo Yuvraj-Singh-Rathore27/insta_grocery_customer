@@ -8,6 +8,7 @@ import '../model/responsemodel/LoginOptRespone.dart';
 import '../model/responsemodel/LoginResponse.dart';
 import '../model/responsemodel/LoginResponseModelNew.dart';
 import '../preferences/UserPreferences.dart';
+import '../preferences/session_manager.dart';
 import '../screen/daskboard/DashBord.dart';
 import '../screen/dialog/helperProgressBar.dart';
 import '../screen/otp_verifiction/otp_verifiction_screen.dart';
@@ -137,14 +138,27 @@ TextEditingController storeCodeController= TextEditingController();
           if(loginRespone.error!){
             Utils.showCustomTosst(loginRespone.message??'1');
           }else{
-            Utils.showCustomTosst(loginRespone.message??'2');
-            final store = GetStorage();
-            store.write(UserPreferences.user_id, loginRespone.data?.id.toString());
-            // prefs = await SharedPreferences.getInstance();
-            // prefs?.setString(UserPreferences.user_id, loginRespone.data?.id.toString()??"");
-            // prefs?.setString(UserPreferences.access_token, loginRespone.data?.accessToken??'');
+            // Both keys are saved together and awaited. This path used to save
+            // the user id only, which left the customer with a session that
+            // had no token: every authenticated call went out as
+            // "Bearer null", the first 401 wiped the storage, and the next
+            // launch showed the login screen again.
+            final bool saved = await SessionManager.saveSession(
+              userId: loginRespone.data?.id,
+              accessToken: loginRespone.data?.accessToken,
+            );
 
-            Get.to(() => DashBord(0, ""));
+            if (!saved) {
+              Utils.showCustomTosstError(
+                  "Login failed, please try again");
+              return;
+            }
+
+            Utils.showCustomTosst(loginRespone.message??'2');
+
+            // offAll, so the back button can't return to the login screen of
+            // a session that is already active.
+            Get.offAll(() => DashBord(0, ""));
           }
 
 

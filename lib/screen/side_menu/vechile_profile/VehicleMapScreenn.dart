@@ -14,6 +14,7 @@ import '../../../model/vechile_model.dart';
 import '../../../webservices/WebServicesHelper.dart';
 import './RideDetailScreen.dart';
 import './VehicleLocationSearchScreen.dart';
+import './vehicle_booking_sheet.dart';
 
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -739,12 +740,6 @@ class _VehicleMapScreenState extends State<VehicleMapScreen> {
         duration: const Duration(seconds: 2),
       );
     }
-  }
-
-  void _openNavigation(double lat, double lng) {
-    final url = Uri.parse(
-        "https://www.google.com/maps/dir/?api=1&destination=$lat,$lng");
-    launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
   void _shareVehicleDetails(Map<String, dynamic> vehicle) {
@@ -2067,28 +2062,63 @@ https://play.google.com/store/apps/details?id=com.insta.grocery.customer
                         ),
                         const SizedBox(height: 14),
 
+                        // ── Live booking status ──
+                        // Appears as soon as the ride is booked and updates
+                        // itself while the controller polls /bookings/{id}:
+                        // Requested → Accepted → Arriving → On trip.
+                        Obx(() {
+                          final booking =
+                              controller.bookingForVehicle(vehicle['id']);
+                          if (booking == null) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child:
+                                VehicleBookingStatusCard(booking: booking),
+                          );
+                        }),
+
                         // ── Action buttons ──
                         Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => _openNavigation(
-                                  (vehicle['latitude'] ?? 0.0).toDouble(),
-                                  (vehicle['longitude'] ?? 0.0).toDouble(),
-                                ),
-                                icon: const Icon(Icons.navigation_outlined,
-                                    size: 17),
-                                label: const Text("Navigate"),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                  side: const BorderSide(color: Colors.red),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 13),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
+                              child: Obx(() {
+                                final bool alreadyBooked = controller
+                                        .bookingForVehicle(vehicle['id']) !=
+                                    null;
+                                return OutlinedButton.icon(
+                                  onPressed: alreadyBooked
+                                      ? null
+                                      : () => showVehicleBookingSheet(
+                                            context,
+                                            vehicle,
+                                            pickupAddress:
+                                                selectedLocationLabel.value ??
+                                                    currentAddress.value,
+                                          ),
+                                  icon: Icon(
+                                    alreadyBooked
+                                        ? Icons.check_circle_outline
+                                        : Icons.local_taxi_outlined,
+                                    size: 17,
                                   ),
-                                ),
-                              ),
+                                  label: Text(alreadyBooked ? "Booked" : "Book"),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                    disabledForegroundColor:
+                                        Colors.grey.shade400,
+                                    side: BorderSide(
+                                      color: alreadyBooked
+                                          ? Colors.grey.shade300
+                                          : Colors.red,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 13),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                );
+                              }),
                             ),
                             const SizedBox(width: 10),
                             Expanded(

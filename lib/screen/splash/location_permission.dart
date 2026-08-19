@@ -9,13 +9,14 @@ import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../controller/vender_controller.dart';
 import '../../res/AppColor.dart';
+import '../../res/AppDimens.dart';
+import '../../res/ImageRes.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../preferences/UserPreferences.dart';
+import '../../preferences/session_manager.dart';
 import '../daskboard/DashBord.dart';
 import '../login/login_screen.dart';
-import 'package:get_storage/get_storage.dart';
 
 class LocationPerMissionScreeen extends StatefulWidget {
   @override
@@ -175,10 +176,12 @@ class _LocationPerMissionScreeen extends State<LocationPerMissionScreeen> {
   }
 
   Future<void> _navigateToNextScreen() async {
-    final store = GetStorage();
-    var userId = store.read(UserPreferences.user_id);
-    print("user_id==> $userId");
-    if (userId != null && userId != "null") {
+    // The session gate. SessionManager treats null, "" and the literal
+    // string "null" (written by older builds via `null.toString()`) as
+    // logged out, so a half-written session can't send the customer to a
+    // dashboard it has no user id for.
+    print("session user_id==> ${SessionManager.userId}");
+    if (SessionManager.isLoggedIn) {
       Get.offAll(() => DashBord(0, ""));
     } else {
       Get.offAll(() => LoginScreen());
@@ -230,190 +233,341 @@ class _LocationPerMissionScreeen extends State<LocationPerMissionScreeen> {
     });
   }
 
+  // ===========================================================
+  //                            UI
+  // ===========================================================
+
+  Color get _primary => AppColor().colorPrimary;
+
+  /// Type sizes come from [AppDimens] and are scaled against a 390pt reference
+  /// width, clamped so a small phone stays readable and a tablet doesn't
+  /// balloon.
+  double get _scale =>
+      (MediaQuery.of(context).size.width / 390).clamp(0.85, 1.2);
+
+  double get _gutter => (24 * _scale).clamp(16.0, 32.0);
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Header Section with Icon
-              const SizedBox(
-                height: 10,
-              ),
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: AppColor().colorPrimary, // Red background
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColor().colorPrimary, // Red border color
-                    width: 2,
-                    strokeAlign: BorderSide.strokeAlignOutside,
-                  ),
-                ),
-                child: Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    color: AppColor().colorPrimary, // Red background
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white, // White dashed border
-                      width: 2,
-                      strokeAlign: BorderSide.strokeAlignOutside,
-                      style: BorderStyle.solid,
+    final MediaQueryData media = MediaQuery.of(context);
+
+    // Cap the system font scale so the card rows can't blow past their box.
+    final double textScale = media.textScaler.scale(1).clamp(1.0, 1.15);
+
+    return MediaQuery(
+      data: media.copyWith(textScaler: TextScaler.linear(textScale)),
+      child: Scaffold(
+        backgroundColor: AppColor().whiteColor,
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                children: [
+                  // Scrolls, so no screen size can overflow this page.
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(_gutter, 8, _gutter, 8),
+                      child: Column(
+                        children: [
+                          _buildHero(),
+                          SizedBox(height: 18 * _scale),
+                          _buildHeading(),
+                          SizedBox(height: 22 * _scale),
+                          _buildHighlights(),
+                          SizedBox(height: 22 * _scale),
+                          _buildLocationCard(),
+                          SizedBox(height: 14 * _scale),
+                          _buildPrivacyNote(),
+                        ],
+                      ),
                     ),
                   ),
-                  child: const Icon(
-                    Icons.question_mark,
-                    size: 40,
-                    color: Colors.white, // White icon color
+
+                  // CTA stays pinned below the scroll area.
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      _gutter,
+                      8,
+                      _gutter,
+                      16 * _scale,
+                    ),
+                    child: _buildContinueButton(),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 20),
-              const Text(
-                "Enable Permissions",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                "Help us provide you with the best experience",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
-                ),
-              ),
-              const SizedBox(height: 80),
-
-              // Permissions List
-              _buildPermissionItem(
-                title: "Location Access",
-                subtitle: "Find nearby businesses and services",
-                value: locationEnabled,
-                onChanged: (value) {
-                  if (value) {
-                    _requestLocation();
-                  } else {
-                    setState(() {
-                      locationEnabled = false;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
-
-
-              const SizedBox(height: 24),
-              const Divider(height: 1),
-
-              const Spacer(),
-
-              // Continue Button - Always enabled
-             SizedBox(
-  width: double.infinity,
-  child: ElevatedButton(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: AppColor().colorPrimary,
-      foregroundColor: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-    ),
-    onPressed: _continueWithSelectedPermissions,
-    child: FittedBox(
-      fit: BoxFit.scaleDown,
-      child: const Text(
-        "Continue with Selected Permissions",
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    ),
-  ),
-),
-              const SizedBox(height: 16),
-
-              // Skip Button
-              // SizedBox(
-              //   width: double.infinity,
-              //   child: TextButton(
-              //     onPressed: _skipForNow,
-              //     child: Text(
-              //       "Skip for now",
-              //       style: TextStyle(
-              //         fontSize: 16,
-              //         color: AppColor().colorPrimary, // Red color from AppColor
-              //       ),
-              //     ),
-              //   ),
-              // ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildPermissionItem({
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  // -----------------------------------------------------------
+  //                       HERO ILLUSTRATION
+  // -----------------------------------------------------------
+  Widget _buildHero() {
+    final double height =
+        (MediaQuery.of(context).size.height * 0.26).clamp(140.0, 260.0);
+
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: Image.asset(
+        ImageRes().locationImage1,
+        fit: BoxFit.contain,
+        // A missing/renamed asset must not leave a blank screen.
+        errorBuilder: (_, __, ___) => Icon(
+          Icons.location_on_rounded,
+          size: height * 0.5,
+          color: _primary,
+        ),
+      ),
+    );
+  }
+
+  // -----------------------------------------------------------
+  //                      TITLE + SUBTITLE
+  // -----------------------------------------------------------
+  Widget _buildHeading() {
+    return Column(
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
-              ),
-            ],
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            "Enable Location Access",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: AppDimens().front_largest * 1.3 * _scale,
+              fontWeight: FontWeight.w800,
+              fontFamily: "Inter",
+              color: AppColor().blackColor,
+            ),
           ),
         ),
-        const SizedBox(width: 12),
-        // Toggle Switch
-        Transform.scale(
-          scale: 1.0,
-          child: Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: Colors.white,
-            activeTrackColor: AppColor().colorPrimary,
-            inactiveThumbColor: Colors.grey.shade400,
-            inactiveTrackColor: Colors.grey.shade300,
+        SizedBox(height: 8 * _scale),
+        Text(
+          "Allow access to your location to provide\nyou with the best experience.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: AppDimens().front_regular * _scale,
+            height: 1.5,
+            color: AppColor().blackColorMore,
           ),
         ),
       ],
+    );
+  }
+
+  // -----------------------------------------------------------
+  //                     THREE HIGHLIGHTS
+  // -----------------------------------------------------------
+  Widget _buildHighlights() {
+    final List<(IconData, String)> items = [
+      (Icons.gps_fixed_rounded, "Accurate\nPickups"),
+      (Icons.route_rounded, "Real-time\nTracking"),
+      (Icons.verified_user_rounded, "Enhanced\nSafety"),
+    ];
+
+    final double circle = (56 * _scale).clamp(44.0, 66.0);
+
+    return Row(
+      children: [
+        for (final (IconData icon, String label) in items)
+          // Equal thirds so the longest label can't shift the others.
+          Expanded(
+            child: Column(
+              children: [
+                Container(
+                  height: circle,
+                  width: circle,
+                  decoration: BoxDecoration(
+                    color: _primary.withOpacity(0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: _primary, size: circle * 0.45),
+                ),
+                SizedBox(height: 8 * _scale),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: AppDimens().front_regular * _scale,
+                    height: 1.3,
+                    fontWeight: FontWeight.w500,
+                    color: AppColor().blackColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  // -----------------------------------------------------------
+  //                  LOCATION TOGGLE CARD
+  // -----------------------------------------------------------
+  Widget _buildLocationCard() {
+    final double tile = (48 * _scale).clamp(40.0, 58.0);
+
+    return Container(
+      padding: EdgeInsets.all(14 * _scale),
+      decoration: BoxDecoration(
+        color: AppColor().whiteColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColor().colorGrayLess),
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: tile,
+            width: tile,
+            decoration: BoxDecoration(
+              color: _primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.location_on_rounded,
+              color: _primary,
+              size: tile * 0.5,
+            ),
+          ),
+          SizedBox(width: 12 * _scale),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Location Access",
+                  style: TextStyle(
+                    fontSize: AppDimens().front_medium * _scale,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: "Inter",
+                    color: AppColor().blackColor,
+                  ),
+                ),
+                SizedBox(height: 3 * _scale),
+                Text(
+                  "Let us help you find nearby services and exact locations.",
+                  style: TextStyle(
+                    fontSize: AppDimens().front_12 * _scale,
+                    height: 1.4,
+                    color: AppColor().blackColorMore,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Same behaviour as before: switching on runs the permission flow,
+          // switching off only clears the local flag.
+          Switch(
+            value: locationEnabled,
+            onChanged: (value) {
+              if (value) {
+                _requestLocation();
+              } else {
+                setState(() {
+                  locationEnabled = false;
+                });
+              }
+            },
+            activeColor: AppColor().whiteColor,
+            activeTrackColor: _primary,
+            inactiveThumbColor: AppColor().whiteColor,
+            inactiveTrackColor: AppColor().colorGray,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // -----------------------------------------------------------
+  //                        PRIVACY NOTE
+  // -----------------------------------------------------------
+  Widget _buildPrivacyNote() {
+    return Container(
+      padding: EdgeInsets.all(14 * _scale),
+      decoration: BoxDecoration(
+        color: _primary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.verified_user_rounded,
+            color: _primary,
+            size: 22 * _scale,
+          ),
+          SizedBox(width: 12 * _scale),
+          Expanded(
+            child: Text(
+              "We respect your privacy. Your location is used only while using the app.",
+              style: TextStyle(
+                fontSize: AppDimens().front_12 * _scale,
+                height: 1.45,
+                color: AppColor().blackColorMore,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // -----------------------------------------------------------
+  //                       CONTINUE BUTTON
+  // -----------------------------------------------------------
+  Widget _buildContinueButton() {
+    final double height = (54 * _scale).clamp(46.0, 62.0);
+
+    return SizedBox(
+      width: double.infinity,
+      height: height,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _primary,
+          foregroundColor: AppColor().whiteColor,
+          disabledBackgroundColor: _primary.withOpacity(0.7),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        onPressed: isLoading ? null : _continueWithSelectedPermissions,
+        child: isLoading
+            ? SizedBox(
+                height: height * 0.42,
+                width: height * 0.42,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(AppColor().whiteColor),
+                ),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.near_me_rounded, size: 20 * _scale),
+                  SizedBox(width: 10 * _scale),
+                  Flexible(
+                    child: Text(
+                      "Continue with Location Access",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: AppDimens().front_medium * _scale,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: "Inter",
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }

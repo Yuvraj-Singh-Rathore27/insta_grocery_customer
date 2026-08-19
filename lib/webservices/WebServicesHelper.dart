@@ -5102,6 +5102,148 @@ class WebServicesHelper {
     }
   }
 
+// ============================================================
+// 🚕 VEHICLE BOOKING (customer side) — /bookings/
+// ============================================================
+// The booking endpoints carry no auth on the backend yet: the customer is
+// identified by customer_id (our logged-in user id) in the body / query.
+// The bearer token is still sent when we have one so the calls keep working
+// if auth gets switched on later.
+
+  /// POST /bookings/ → create a booking request for a driver + vehicle.
+  /// [body] comes from VehicleBookingCreateModel.toJson().
+  Future<Map<String, dynamic>?> createVehicleBooking(
+    Map<String, dynamic> body, [
+    String accessToken = "",
+  ]) async {
+    final String url = ApiUrl.vehicleBooking;
+
+    Utils().customPrint('Create Booking => $url');
+    Utils().customPrint('Body => $body');
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse(url),
+            body: json.encode(body),
+            headers: {
+              "Accept": "application/json",
+              "Content-Type": "application/json",
+              if (accessToken.isNotEmpty)
+                "Authorization": "Bearer $accessToken",
+            },
+          )
+          .timeout(const Duration(seconds: 20));
+
+      Utils().customPrint("Response => ${response.body}");
+      Utils().customPrint("Status => ${response.statusCode}");
+
+      return json.decode(response.body);
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
+      return null;
+    }
+  }
+
+  /// GET /bookings/?customer_id=&page=&size= → the customer's bookings,
+  /// newest first as sent by the backend.
+  Future<Map<String, dynamic>?> getCustomerBookings({
+    required int customerId,
+    int page = 1,
+    int size = 10,
+    String accessToken = "",
+  }) async {
+    final uri = Uri.parse(ApiUrl.vehicleBooking).replace(queryParameters: {
+      "customer_id": customerId.toString(),
+      "page": page.toString(),
+      "size": size.toString(),
+    });
+
+    Utils().customPrint("My Bookings API => $uri");
+
+    try {
+      final response = await http.get(
+        uri,
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          if (accessToken.isNotEmpty) "Authorization": "Bearer $accessToken",
+        },
+      ).timeout(const Duration(seconds: 20));
+
+      Utils().customPrint("Response => ${response.body}");
+
+      return json.decode(response.body);
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
+      return null;
+    }
+  }
+
+  /// GET /bookings/{booking_id} → one booking with customer / driver /
+  /// vehicle details. Used to poll the live status of a ride.
+  Future<Map<String, dynamic>?> getVehicleBookingById(
+    int bookingId, [
+    String accessToken = "",
+  ]) async {
+    final String url = "${ApiUrl.vehicleBooking}$bookingId";
+
+    Utils().customPrint("Booking Detail API => $url");
+
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          if (accessToken.isNotEmpty) "Authorization": "Bearer $accessToken",
+        },
+      ).timeout(const Duration(seconds: 20));
+
+      Utils().customPrint("Response => ${response.body}");
+
+      return json.decode(response.body);
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
+      return null;
+    }
+  }
+
+  /// POST /bookings/{booking_id}/cancel → customer cancels their booking.
+  /// The backend refuses this once the trip is COMPLETED.
+  Future<Map<String, dynamic>?> cancelVehicleBooking(
+    int bookingId,
+    int customerId, [
+    String accessToken = "",
+  ]) async {
+    final String url = "${ApiUrl.vehicleBooking}$bookingId/cancel";
+
+    Utils().customPrint("Cancel Booking API => $url");
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse(url),
+            body: json.encode({"customer_id": customerId}),
+            headers: {
+              "Accept": "application/json",
+              "Content-Type": "application/json",
+              if (accessToken.isNotEmpty)
+                "Authorization": "Bearer $accessToken",
+            },
+          )
+          .timeout(const Duration(seconds: 20));
+
+      Utils().customPrint("Response => ${response.body}");
+      Utils().customPrint("Status => ${response.statusCode}");
+
+      return json.decode(response.body);
+    } catch (e) {
+      Utils().customPrint("Exception => $e");
+      return null;
+    }
+  }
+
 // these module si basically implent for a feedabce section
 
   Future<Map<String, dynamic>?> getFeedbackTypes() async {

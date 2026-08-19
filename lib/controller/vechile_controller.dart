@@ -6,6 +6,7 @@ import '../webservices/WebServicesHelper.dart';
 import '../preferences/UserPreferences.dart';
 import '../model/vechile_model.dart';
 import '../model/vehicle_sos_model.dart';
+import '../model/vehicle_booking_model.dart';
 import '../model/file_model.dart';
 
 import 'package:geolocator/geolocator.dart';
@@ -88,6 +89,18 @@ class VehicleController extends GetxController {
 
   // ==================== SOS / EMERGENCY ====================
   RxBool isSendingSos = false.obs;
+
+  // ==================== BOOKING (/bookings/) ====================
+  // The booking the customer is currently riding on / waiting for. Restored
+  // from GET /bookings/ on startup so the live status survives an app restart,
+  // and polled while it is in a non-terminal state.
+  Rxn<VehicleBookingModel> activeBooking = Rxn<VehicleBookingModel>();
+  RxList<VehicleBookingModel> myBookings = <VehicleBookingModel>[].obs;
+  RxBool isCreatingBooking = false.obs;
+  RxBool isCancellingBooking = false.obs;
+  RxBool isLoadingBookings = false.obs;
+  Timer? bookingPollTimer;
+  static const Duration bookingPollInterval = Duration(seconds: 10);
   
   // Add loading indicator for category change
   RxBool isLoadingVehiclesByCategory = false.obs;
@@ -125,6 +138,9 @@ class VehicleController extends GetxController {
     loadUserData();
     // Facility names for the detail screen (no need to block on it)
     loadFacilities();
+    // Restore a ride that is still running from a previous session so the
+    // card shows its live status instead of an empty "Book" button.
+    loadMyBookings();
     _bootstrap();
   }
 
@@ -157,7 +173,8 @@ class VehicleController extends GetxController {
     customerLocationStream?.cancel();
     apiDebounceTimer?.cancel();
     refreshTimer?.cancel();
-    
+    bookingPollTimer?.cancel();
+
     nameController.dispose();
     phoneController.dispose();
     licenseController.dispose();
@@ -889,5 +906,324 @@ Future<void> clearCategoryFilter() async {
     } finally {
       isSendingSos.value = false;
     }
+  }
+
+  // ============================
+  // ✅ BOOKING (/bookings/)
+  // ============================
+
+  /// The logged-in user id, which the booking API calls `customer_id`.
+  /// 0 when nobody is logged in — every booking call guards on this.
+  int get customerId => int.tryParse(userId) ?? 0;
+
+  /// The live booking for [vehicleId], if the customer has one. Used by the
+  /// vehicle card to swap the Book button for the ride status.
+  VehicleBookingModel? bookingForVehicle(dynamic vehicleId) {
+    final int? id = vehicleId is int
+        ? vehicleId
+        : int.tryParse(vehicleId?.toString() ?? '');
+    if (id == null) return null;
+
+    final VehicleBookingModel? booking = activeBooking.value;
+    if (booking != null && booking.vehicleId == id && booking.isLive) {
+      return booking;
+    }
+    return null;
+  }
+
+  /// POST /bookings/ — books [vehicleId] with [driverId] from the customer's
+  /// current pickup point. Drop coordinates are optional (the API only
+  /// requires pickup). Returns the created booking, or null with a snackbar
+  /// carrying the backend's message on failure.
+  Future<VehicleBookingModel?> createBooking({
+    required int driverId,
+    required int vehicleId,
+    double? pickupLat,
+    double? pickupLng,
+    double? dropLat,
+    double? dropLng,
+  }) async {
+    if (isCreatingBooking.value) return null;
+
+    final request = VehicleBookingCreateModel(
+      customerId: customerId,
+      driverId: driverId,
+      vehicleId: vehicleId,
+      // Default pickup = wherever the customer is looking on the map (their
+      // GPS fix, or the location they picked manually).
+      pickupLatitude: pickupLat ?? latitude.value,
+      pickupLongitude: pickupLng ?? longitude.value,
+      dropLatitude: dropLat,
+      dropLongitude: dropLng,
+    );
+
+    if (!request.isValid) {
+      debugPrint("❌ [BOOKING] Invalid request: ${request.toJson()}");
+      _bookingError(customerId <= 0
+          ? "Please log in to book this vehicle"
+          : "Could not read your pickup location. Try again.");
+      return null;
+    }
+
+    try {
+      isCreatingBooking.value = true;
+
+      final response = await WebServicesHelper()
+          .createVehicleBooking(request.toJson(), accessToken);
+
+      if (response == null) {
+        _bookingError("Network error. Please try again.");
+        return null;
+      }
+
+      final int status = _statusCodeOf(response);
+      if (status < 200 || status > 299 || response['error'] == true) {
+        _bookingError(_messageOf(response, "Could not create the booking"));
+        return null;
+      }
+
+      final Map<String, dynamic>? data = _dataMapOf(response);
+      if (data == null) {
+        _bookingError(_messageOf(response, "Could not create the booking"));
+        return null;
+      }
+
+      final booking = VehicleBookingModel.fromJson(data);
+
+      // The create response doesn't always echo every field back. Backfill
+      // from the request so the card can match this booking to its vehicle
+      // and show a status straight away (the next poll replaces it anyway).
+      booking.customerId ??= request.customerId;
+      booking.driverId ??= request.driverId;
+      booking.vehicleId ??= request.vehicleId;
+      booking.pickupLatitude ??= request.pickupLatitude;
+      booking.pickupLongitude ??= request.pickupLongitude;
+      booking.dropLatitude ??= request.dropLatitude;
+      booking.dropLongitude ??= request.dropLongitude;
+      booking.status ??= VehicleBookingStatus.pending;
+
+      activeBooking.value = booking;
+      myBookings.insert(0, booking);
+      _startBookingPolling();
+
+      debugPrint("✅ [BOOKING] Created #${booking.id} → ${booking.status}");
+      return booking;
+    } catch (e) {
+      debugPrint("❌ [BOOKING] Create error: $e");
+      _bookingError("Something went wrong. Please try again.");
+      return null;
+    } finally {
+      isCreatingBooking.value = false;
+    }
+  }
+
+  /// GET /bookings/?customer_id=&page=&size= — the customer's bookings.
+  /// Also picks the newest still-running one as [activeBooking] and starts
+  /// polling it.
+  Future<void> loadMyBookings({int page = 1, int size = 10}) async {
+    if (customerId <= 0) {
+      debugPrint("⏭️ [BOOKING] No user id, skipping booking list");
+      return;
+    }
+
+    try {
+      isLoadingBookings.value = true;
+
+      final response = await WebServicesHelper().getCustomerBookings(
+        customerId: customerId,
+        page: page,
+        size: size,
+        accessToken: accessToken,
+      );
+
+      if (response == null) {
+        debugPrint("❌ [BOOKING] Null booking list response");
+        return;
+      }
+
+      final parsed = VehicleBookingListResponse.fromJson(response);
+      myBookings.value = parsed.data;
+
+      VehicleBookingModel? live;
+      for (final booking in parsed.data) {
+        if (booking.isLive) {
+          live = booking;
+          break;
+        }
+      }
+
+      activeBooking.value = live;
+      if (live != null) {
+        _startBookingPolling();
+      } else {
+        _stopBookingPolling();
+      }
+
+      debugPrint("✅ [BOOKING] ${parsed.data.length} bookings"
+          "${live != null ? ', active #${live.id} (${live.status})' : ''}");
+    } catch (e) {
+      debugPrint("❌ [BOOKING] List error: $e");
+    } finally {
+      isLoadingBookings.value = false;
+    }
+  }
+
+  /// GET /bookings/{id} — refreshes one booking. Returns the fresh record and
+  /// keeps [activeBooking] / [myBookings] in sync with it.
+  Future<VehicleBookingModel?> refreshBooking(int bookingId) async {
+    try {
+      final response = await WebServicesHelper()
+          .getVehicleBookingById(bookingId, accessToken);
+
+      if (response == null) return null;
+
+      final Map<String, dynamic>? data = _dataMapOf(response);
+      if (data == null || data.isEmpty) return null;
+
+      final booking = VehicleBookingModel.fromJson(data);
+      _applyBookingUpdate(booking);
+      return booking;
+    } catch (e) {
+      debugPrint("❌ [BOOKING] Refresh error: $e");
+      return null;
+    }
+  }
+
+  /// POST /bookings/{id}/cancel — the backend refuses this once the trip is
+  /// COMPLETED, so its message is surfaced as-is when it does.
+  Future<bool> cancelBooking(int bookingId) async {
+    if (isCancellingBooking.value) return false;
+
+    if (customerId <= 0) {
+      _bookingError("Please log in to manage your bookings");
+      return false;
+    }
+
+    try {
+      isCancellingBooking.value = true;
+
+      final response = await WebServicesHelper()
+          .cancelVehicleBooking(bookingId, customerId, accessToken);
+
+      if (response == null) {
+        _bookingError("Network error. Please try again.");
+        return false;
+      }
+
+      final int status = _statusCodeOf(response);
+      if (status < 200 || status > 299 || response['error'] == true) {
+        _bookingError(_messageOf(response, "Could not cancel the booking"));
+        return false;
+      }
+
+      final Map<String, dynamic>? data = _dataMapOf(response);
+      // The cancel response may or may not echo the booking back — fall back
+      // to marking the one we know about as cancelled.
+      final VehicleBookingModel booking = (data != null && data.isNotEmpty)
+          ? VehicleBookingModel.fromJson(data)
+          : (VehicleBookingModel.fromJson({
+              ...?activeBooking.value?.toJson(),
+              'id': bookingId,
+              'status': VehicleBookingStatus.cancelled,
+            }));
+
+      _applyBookingUpdate(booking);
+
+      debugPrint("✅ [BOOKING] Cancelled #$bookingId");
+      return true;
+    } catch (e) {
+      debugPrint("❌ [BOOKING] Cancel error: $e");
+      _bookingError("Something went wrong. Please try again.");
+      return false;
+    } finally {
+      isCancellingBooking.value = false;
+    }
+  }
+
+  // Writes a fresh booking record into the list + active slot, and stops the
+  // polling once the ride reaches a terminal state.
+  void _applyBookingUpdate(VehicleBookingModel booking) {
+    final int index = myBookings.indexWhere((b) => b.id == booking.id);
+    if (index >= 0) {
+      myBookings[index] = booking;
+    } else {
+      myBookings.insert(0, booking);
+    }
+
+    if (activeBooking.value?.id == booking.id || booking.isLive) {
+      activeBooking.value = booking.isLive ? booking : null;
+    }
+
+    if (!booking.isLive) {
+      _stopBookingPolling();
+    }
+  }
+
+  // Polls the active booking so the customer sees ACCEPTED → ARRIVING →
+  // IN_PROGRESS → COMPLETED without pulling to refresh. Stops itself as soon
+  // as there is nothing live left to watch.
+  void _startBookingPolling() {
+    if (bookingPollTimer?.isActive ?? false) return;
+
+    bookingPollTimer = Timer.periodic(bookingPollInterval, (_) async {
+      final VehicleBookingModel? booking = activeBooking.value;
+      final int? id = booking?.id;
+
+      if (id == null || booking == null || !booking.isLive) {
+        _stopBookingPolling();
+        return;
+      }
+
+      await refreshBooking(id);
+    });
+  }
+
+  void _stopBookingPolling() {
+    bookingPollTimer?.cancel();
+    bookingPollTimer = null;
+  }
+
+  // ---- response helpers (the backend wraps everything in an envelope) ----
+
+  int _statusCodeOf(Map<String, dynamic> response) {
+    final dynamic status = response['status'];
+    if (status is int) return status;
+    return int.tryParse(status?.toString() ?? '') ?? 200;
+  }
+
+  String _messageOf(Map<String, dynamic> response, String fallback) {
+    // FastAPI validation errors come back as {detail: [...]} instead of the
+    // usual envelope, so they'd otherwise show as a blank message.
+    final dynamic detail = response['detail'];
+    if (detail is String && detail.isNotEmpty) return detail;
+    if (detail is List && detail.isNotEmpty) {
+      final dynamic first = detail.first;
+      if (first is Map && first['msg'] != null) return first['msg'].toString();
+    }
+
+    final dynamic message = response['message'];
+    if (message is String && message.isNotEmpty) return message;
+
+    return fallback;
+  }
+
+  Map<String, dynamic>? _dataMapOf(Map<String, dynamic> response) {
+    final dynamic data = response['data'];
+    if (data is Map) return Map<String, dynamic>.from(data);
+    if (data is List && data.isNotEmpty && data.first is Map) {
+      return Map<String, dynamic>.from(data.first as Map);
+    }
+    return null;
+  }
+
+  void _bookingError(String message) {
+    Get.snackbar(
+      "Booking",
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
+    );
   }
 }

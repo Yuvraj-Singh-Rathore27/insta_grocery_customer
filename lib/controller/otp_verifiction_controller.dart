@@ -3,12 +3,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../model/responsemodel/LoginResponseModelNew.dart';
-import '../preferences/UserPreferences.dart';
+import '../preferences/session_manager.dart';
 import '../screen/daskboard/DashBord.dart';
 import '../screen/dialog/helperProgressBar.dart';
 import '../utills/Utils.dart';
 import '../webservices/WebServicesHelper.dart';
-import 'package:get_storage/get_storage.dart';
 
 class OtpVerificationController extends GetxController{
   SharedPreferences? prefs;
@@ -65,15 +64,22 @@ TextEditingController passwordController= new TextEditingController();
             if(loginRespone.error!){
               Utils.showCustomTosst(loginRespone.message??'1');
             }else{
-              Utils.showCustomTosst(loginRespone.message??'2');
-              final store = GetStorage();
-              store.write(UserPreferences.user_id, loginRespone.data?.id.toString());
-              store.write(UserPreferences.access_token, loginRespone.data?.accessToken.toString());
-             //  prefs = await SharedPreferences.getInstance();
-             //  prefs?.setString(UserPreferences.user_id, loginRespone.data?.id.toString()??"");
-             // prefs?.setString(UserPreferences.access_token, loginRespone.data?.accessToken??'');
+              // Awaited, and refused when the response carries no user id —
+              // navigating on an empty session is what made the app look
+              // logged in until it was reopened.
+              final bool saved = await SessionManager.saveSession(
+                userId: loginRespone.data?.id,
+                accessToken: loginRespone.data?.accessToken,
+              );
 
-              Get.to(() => DashBord(0, ""));
+              if (!saved) {
+                Utils.showCustomTosstError("Login failed, please try again");
+                return;
+              }
+
+              Utils.showCustomTosst(loginRespone.message??'2');
+
+              Get.offAll(() => DashBord(0, ""));
             }
 
 

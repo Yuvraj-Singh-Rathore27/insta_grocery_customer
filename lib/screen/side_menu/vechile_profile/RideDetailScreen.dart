@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../controller/vechile_controller.dart';
 import '../../../utills/weight_units.dart';
 import '../../../webservices/WebServicesHelper.dart';
+import './vehicle_booking_sheet.dart';
 
 class RideDetailsScreen extends StatefulWidget {
   final Map<String, dynamic>? vehicle;
@@ -941,46 +942,71 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     final driver = vehicleData['driver'] ?? {};
     final driverContact = driver['contact_number'] ?? '';
     final hasContact = driverContact.isNotEmpty && driverContact.length >= 10;
-    final lat = vehicleData['latitude'] ?? controller.latitude.value;
-    final lng = vehicleData['longitude'] ?? controller.longitude.value;
-    
-    return Row(
+
+    return Column(
       children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () => _openNavigation(lat.toDouble(), lng.toDouble()),
-            icon: const Icon(Icons.navigation, size: 20),
-            label: const Text("Navigate"),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.red,
-              side: const BorderSide(color: Colors.red),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+        // Live booking status — shown once this vehicle is booked and kept
+        // up to date by the controller's /bookings/{id} polling.
+        Obx(() {
+          final booking = controller.bookingForVehicle(vehicleData['id']);
+          if (booking == null) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: VehicleBookingStatusCard(booking: booking),
+          );
+        }),
+        Row(
+          children: [
+            Expanded(
+              child: Obx(() {
+                final bool alreadyBooked =
+                    controller.bookingForVehicle(vehicleData['id']) != null;
+                return OutlinedButton.icon(
+                  onPressed: alreadyBooked
+                      ? null
+                      : () => showVehicleBookingSheet(context, vehicleData),
+                  icon: Icon(
+                    alreadyBooked
+                        ? Icons.check_circle_outline
+                        : Icons.local_taxi_outlined,
+                    size: 20,
+                  ),
+                  label: Text(alreadyBooked ? "Booked" : "Book"),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    disabledForegroundColor: Colors.grey.shade400,
+                    side: BorderSide(
+                      color: alreadyBooked ? Colors.grey.shade300 : Colors.red,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton.icon(
+                onPressed:
+                    hasContact ? () => _makePhoneCall(driverContact) : null,
+                icon: const Icon(Icons.call, size: 20),
+                label: Text(
+                  hasContact ? "Call Driver" : "Contact Unavailable",
+                  style: const TextStyle(fontSize: 14),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          flex: 2,
-          child: ElevatedButton.icon(
-            onPressed: hasContact
-                ? () => _makePhoneCall(driverContact)
-                : null,
-            icon: const Icon(Icons.call, size: 20),
-            label: Text(
-              hasContact ? "Call Driver" : "Contact Unavailable",
-              style: const TextStyle(fontSize: 14),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
+          ],
         ),
       ],
     );

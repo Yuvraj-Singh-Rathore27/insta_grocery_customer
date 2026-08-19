@@ -1,12 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../model/responsemodel/LoginOptRespone.dart';
 import '../model/responsemodel/LoginResponse.dart';
 import '../model/responsemodel/LoginResponseModelNew.dart';
-import '../preferences/UserPreferences.dart';
+import '../preferences/session_manager.dart';
 import '../screen/daskboard/DashBord.dart';
 import '../screen/dialog/helperProgressBar.dart';
 import '../utills/Utils.dart';
@@ -157,14 +156,19 @@ class RegisterController extends GetxController {
           if (loginRespone.error!) {
             Utils.showCustomTosst(loginRespone.message ?? "");
           } else {
+            final bool saved = await SessionManager.saveSession(
+              userId: loginRespone.data?.id,
+              accessToken: loginRespone.data?.accessToken,
+            );
+
+            if (!saved) {
+              Utils.showCustomTosstError("Signup failed, please try again");
+              return;
+            }
+
             Utils.showCustomTosst(loginRespone.message ?? "");
-            final store = GetStorage();
-            store.write(
-                UserPreferences.user_id, loginRespone.data?.id.toString());
-            store.write(UserPreferences.access_token,
-                loginRespone.data?.accessToken.toString());
-            Get.to(() => DashBord(0, ""));
             showOtpScreen.value = false;
+            Get.offAll(() => DashBord(0, ""));
           }
         } else {
           Utils.showCustomTosst("Login failed");
